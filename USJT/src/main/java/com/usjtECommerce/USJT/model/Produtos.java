@@ -1,5 +1,13 @@
 package com.usjtECommerce.USJT.model;
 
+import javax.persistence.Entity;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@Entity
 public class Produtos {
 	private Integer Id;
 	private Integer codUser;
