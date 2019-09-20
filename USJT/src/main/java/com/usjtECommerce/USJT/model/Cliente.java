@@ -1,6 +1,11 @@
 package com.usjtECommerce.USJT.model;
 
+import java.io.Serializable;
+
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -8,9 +13,10 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-public class Cliente {
-	
-	private Integer id;
+public class Cliente implements Serializable{
+	@Id
+	@GeneratedValue(strategy=GenerationType.IDENTITY)
+	private long id;
 	private Integer codUser;
 	private String nome;
 	private String cpf;
@@ -22,12 +28,8 @@ public class Cliente {
 	private String cidade;
 	private String uf;
 	private String dataNasc;
-	public Integer getId() {
-		return id;
-	}
-	public void setId(Integer id) {
-		this.id = id;
-	}
+	
+	
 	public Integer getCodUser() {
 		return codUser;
 	}
