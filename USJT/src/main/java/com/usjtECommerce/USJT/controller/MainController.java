@@ -82,6 +82,12 @@ public class MainController {
 		ModelAndView mv = new ModelAndView("produto");
 		return mv;
 	}
+	
+	@RequestMapping("/perfil")
+	public ModelAndView perfil(){
+		ModelAndView mv = new ModelAndView("perfil");
+		return mv;
+	}
 	@Controller
 	public class LoginController {
 		@Autowired
