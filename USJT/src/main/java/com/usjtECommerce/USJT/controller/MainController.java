@@ -29,13 +29,64 @@ public class MainController {
 		return mv;
 	}
 	
-
+	@RequestMapping("/buy")
+	public ModelAndView buy(){
+		ModelAndView mv = new ModelAndView("carrinho");
+		return mv;
+	}
 	
+	@RequestMapping("/carrinho")
+	public ModelAndView carrinho(){
+		ModelAndView mv = new ModelAndView("carrinho");
+		return mv;
+	}
+	
+	@RequestMapping("/sell")
+	public ModelAndView sell(){
+		ModelAndView mv = new ModelAndView("carrinho");
+		return mv;
+	}
+	
+	@RequestMapping("/contato")
+	public ModelAndView contato(){
+		ModelAndView mv = new ModelAndView("contato");
+		return mv;
+	}
+	
+	@RequestMapping("/checkout")
+	public ModelAndView checkout(){
+		ModelAndView mv = new ModelAndView("checkout");
+		return mv;
+	}
+	
+	@RequestMapping("/buscar")
+	public ModelAndView busca(){
+		ModelAndView mv = new ModelAndView("busca");
+		return mv;
+	}
+	
+	@RequestMapping("/confirmacao")
+	public ModelAndView confirmacao(){
+		ModelAndView mv = new ModelAndView("confirmacao");
+		return mv;
+	}
+	
+	@RequestMapping("/track")
+	public ModelAndView track(){
+		ModelAndView mv = new ModelAndView("track");
+		return mv;
+	}
+	
+	@RequestMapping("/produto")
+	public ModelAndView produto(){
+		ModelAndView mv = new ModelAndView("produto");
+		return mv;
+	}
 	@Controller
 	public class LoginController {
 		@Autowired
 		private LoginService loginService;
-		@GetMapping(value = { "/login","/buy","/sell" })
+		@GetMapping(value = { "/login" })
 		public ModelAndView login() {
 			ModelAndView mv = new ModelAndView("login");
 			mv.addObject(new Usuario());
@@ -46,7 +97,7 @@ public class MainController {
 		public String fazerLogin(HttpServletRequest request,Usuario usuario) {
 			if (loginService.logar(usuario)) {
 				request.getSession().setAttribute("usuarioLogado", usuario);
-				return "redirect:home";
+				return "redirect:contato";
 			} else {
 				return "login";
 			}

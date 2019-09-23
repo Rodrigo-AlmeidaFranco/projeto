@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="zxx" class="no-js">
+<html lang="zxx" class="no-js"
+xmlns:th="http://www.thymeleaf.org">
 
 <head>
 	<!-- Mobile Specific Meta -->
@@ -15,7 +16,7 @@
 	<!-- meta character set -->
 	<meta charset="UTF-8">
 	<!-- Site Title -->
-	<title>Karma Shop</title>
+	<title>TefSky Shop</title>
 	<!--
 		CSS
 		============================================= -->
@@ -37,7 +38,7 @@
 			<nav class="navbar navbar-expand-lg navbar-light main_box">
 				<div class="container">
 					<!-- Brand and toggle get grouped for better mobile display -->
-					<a class="navbar-brand logo_h" href="index.html"><img src="../static/img/logo.png" alt="" th:src="@{/img/logo.png}"></a>
+					<a class="navbar-brand logo_h" href="/home"><img src="../static/img/logo.png" alt="" th:src="@{/img/logo.png}"></a>
 					<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
 					 aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
 						<span class="icon-bar"></span>
@@ -47,16 +48,16 @@
 					<!-- Collect the nav links, forms, and other content for toggling -->
 					<div class="collapse navbar-collapse offset" id="navbarSupportedContent">
 						<ul class="nav navbar-nav menu_nav ml-auto">
-							<li class="nav-item active"><a class="nav-link" href="index.html">Home</a></li>
+							<li class="nav-item active"><a class="nav-link" href="/home">Home</a></li>
 							<li class="nav-item submenu dropdown">
 								<a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
 								 aria-expanded="false">Shop</a>
 								<ul class="dropdown-menu">
-									<li class="nav-item"><a class="nav-link" href="category.html">Shop Category</a></li>
-									<li class="nav-item"><a class="nav-link" href="single-product.html">Product Details</a></li>
-									<li class="nav-item"><a class="nav-link" href="checkout.html">Product Checkout</a></li>
-									<li class="nav-item"><a class="nav-link" href="cart.html">Shopping Cart</a></li>
-									<li class="nav-item"><a class="nav-link" href="confirmation.html">Confirmation</a></li>
+									<li class="nav-item"><a class="nav-link" href="/buscar">Shop Category</a></li>
+									<li class="nav-item"><a class="nav-link" href="/produto">Product Details</a></li>
+									<li class="nav-item"><a class="nav-link" href="/checkout">Product Checkout</a></li>
+									<li class="nav-item"><a class="nav-link" href="/carrinho">Shopping Cart</a></li>
+									<li class="nav-item"><a class="nav-link" href="/confirmacao">Confirmation</a></li>
 								</ul>
 							</li>
 							<li class="nav-item submenu dropdown">
@@ -71,12 +72,11 @@
 								<a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
 								 aria-expanded="false">Pages</a>
 								<ul class="dropdown-menu">
-									<li class="nav-item"><a class="nav-link" href="login.html">Login</a></li>
+									<li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
 									<li class="nav-item"><a class="nav-link" href="tracking.html">Tracking</a></li>
-									<li class="nav-item"><a class="nav-link" href="elements.html">Elements</a></li>
 								</ul>
 							</li>
-							<li class="nav-item"><a class="nav-link" href="contact.html">Contact</a></li>
+							<li class="nav-item"><a class="nav-link" href="/contato">Contact</a></li>
 						</ul>
 						<ul class="nav navbar-nav navbar-right">
 							<li class="nav-item"><a href="#" class="cart"><span class="ti-bag"></span></a></li>
@@ -250,7 +250,7 @@
 						<div class="col-lg-4 col-md-4">
 							<div class="single-deal">
 								<div class="overlay"></div>
-								<img class="img-fluid w-100" src="../static/img/category/c3.jpg" alt="">
+								<img class="img-fluid w-100" src="../static/img/category/c3.jpg" alt="" th:src="@{/img/category/c3.jpg}">
 								<a href="../static/img/category/c3.jpg" class="img-pop-up" target="_blank" th:src="@{/img/category/c3.jpg}">
 									<div class="deal-details">
 										<h6 class="deal-title">Product for Couple</h6>
@@ -261,7 +261,7 @@
 						<div class="col-lg-8 col-md-8">
 							<div class="single-deal">
 								<div class="overlay"></div>
-								<img class="img-fluid w-100" src="../static/img/category/c4.jpg" alt="">
+								<img class="img-fluid w-100" src="../static/img/category/c4.jpg" alt="" th:src="@{/img/category/c4.jpg}">
 								<a href="../static/img/category/c4.jpg" class="img-pop-up" target="_blank" th:src="@{/img/category/c4.jpg}">
 									<div class="deal-details">
 										<h6 class="deal-title">Sneaker for Sports</h6>
