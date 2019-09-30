@@ -281,6 +281,8 @@
 .ti-bag:before {
 	content: "\e655";
 }
+
+
 .ti-move:before {
 	content: "\e656";
 }

@@ -36,6 +36,9 @@
 	href="../static/CSS/nouislider.min.css">
 <link rel="stylesheet" th:href="@{/CSS/estilo.css}"
 	href="../static/CSS/estilo.css">
+<link rel="stylesheet" th:href="@{/CSS/modal.css}"
+	href="../static/CSS/modal.css">
+		<script src="https://kit.fontawesome.com/79e58ef0aa.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
@@ -60,37 +63,14 @@
 						id="navbarSupportedContent">
 						<ul class="nav navbar-nav menu_nav ml-auto">
 							<li class="nav-item"><a class="nav-link" href="/home">Home</a></li>
-							<li class="nav-item submenu dropdown"><a href="#"
-								class="nav-link dropdown-toggle" data-toggle="dropdown"
-								role="button" aria-haspopup="true" aria-expanded="false">Shop</a>
-								<ul class="dropdown-menu">
-									<li class="nav-item"><a class="nav-link" href="/buscar">Shop
-											Category</a></li>
-									<li class="nav-item"><a class="nav-link" href="/produto">Product
-											Details</a></li>
-									<li class="nav-item"><a class="nav-link" href="/checkout">Product
-											Checkout</a></li>
-									<li class="nav-item"><a class="nav-link" href="/carrinho">Shopping
-											Cart</a></li>
-									<li class="nav-item"><a class="nav-link"
-										href="/confirmacao">Confirmation</a></li>
-								</ul></li>
-							<li class="nav-item active submenu dropdown"><a
-								href="/perfil" class="nav-link dropdown-toggle"
-								data-toggle="dropdown" role="button" aria-haspopup="true"
-								aria-expanded="false">Perfil</a></li>
-							<li class="nav-item submenu dropdown"><a href="#"
-								class="nav-link dropdown-toggle" data-toggle="dropdown"
-								role="button" aria-haspopup="true" aria-expanded="false">Pages</a>
-								<ul class="dropdown-menu">
-									<li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
-									<li class="nav-item"><a class="nav-link"
-										href="tracking.html">Tracking</a></li>
-								</ul></li>
-							<li class="nav-item"><a class="nav-link" href="/contato">Contact</a></li>
+							<li class="nav-item submenu dropdown"><a href="/buscar"
+								class="nav-link dropdown-toggle" role="button"
+								aria-expanded="false">Shop</a></li>
+							<li class="nav-item"><a class="nav-link" href="/contato">Suporte</a></li>
 						</ul>
 						<ul class="nav navbar-nav navbar-right">
-							<li class="nav-item"><a href="#" class="cart"><span
+							<li class="nav-item"><a href="/perfil" class="cart"><span><i class="fas fa-user"></i></span></a></li>
+							<li class="nav-item"><a href="/carrinho" class="cart"><span
 									class="ti-bag"></span></a></li>
 							<li class="nav-item">
 								<button class="search">
@@ -115,75 +95,92 @@
 	</header>
 	<!-- End Header Area -->
 
+
+
 	<!-- start banner Area -->
 	<section class="banner-area">
 		<div class="container">
-			<div class="row fullscreen align-items-center justify-content-start">
-				<div class="order_details_table">
-					<h2>Pedidos</h2>
-					<div class="table-responsive">
-						<table class="table">
-							<thead>
-								<tr>
-									<th scope="col">Número o pedido</th>
-									<th scope="col">Valor</th>
-									<th scope="col">Status</th>
-									<th scope="col">Data</th>
-									<th scope="col">Detalhes</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td>696969</td>
-									<td>USD: 30</td>
-									<td>Entregue</td>
-									<td>07/08/2005</td>
-									<td><a>Detalhes</a></td>
-								</tr>
-								<tr>
-									<td>696969</td>
-									<td>USD: 30</td>
-									<td>Entregue</td>
-									<td>07/08/2005</td>
-									<td><a>Detalhes</a></td>
-								</tr>
-								<tr>
-									<td>696969</td>
-									<td>USD: 30</td>
-									<td>Entregue</td>
-									<td>07/08/2005</td>
-									<td><a>Detalhes</a></td>
-								</tr>
-							</tbody>
-						</table>
+			<section class="bg_white">
+				<div class="container">
+					<div class="row features-inner">
+						<!-- single features -->
+						<div class="col-lg-3 col-md-6 col-sm-6">
+							<div class="single-features">
+								<div class="f-icon" data-toggle="modal"
+									data-target="#modalTrack">
+									<img src="../static/img/features/f-icon1.png" alt=""
+										th:src="@{/img/features/f-icon1.png}"
+										onclick="show('trakcer')">
+								</div>
+								<h6>Tracking</h6>
+								<p>Visualize a entrega de seu Pedido</p>
+							</div>
+						</div>
+						<!-- single features -->
+						<div class="col-lg-3 col-md-6 col-sm-6">
+							<div class="single-features">
+								<div class="f-icon">
+									<img src="../static/img/features/f-icon2.png" alt=""
+										th:src="@{/img/features/f-icon2.png}" onclick="show('devolucao')">
+								</div>
+								<h6>Devoluções</h6>
+								<p>Detalhes</p>
+							</div>
+						</div>
+						<!-- single features -->
+						<div class="col-lg-3 col-md-6 col-sm-6">
+							<div class="single-features">
+								<div class="f-icon">
+									<img src="../static/img/features/f-icon3.png" alt=""
+										th:src="@{/img/features/f-icon3.png}" onclick="show('suporte')">
+								</div>
+								<h6>Suporte</h6>
+								<p>Atendentes 24/7</p>
+							</div>
+						</div>
+						<!-- single features -->
+						<div class="col-lg-3 col-md-6 col-sm-6">
+							<div class="single-features">
+								<div class="f-icon">
+									<img src="../static/img/features/f-icon4.png" alt=""
+										th:src="@{/img/features/f-icon4.png}" onclick="show('metodosPagto')">
+								</div>
+								<h6>Métodos de Pagamento</h6>
+								<p>Detalhes</p>
+							</div>
+						</div>
+						<!-- single features -->
+
+						<div class="col-lg-12 col-md-12 col-sm-12">
+							<hr>
+							<div class="single-features">
+								<div class="f-icon">
+									<img src="../static/img/features/f-icon5.png" alt=""
+										th:src="@{/img/features/f-icon5.png}" onclick="show('perfil')">
+								</div>
+								<h6>Perfil</h6>
+								<p>Detalhes</p>
+							</div>
+						</div>
 					</div>
 				</div>
-				<div class="order_details_table" style="margin-left: 10px">
-					<h2>Cupons</h2>
-					<div class="table-responsive">
-						<table class="table">
-							<thead>
-								<tr>
-									<th scope="col">Número do cupom</th>
-									<th scope="col">Valor</th>
-									<th scope="col">Status</th>
-									<th scope="col">Data</th>
-									<th scope="col">Detalhes</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td></td>
-									<td></td>
-									<td></td>
-									<td></td>
-									<td><a></a></td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
+			</section>
+			<br>
+			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content trakcer" id="trakcer">
+				<h3 class="title_confirmation">trakcer.</h3>
+			</section>
+			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content perfil" id="perfil">
+				<h3 class="title_confirmation">perfil.</h3>
+			</section>
+			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content suporte" id="suporte">
+				<h3 class="title_confirmation">suporte.</h3>
+			</section>
+			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content metodosPagto" id="metodosPagto">
+				<h3 class="title_confirmation">metodosPagto.</h3>
+			</section>
+			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content devolucao" id="devolucao">
+				<h3 class="title_confirmation">devolucao.</h3>
+			</section>
 		</div>
 	</section>
 	<!-- End banner Area -->
@@ -292,6 +289,7 @@
 		th:src="@{/JS/jquery.magnific-popup.min.js}"></script>
 	<script src="../static/JS/owl.carousel.min.js"
 		th:src="@{/JS/owl.carousel.min.js}"></script>
+	<script src="../static/JS/JS.js" th:src="@{/JS/JS.js}"></script>
 	<!--gmaps Js-->
 	<script
 		src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCjCGmQ0Uq4exrzdcL6rvxywDDOvfAu6eE"></script>

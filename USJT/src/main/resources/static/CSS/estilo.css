@@ -5793,3 +5793,45 @@ label {
     color: #ffba00; }
 
 /*# sourceMappingURL=main.css.map */
+
+.bg_white{
+	background-color: white;
+	position: relative;
+	width: 100%;
+	padding: 0px;
+	margin-top: 10%;
+}
+
+.conteudo{
+	margin-top: -15%;
+}
+
+.perfil-content{
+	height: 500px;
+}
+
+.trakcer{
+	display: none;
+}
+
+.perfil{
+	display: none;
+}
+
+.suporte{
+	display: none;
+}
+
+.metodosPagto{
+	display: none;
+}
+
+.devolucao{
+	display: none;
+}
+
+.user{
+	color: black;
+	box-sizing: border-box;
+	margin-top: 50%;
+}

@@ -1,33 +1,42 @@
 <!DOCTYPE html>
-<html lang="zxx" class="no-js"
-xmlns:th="http://www.thymeleaf.org">
+<html lang="zxx" class="no-js" xmlns:th="http://www.thymeleaf.org">
 
 <head>
-	<!-- Mobile Specific Meta -->
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<!-- Favicon-->
-	<link rel="shortcut icon" href="img/fav.png">
-	<!-- Author Meta -->
-	<meta name="author" content="CodePixar">
-	<!-- Meta Description -->
-	<meta name="description" content="">
-	<!-- Meta Keyword -->
-	<meta name="keywords" content="">
-	<!-- meta character set -->
-	<meta charset="UTF-8">
-	<!-- Site Title -->
-	<title>TefSky Shop</title>
-	<!--
+<!-- Mobile Specific Meta -->
+<meta name="viewport"
+	content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- Favicon-->
+<link rel="shortcut icon" href="img/fav.png">
+<!-- Author Meta -->
+<meta name="author" content="CodePixar">
+<!-- Meta Description -->
+<meta name="description" content="">
+<!-- Meta Keyword -->
+<meta name="keywords" content="">
+<!-- meta character set -->
+<meta charset="UTF-8">
+<!-- Site Title -->
+<title>TefSky Shop</title>
+<!--
 		CSS
 		============================================= -->
-	<link rel="stylesheet" th:href="@{/CSS/bootstrap.css}" href="../static/CSS/bootstrap.css">
-	<link rel="stylesheet" th:href="@{/CSS/linearicons.css}" href="../static/CSS/linearicons.css">
-	<link rel="stylesheet" th:href="@{/CSS/owl.carousel.css}" href="../static/CSS/owl.carousel.css">
-	<link rel="stylesheet" th:href="@{/CSS/themify-icons.css}" href="../static/CSS/themify-icons.css">
-	<link rel="stylesheet" th:href="@{/CSS/font-awesome.min.css}" href="../static/CSS/font-awesome.min.css">
-	<link rel="stylesheet" th:href="@{/CSS/nice-select.css}" href="../static/CSS/nice-select.css">
-	<link rel="stylesheet" th:href="@{/CSS/nouislider.min.css}"href="../static/CSS/nouislider.min.css">
-	<link rel="stylesheet" th:href="@{/CSS/estilo.css}" href="../static/CSS/estilo.css">
+<link rel="stylesheet" th:href="@{/CSS/bootstrap.css}"
+	href="../static/CSS/bootstrap.css">
+<link rel="stylesheet" th:href="@{/CSS/linearicons.css}"
+	href="../static/CSS/linearicons.css">
+<link rel="stylesheet" th:href="@{/CSS/owl.carousel.css}"
+	href="../static/CSS/owl.carousel.css">
+<link rel="stylesheet" th:href="@{/CSS/themify-icons.css}"
+	href="../static/CSS/themify-icons.css">
+<link rel="stylesheet" th:href="@{/CSS/font-awesome.min.css}"
+	href="../static/CSS/font-awesome.min.css">
+	<script src="https://kit.fontawesome.com/79e58ef0aa.js" crossorigin="anonymous"></script>
+<link rel="stylesheet" th:href="@{/CSS/nice-select.css}"
+	href="../static/CSS/nice-select.css">
+<link rel="stylesheet" th:href="@{/CSS/nouislider.min.css}"
+	href="../static/CSS/nouislider.min.css">
+<link rel="stylesheet" th:href="@{/CSS/estilo.css}"
+	href="../static/CSS/estilo.css">
 </head>
 
 <body>
@@ -38,50 +47,33 @@ xmlns:th="http://www.thymeleaf.org">
 			<nav class="navbar navbar-expand-lg navbar-light main_box">
 				<div class="container">
 					<!-- Brand and toggle get grouped for better mobile display -->
-					<a class="navbar-brand logo_h" href="/home"><img src="../static/img/logo.png" alt="" th:src="@{/img/logo.png}"></a>
-					<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
-					 aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-						<span class="icon-bar"></span>
-						<span class="icon-bar"></span>
-						<span class="icon-bar"></span>
+					<a class="navbar-brand logo_h" href="/home"><img
+						src="../static/img/logo.png" alt="" th:src="@{/img/logo.png}"></a>
+					<button class="navbar-toggler" type="button" data-toggle="collapse"
+						data-target="#navbarSupportedContent"
+						aria-controls="navbarSupportedContent" aria-expanded="false"
+						aria-label="Toggle navigation">
+						<span class="icon-bar"></span> <span class="icon-bar"></span> <span
+							class="icon-bar"></span>
 					</button>
 					<!-- Collect the nav links, forms, and other content for toggling -->
-					<div class="collapse navbar-collapse offset" id="navbarSupportedContent">
+					<div class="collapse navbar-collapse offset"
+						id="navbarSupportedContent">
 						<ul class="nav navbar-nav menu_nav ml-auto">
-							<li class="nav-item active"><a class="nav-link" href="/home">Home</a></li>
-							<li class="nav-item submenu dropdown">
-								<a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
-								 aria-expanded="false">Shop</a>
-								<ul class="dropdown-menu">
-									<li class="nav-item"><a class="nav-link" href="/buscar">Shop Category</a></li>
-									<li class="nav-item"><a class="nav-link" href="/produto">Product Details</a></li>
-									<li class="nav-item"><a class="nav-link" href="/checkout">Product Checkout</a></li>
-									<li class="nav-item"><a class="nav-link" href="/carrinho">Shopping Cart</a></li>
-									<li class="nav-item"><a class="nav-link" href="/confirmacao">Confirmation</a></li>
-								</ul>
-							</li>
-							<li class="nav-item submenu dropdown">
-								<a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
-								 aria-expanded="false">Blog</a>
-								<ul class="dropdown-menu">
-									<li class="nav-item"><a class="nav-link" href="blog.html">Blog</a></li>
-									<li class="nav-item"><a class="nav-link" href="single-blog.html">Blog Details</a></li>
-								</ul>
-							</li>
-							<li class="nav-item submenu dropdown">
-								<a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
-								 aria-expanded="false">Pages</a>
-								<ul class="dropdown-menu">
-									<li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
-									<li class="nav-item"><a class="nav-link" href="tracking.html">Tracking</a></li>
-								</ul>
-							</li>
-							<li class="nav-item"><a class="nav-link" href="/contato">Contact</a></li>
+							<li class="nav-item"><a class="nav-link" href="/home">Home</a></li>
+							<li class="nav-item submenu dropdown"><a href="/buscar"
+								class="nav-link dropdown-toggle" role="button"
+								aria-expanded="false">Shop</a></li>
+							<li class="nav-item"><a class="nav-link" href="/contato">Suporte</a></li>
 						</ul>
 						<ul class="nav navbar-nav navbar-right">
-							<li class="nav-item"><a href="#" class="cart"><span class="ti-bag"></span></a></li>
+							<li class="nav-item"><a href="/perfil" class="cart"><span><i class="fas fa-user"></i></span></a></li>
+							<li class="nav-item"><a href="/carrinho" class="cart"><span
+									class="ti-bag"></span></a></li>
 							<li class="nav-item">
-								<button class="search"><span class="lnr lnr-magnifier" id="search"></span></button>
+								<button class="search">
+									<span class="lnr lnr-magnifier" id="search"></span>
+								</button>
 							</li>
 						</ul>
 					</div>
@@ -91,7 +83,8 @@ xmlns:th="http://www.thymeleaf.org">
 		<div class="search_input" id="search_input_box">
 			<div class="container">
 				<form class="d-flex justify-content-between">
-					<input type="text" class="form-control" id="search_input" placeholder="Search Here">
+					<input type="text" class="form-control" id="search_input"
+						placeholder="Search Here">
 					<button type="submit" class="btn"></button>
 					<span class="lnr lnr-cross" id="close_search" title="Close Search"></span>
 				</form>
@@ -110,9 +103,13 @@ xmlns:th="http://www.thymeleaf.org">
 						<div class="row single-slide align-items-center d-flex">
 							<div class="col-lg-5 col-md-6">
 								<div class="banner-content">
-									<h1>Nike New <br>Collection!</h1>
-									<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et
-										dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.</p>
+									<h1>
+										Nike New <br>Collection!
+									</h1>
+									<p>Lorem ipsum dolor sit amet, consectetur adipisicing
+										elit, sed do eiusmod tempor incididunt ut labore et dolore
+										magna aliqua. Ut enim ad minim veniam, quis nostrud
+										exercitation.</p>
 									<div class="add-bag d-flex align-items-center">
 										<a class="add-btn" href=""><span class="lnr lnr-cross"></span></a>
 										<span class="add-text text-uppercase">Add to Bag</span>
@@ -121,7 +118,9 @@ xmlns:th="http://www.thymeleaf.org">
 							</div>
 							<div class="col-lg-7">
 								<div class="banner-img">
-									<img class="img-fluid" src="../static/img/banner/banner-img.png" alt="" th:src="@{/img/banner/banner-img.png}">
+									<img class="img-fluid"
+										src="../static/img/banner/banner-img.png" alt=""
+										th:src="@{/img/banner/banner-img.png}">
 								</div>
 							</div>
 						</div>
@@ -129,9 +128,13 @@ xmlns:th="http://www.thymeleaf.org">
 						<div class="row single-slide">
 							<div class="col-lg-5">
 								<div class="banner-content">
-									<h1>Nike New <br>Collection!</h1>
-									<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et
-										dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.</p>
+									<h1>
+										Nike New <br>Collection!
+									</h1>
+									<p>Lorem ipsum dolor sit amet, consectetur adipisicing
+										elit, sed do eiusmod tempor incididunt ut labore et dolore
+										magna aliqua. Ut enim ad minim veniam, quis nostrud
+										exercitation.</p>
 									<div class="add-bag d-flex align-items-center">
 										<a class="add-btn" href=""><span class="lnr lnr-cross"></span></a>
 										<span class="add-text text-uppercase">Add to Bag</span>
@@ -148,9 +151,13 @@ xmlns:th="http://www.thymeleaf.org">
 						<div class="row single-slide">
 							<div class="col-lg-5">
 								<div class="banner-content">
-									<h1>Nike New <br>Collection!</h1>
-									<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et
-										dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.</p>
+									<h1>
+										Nike New <br>Collection!
+									</h1>
+									<p>Lorem ipsum dolor sit amet, consectetur adipisicing
+										elit, sed do eiusmod tempor incididunt ut labore et dolore
+										magna aliqua. Ut enim ad minim veniam, quis nostrud
+										exercitation.</p>
 									<div class="add-bag d-flex align-items-center">
 										<a class="add-btn" href=""><span class="lnr lnr-cross"></span></a>
 										<span class="add-text text-uppercase">Add to Bag</span>
@@ -178,7 +185,8 @@ xmlns:th="http://www.thymeleaf.org">
 				<div class="col-lg-3 col-md-6 col-sm-6">
 					<div class="single-features">
 						<div class="f-icon">
-							<img src="../static/img/features/f-icon1.png" alt="" th:src="@{/img/features/f-icon1.png}">
+							<img src="../static/img/features/f-icon1.png" alt=""
+								th:src="@{/img/features/f-icon1.png}">
 						</div>
 						<h6>Free Delivery</h6>
 						<p>Free Shipping on all order</p>
@@ -188,7 +196,8 @@ xmlns:th="http://www.thymeleaf.org">
 				<div class="col-lg-3 col-md-6 col-sm-6">
 					<div class="single-features">
 						<div class="f-icon">
-							<img src="../static/img/features/f-icon2.png" alt="" th:src="@{/img/features/f-icon2.png}">
+							<img src="../static/img/features/f-icon2.png" alt=""
+								th:src="@{/img/features/f-icon2.png}">
 						</div>
 						<h6>Return Policy</h6>
 						<p>Free Shipping on all order</p>
@@ -198,7 +207,8 @@ xmlns:th="http://www.thymeleaf.org">
 				<div class="col-lg-3 col-md-6 col-sm-6">
 					<div class="single-features">
 						<div class="f-icon">
-							<img src="../static/img/features/f-icon3.png" alt="" th:src="@{/img/features/f-icon3.png}">
+							<img src="../static/img/features/f-icon3.png" alt=""
+								th:src="@{/img/features/f-icon3.png}">
 						</div>
 						<h6>24/7 Support</h6>
 						<p>Free Shipping on all order</p>
@@ -208,7 +218,8 @@ xmlns:th="http://www.thymeleaf.org">
 				<div class="col-lg-3 col-md-6 col-sm-6">
 					<div class="single-features">
 						<div class="f-icon">
-							<img src="../static/img/features/f-icon4.png" alt="" th:src="@{/img/features/f-icon4.png}">
+							<img src="../static/img/features/f-icon4.png" alt=""
+								th:src="@{/img/features/f-icon4.png}">
 						</div>
 						<h6>Secure Payment</h6>
 						<p>Free Shipping on all order</p>
@@ -228,8 +239,11 @@ xmlns:th="http://www.thymeleaf.org">
 						<div class="col-lg-8 col-md-8">
 							<div class="single-deal">
 								<div class="overlay"></div>
-								<img class="../static/img-fluid w-100" src="../static/img/category/c1.jpg" alt="" th:src="@{/img/category/c1.jpg}">
-								<a href="../static/img/category/c1.jpg" class="img-pop-up" target="_blank" th:src="@{/img/category/c1.jpg}">
+								<img class="../static/img-fluid w-100"
+									src="../static/img/category/c1.jpg" alt=""
+									th:src="@{/img/category/c1.jpg}"> <a
+									href="../static/img/category/c1.jpg" class="img-pop-up"
+									target="_blank" th:src="@{/img/category/c1.jpg}">
 									<div class="deal-details">
 										<h6 class="deal-title">Sneaker for Sports</h6>
 									</div>
@@ -239,8 +253,10 @@ xmlns:th="http://www.thymeleaf.org">
 						<div class="col-lg-4 col-md-4">
 							<div class="single-deal">
 								<div class="overlay"></div>
-								<img class="img-fluid w-100" src="../static/img/category/c2.jpg" alt="" th:src="@{/img/category/c2.jpg}">
-								<a href="../img/category/c2.jpg" class="img-pop-up" target="_blank" th:src="@{/img/category/c2.jpg}">
+								<img class="img-fluid w-100" src="../static/img/category/c2.jpg"
+									alt="" th:src="@{/img/category/c2.jpg}"> <a
+									href="../img/category/c2.jpg" class="img-pop-up"
+									target="_blank" th:src="@{/img/category/c2.jpg}">
 									<div class="deal-details">
 										<h6 class="deal-title">Sneaker for Sports</h6>
 									</div>
@@ -250,8 +266,10 @@ xmlns:th="http://www.thymeleaf.org">
 						<div class="col-lg-4 col-md-4">
 							<div class="single-deal">
 								<div class="overlay"></div>
-								<img class="img-fluid w-100" src="../static/img/category/c3.jpg" alt="" th:src="@{/img/category/c3.jpg}">
-								<a href="../static/img/category/c3.jpg" class="img-pop-up" target="_blank" th:src="@{/img/category/c3.jpg}">
+								<img class="img-fluid w-100" src="../static/img/category/c3.jpg"
+									alt="" th:src="@{/img/category/c3.jpg}"> <a
+									href="../static/img/category/c3.jpg" class="img-pop-up"
+									target="_blank" th:src="@{/img/category/c3.jpg}">
 									<div class="deal-details">
 										<h6 class="deal-title">Product for Couple</h6>
 									</div>
@@ -261,8 +279,10 @@ xmlns:th="http://www.thymeleaf.org">
 						<div class="col-lg-8 col-md-8">
 							<div class="single-deal">
 								<div class="overlay"></div>
-								<img class="img-fluid w-100" src="../static/img/category/c4.jpg" alt="" th:src="@{/img/category/c4.jpg}">
-								<a href="../static/img/category/c4.jpg" class="img-pop-up" target="_blank" th:src="@{/img/category/c4.jpg}">
+								<img class="img-fluid w-100" src="../static/img/category/c4.jpg"
+									alt="" th:src="@{/img/category/c4.jpg}"> <a
+									href="../static/img/category/c4.jpg" class="img-pop-up"
+									target="_blank" th:src="@{/img/category/c4.jpg}">
 									<div class="deal-details">
 										<h6 class="deal-title">Sneaker for Sports</h6>
 									</div>
@@ -274,8 +294,10 @@ xmlns:th="http://www.thymeleaf.org">
 				<div class="col-lg-4 col-md-6">
 					<div class="single-deal">
 						<div class="overlay"></div>
-						<img class="img-fluid w-100" src="../static/img/category/c5.jpg" alt="" th:src="@{/img/category/c5.jpg}">
-						<a href="../static/img/category/c5.jpg" class="img-pop-up" target="_blank" >
+						<img class="img-fluid w-100" src="../static/img/category/c5.jpg"
+							alt="" th:src="@{/img/category/c5.jpg}"> <a
+							href="../static/img/category/c5.jpg" class="img-pop-up"
+							target="_blank">
 							<div class="deal-details">
 								<h6 class="deal-title">Sneaker for Sports</h6>
 							</div>
@@ -325,33 +347,35 @@ xmlns:th="http://www.thymeleaf.org">
 					<div class="active-exclusive-product-slider">
 						<!-- single exclusive carousel -->
 						<div class="single-exclusive-slider">
-							<img class="img-fluid" src="../static/img/product/e-p1.png" alt="" th:src="@{/img/product/e-p1.png}">
+							<img class="img-fluid" src="../static/img/product/e-p1.png"
+								alt="" th:src="@{/img/product/e-p1.png}">
 							<div class="product-details">
 								<div class="price">
 									<h6>$150.00</h6>
 									<h6 class="l-through">$210.00</h6>
 								</div>
-								<h4>addidas New Hammer sole
-									for Sports person</h4>
-								<div class="add-bag d-flex align-items-center justify-content-center">
-									<a class="add-btn" href=""><span class="ti-bag"></span></a>
-									<span class="add-text text-uppercase">Add to Bag</span>
+								<h4>addidas New Hammer sole for Sports person</h4>
+								<div
+									class="add-bag d-flex align-items-center justify-content-center">
+									<a class="add-btn" href=""><span class="ti-bag"></span></a> <span
+										class="add-text text-uppercase">Add to Bag</span>
 								</div>
 							</div>
 						</div>
 						<!-- single exclusive carousel -->
 						<div class="single-exclusive-slider">
-							<img class="img-fluid" src="../static/img/product/e-p1.png" alt="" th:src="@{/img/product/e-p1.png}">
+							<img class="img-fluid" src="../static/img/product/e-p1.png"
+								alt="" th:src="@{/img/product/e-p1.png}">
 							<div class="product-details">
 								<div class="price">
 									<h6>$150.00</h6>
 									<h6 class="l-through">$210.00</h6>
 								</div>
-								<h4>addidas New Hammer sole
-									for Sports person</h4>
-								<div class="add-bag d-flex align-items-center justify-content-center">
-									<a class="add-btn" href=""><span class="ti-bag"></span></a>
-									<span class="add-text text-uppercase">Add to Bag</span>
+								<h4>addidas New Hammer sole for Sports person</h4>
+								<div
+									class="add-bag d-flex align-items-center justify-content-center">
+									<a class="add-btn" href=""><span class="ti-bag"></span></a> <span
+										class="add-text text-uppercase">Add to Bag</span>
 								</div>
 							</div>
 						</div>
@@ -372,10 +396,8 @@ xmlns:th="http://www.thymeleaf.org">
 				<div class="col-lg-3  col-md-6 col-sm-6">
 					<div class="single-footer-widget">
 						<h6>About Us</h6>
-						<p>
-							Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore dolore
-							magna aliqua.
-						</p>
+						<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit,
+							sed do eiusmod tempor incididunt ut labore dolore magna aliqua.</p>
 					</div>
 				</div>
 				<div class="col-lg-4  col-md-6 col-sm-6">
@@ -384,18 +406,24 @@ xmlns:th="http://www.thymeleaf.org">
 						<p>Stay update with our latest</p>
 						<div class="" id="mc_embed_signup">
 
-							<form target="_blank" novalidate="true" action="https://spondonit.us12.list-manage.com/subscribe/post?u=1462626880ade1ac87bd9c93a&amp;id=92a4423d01"
-							 method="get" class="form-inline">
+							<form target="_blank" novalidate="true"
+								action="https://spondonit.us12.list-manage.com/subscribe/post?u=1462626880ade1ac87bd9c93a&amp;id=92a4423d01"
+								method="get" class="form-inline">
 
 								<div class="d-flex flex-row">
 
-									<input class="form-control" name="EMAIL" placeholder="Enter Email" onfocus="this.placeholder = ''" onblur="this.placeholder = 'Enter Email '"
-									 required="" type="email">
+									<input class="form-control" name="EMAIL"
+										placeholder="Enter Email" onfocus="this.placeholder = ''"
+										onblur="this.placeholder = 'Enter Email '" required=""
+										type="email">
 
 
-									<button class="click-btn btn btn-default"><i class="fa fa-long-arrow-right" aria-hidden="true"></i></button>
+									<button class="click-btn btn btn-default">
+										<i class="fa fa-long-arrow-right" aria-hidden="true"></i>
+									</button>
 									<div style="position: absolute; left: -5000px;">
-										<input name="b_36c4fd991d266f23781ded980_aefe40901a" tabindex="-1" value="" type="text">
+										<input name="b_36c4fd991d266f23781ded980_aefe40901a"
+											tabindex="-1" value="" type="text">
 									</div>
 
 									<!-- <div class="col-lg-4 col-md-4">
@@ -420,38 +448,57 @@ xmlns:th="http://www.thymeleaf.org">
 						<h6>Follow Us</h6>
 						<p>Let us be social</p>
 						<div class="footer-social d-flex align-items-center">
-							<a href="#"><i class="fa fa-facebook"></i></a>
-							<a href="#"><i class="fa fa-twitter"></i></a>
-							<a href="#"><i class="fa fa-dribbble"></i></a>
-							<a href="#"><i class="fa fa-behance"></i></a>
+							<a href="#"><i class="fa fa-facebook"></i></a> <a href="#"><i
+								class="fa fa-twitter"></i></a> <a href="#"><i
+								class="fa fa-dribbble"></i></a> <a href="#"><i
+								class="fa fa-behance"></i></a>
 						</div>
 					</div>
 				</div>
 			</div>
-			<div class="footer-bottom d-flex justify-content-center align-items-center flex-wrap">
-				<p class="footer-text m-0"><!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-Copyright &copy;<script>document.write(new Date().getFullYear());</script> All rights reserved </p>
+			<div
+				class="footer-bottom d-flex justify-content-center align-items-center flex-wrap">
+				<p class="footer-text m-0">
+					<!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
+					Copyright &copy;
+					<script>
+						document.write(new Date().getFullYear());
+					</script>
+					All rights reserved
+				</p>
 			</div>
 		</div>
 	</footer>
 	<!-- End footer Area -->
 
-	<script src="../static/JS/jquery-2.2.4.min.js" th:src="@{/JS/jquery-2.2.4.min.js}"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" 
-	integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4"
-	 crossorigin="anonymous" th:inline="javascript"></script>
-	<script src="../static/JS/bootstrap.min.js" th:src="@{/JS/bootstrap.min.js}"></script>
-	<script src="../static/JS/jquery.ajaxchimp.min.js" th:src="@{/JS/jquery.ajaxchimp.min.js}"></script>
-	<script src="../static/JS/jquery.nice-select.min.js" th:src="@{/JS/jquery.nice-select.min.js}"></script>
-	<script src="../static/JS/jquery.sticky.js" th:src="@{/JS/jquery.sticky.js}"></script>
-	<script src="../static/JS/nouislider.min.js" th:src="@{/JS/nouislider.min.js}"></script>
+	<script src="../static/JS/jquery-2.2.4.min.js"
+		th:src="@{/JS/jquery-2.2.4.min.js}"></script>
+	<script
+		src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"
+		integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4"
+		crossorigin="anonymous" th:inline="javascript"></script>
+	<script src="../static/JS/bootstrap.min.js"
+		th:src="@{/JS/bootstrap.min.js}"></script>
+	<script src="../static/JS/jquery.ajaxchimp.min.js"
+		th:src="@{/JS/jquery.ajaxchimp.min.js}"></script>
+	<script src="../static/JS/jquery.nice-select.min.js"
+		th:src="@{/JS/jquery.nice-select.min.js}"></script>
+	<script src="../static/JS/jquery.sticky.js"
+		th:src="@{/JS/jquery.sticky.js}"></script>
+	<script src="../static/JS/nouislider.min.js"
+		th:src="@{/JS/nouislider.min.js}"></script>
 	<script src="../static/JS/countdown.js" th:src="@{/JS/countdown.js}"></script>
-	<script src="../static/JS/jquery.magnific-popup.min.js" th:src="@{/JS/jquery.magnific-popup.min.js}"></script>
-	<script src="../static/JS/owl.carousel.min.js" th:src="@{/JS/owl.carousel.min.js}"></script>
+	<script src="../static/JS/jquery.magnific-popup.min.js"
+		th:src="@{/JS/jquery.magnific-popup.min.js}"></script>
+	<script src="../static/JS/owl.carousel.min.js"
+		th:src="@{/JS/owl.carousel.min.js}"></script>
 	<!--gmaps Js-->
-	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCjCGmQ0Uq4exrzdcL6rvxywDDOvfAu6eE"></script>
+	<script
+		src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCjCGmQ0Uq4exrzdcL6rvxywDDOvfAu6eE"></script>
 	<script src="../static/JS/gmaps.min.js" th:src="@{/JS/gmaps.min.js}"></script>
 	<script src="../static/JS/main.js" th:src="@{/JS/main.js}"></script>
+
+	
 </body>
 
 </html>

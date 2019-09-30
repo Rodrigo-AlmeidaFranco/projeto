@@ -14,4 +14,5 @@ public class LoginService {
 	public boolean logar(Usuario usuario) {
 		return usuarioRepo.findOneByLoginAndSenha(usuario.getLogin(), usuario.getSenha()) != null;
 	}
+	
 }
