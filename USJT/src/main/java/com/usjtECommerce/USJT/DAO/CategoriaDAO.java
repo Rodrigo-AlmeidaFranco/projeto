@@ -3,26 +3,28 @@ package com.usjtECommerce.USJT.DAO;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
 import com.usjtECommerce.USJT.model.Categoria;
-import com.usjtECommerce.USJT.repository.CategoriaRepo;
+import com.usjtECommerce.USJT.service.CategoriaService;
 
 
+@Controller
 public class CategoriaDAO {
 	@Autowired
-	private CategoriaRepo repo;
+	private CategoriaService service;
 	
 
 	public void deletarCategoria(Long id) {
-		repo.deleteById(id);
+		service.delete(id);
 	}
 	
 	public void cadastrarCategoria(Categoria categoria) {
-		repo.save(categoria);
+		service.save(categoria);
 	}
 	
-	public List listarCategorias() {
-		List<Categoria> categorias = repo.findAll();
+	public List<Categoria> listarCategorias() {
+		List<Categoria> categorias = service.findAll();
 		return categorias;
 	}
 }

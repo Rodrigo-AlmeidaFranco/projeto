@@ -17,20 +17,12 @@ public class Categoria implements Serializable{
 	private static final long serialVersionUID = 1L;
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
-	private String Categoria;
+	private Long id;
+	private String nome;
 	
 	
 	
-	
-	public static long getSerialversionuid() {
-		return serialVersionUID;
-	}
-	public String getCategoria() {
-		return Categoria;
-	}
-	public void setCategoria(String categoria) {
-		Categoria = categoria;
-	}
+
 	
 	
 }
