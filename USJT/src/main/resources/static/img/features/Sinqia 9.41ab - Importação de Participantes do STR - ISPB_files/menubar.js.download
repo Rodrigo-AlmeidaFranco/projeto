@@ -1,0 +1,145 @@
+var maxMenuHeight = 576;
+
+function initializeAMnetMenu( )
+{
+  $( '.menu-horz-item[prm]' ).click( clickMenuOption );
+  
+  $( 'body' ).click( hideAMnetMenu );
+  $( 'html' ).keyup( 
+      function( e )
+      {
+        if( e.which == 27 )
+          hideAMnetMenu( );
+      } );
+}
+
+function clickMenuOption( event )
+{
+  removeApplet( );
+  buildMenu( this ); 
+  showAMnetMenu( this ); 
+  event.stopPropagation( );
+}
+
+function buildMenu( pr_menu )
+{
+  //var ini = Date.now();
+  var resp;
+  
+  try
+  {
+    resp = jQuery.parseJSON( executePostContent( g_strServletURL, $(pr_menu).attr( 'prm' ) ) );    
+  }
+  catch( e ) //Se houve exceção nesse tratamento, redireciona para a página principal.
+  {
+    redirectTo( g_strServletURL );
+    return;
+  }
+  
+  $( '#drop-menu' ).remove( );
+  $( 'body'       ).append( "<div id='drop-menu' class='shadow-effect-A drop-menu-border'>" + resp.options + "</div>");
+  
+  var menu = $( '#drop-menu' );
+  
+  menu.multilevelpushmenu( { menuID: 'drop-menu-nav',
+                             preventItemClick: false, 
+                             swipe: 'touchscreen', 
+                             mode: 'cover', 
+                             backText: resp.back,
+                             backItemIcon: 'fa fa-angle-left',
+                             groupIcon: 'fa fa-angle-right',                              
+                             menuWidth: '250px' } );
+  
+  //var end = Date.now( );
+  //console.log( end-ini );
+}
+
+function showAMnetMenu( pr_menu )
+{
+  var menu         = $( '#drop-menu' );
+  var menuSelected = $(pr_menu);
+  var position     = menuSelected.offset( );
+  
+  //Desmarca qualquer menu que esteja selecionado por um novo click.
+  $( '#menu-bar .menu-selected-font' ).removeClass( 'menu-selected-font' );
+  menuSelected.addClass( 'menu-selected-font' );
+
+  //Precisa estar visível para que a altura seja calculada.
+  menu.css( 'display',    'block' );
+  menu.css( 'visibility', ''      );
+  menu.css( 'opacity',    '0.01'  ); 
+  
+  menu.multilevelpushmenu( 'redraw' );
+
+  //Se o menu for maior que o tamanho máximo, corrige as alturas dos containers e
+  //ajusta o tamanho da ul dos itens para gerar o scroll.
+  if( menu.height( ) > maxMenuHeight )
+  {
+    menu.css( 'height',     maxMenuHeight + 'px'  );
+    menu.css( 'min-height', maxMenuHeight + 'px'  );
+    
+    $( '#drop-menu-nav' ).css( 'height',     maxMenuHeight + 'px'  );
+    $( '#drop-menu-nav' ).css( 'min-height', maxMenuHeight + 'px'  );
+    
+    $( '#drop-menu ul'                     ).css( 'height', (maxMenuHeight - 78) + 'px' ); //Tira altura do cabeçalho e opção Voltar
+    $( '#drop-menu div[data-level="0"]>ul' ).css( 'height', (maxMenuHeight - 42) + 'px' ); //Tira altura do cabeçalho
+  }
+
+  //Joga o menu para o topo, para fazer a animaçãao.
+  position.top   = -maxMenuHeight;
+  position.left -= 125 - ($(pr_menu).width()/2);
+  menu.offset( position );
+  
+  //Restaura a opacidade para que o menu fique realmetne visivel.
+  menu.css( 'opacity', '1'  );  
+  
+  menu.animate( {'top': '33px'}, 200, "swing" );
+  menu.attr( 'menu-show', 'true' );
+  
+  //Faz com que o evento de click no li não feche o menu. 
+  //O menu permite click no li, mas não faz a ação de click da opção...
+  $( '#drop-menu li' ).click( function( event ) { event.stopPropagation(); });
+  
+  //Prepara o tooltip em casos que devem ser mostrados
+  $( '#drop-menu li[du-msg]' ).qtip( {
+    content: { attr: 'du-msg' },
+    show: 'click',
+    hide: { fixed: true, delay: 100 },
+    style: { classes: 'qtip-red qtip-shadow qtip-rounded' },
+    position: { my: 'middle left', at: 'middle right' }
+  });
+}
+
+function hideAMnetMenu( )
+{
+  var menu = $('#drop-menu');
+    
+  if( menu.attr( 'menu-show' ) == 'true' )
+  {
+    menu.animate( {'top': -maxMenuHeight + 'px'}, 200, "swing", 
+        function( )
+        { 
+          var menu = $('#drop-menu');
+          
+          menu.css( 'display',    'none'   );
+          menu.css( 'visibility', 'hidden' );
+          
+          //loadAppletPosition( );
+        } );
+    menu.attr( 'menu-show', 'false' );
+  }
+  
+  //desmarca o menu corrente selecionado.
+  $( '#menu-bar .menu-selected-font' ).removeClass( 'menu-selected-font' );
+}
+
+function removeApplet( )
+{
+  $( 'applet' ).remove( );
+}
+
+function doClickSearch( pr_url )
+{
+  var prm = "&txArgBusca=" + escape(document.getElementById( "txArgBusca").value);
+  redirectTo( pr_url + prm );
+}

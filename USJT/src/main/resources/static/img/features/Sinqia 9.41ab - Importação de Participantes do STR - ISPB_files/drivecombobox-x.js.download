@@ -1,0 +1,535 @@
+/**
+ * Drive combobox versão 1.0
+ * 
+ * Por motivos de performance, o componente no IE7 ainda é o componente default HTML, para os demais já é o componente com visual novo,
+ * utilizando jQuery com a extensão selectmenu, sendo que a mesma foi alterada para dar suporte à funcionalidades adicionais.
+ *
+ * Componente original, as funcionalidades implementadas serão enviadas para o desenvolvedor, para ver se é de interesse integrar ao componente.
+ * https://github.com/fnagel/jquery-ui
+ * 
+ * Browsers compatíveis:
+ * Firefox 10.0
+ * Chrome 17.0.963.46 m
+ * IE9 (documento em modo Quirks)
+ * Safari 5.1.2 (7534.52.7)
+ * Opera 11.60
+ */
+
+drivecombobox = function( arg )
+{
+  return drivecombobox.__constructor( arg );
+};
+
+drivecombobox.__constructor = function( arg )
+{
+  var e = document.createElement( "SPAN" );
+
+  e._constructor = drivecombobox._constructor;
+  e._constructor( arg );
+
+  e.style.width = e._nW + 1;
+
+  return e;
+}
+
+drivecombobox._constructor = function( arg )
+{
+  this._parent = document.getElementById( arg["parent"] );
+  this._parent.appendChild( this );
+  this.onchangeFunction = undefined;
+  this.strFLAIdx        = ( g_nFLACount != 0 ? g_nFLACount : "" );
+  this.strAlign         = "left";
+  this.bDelayedOpen     = false;
+
+  this._cpName = arg["name"];
+  this._nW     = 30;
+
+  // Define se a Combobox será estática, ou seja, não chamará o getComboBoxData( )
+  this._bStatic = arg["Static"];
+
+  if( g_nScrollBarWidth == undefined )
+    g_nScrollBarWidth = getScrollBarWidth( );
+
+  this._combo         = document.createElement( "SELECT" );
+  this._combo._parent = this;
+
+  this.lstComboboxData = [];
+
+  this.appendChild( this._combo );
+ 
+  var combobox = this;
+
+  this._combo.onfocus = function( ){ this._parent.focus( ); };
+  
+  // Não é tão estúpido quanto parece, se o usuário passar o mouse por cima da primeira opção e depois clicar no documento,
+  // o dropdown fecha com a perda de foco, mas a primeira opção fica selecionada, sem alterar o valor do índice selecionado.
+  // Assim, eu forço o componente a deselecionar quando não existe opção realmente selecionada. Também ocorre caso clique
+  // no select em si para fechar o dropdown, por isso o tratamento também no clique. Só ocorre no Opera (11.6)
+  if( isOpera( ) )
+  {
+    this._combo.onblur  = function( ){ if( this.selectedIndex == -1 ) this.selectedIndex = -1; };
+    this._combo.onclick = function( ){ if( this.selectedIndex == -1 ) this.selectedIndex = -1; };
+  }
+
+  this._divShield           = document.createElement( "DIV" );
+  this._divShield.innerHTML =
+    "<table width='100%' height='100%' cellpadding=0 cellspacing=0><tr><td onClick='event.cancelBuble=true;'></td></tr></table>";
+  this._divShield.style.overflow   = "hidden";
+  this._divShield.style.position   = "absolute";
+  this._divShield.style.top        = 0;
+  this._divShield.style.left       = 0;
+  this._divShield.style.visibility = "hidden";
+  this._divShield.style.cursor     = "default";
+  document.body.appendChild( this._divShield );
+
+  this._bReadOnly     = false;
+  this._type          = registry.ui.types.combobox;
+  this.loadFinish     = true;
+
+  // Se for conteúdo estático, já digo que está preenchido. Assim, não dispara o pedido de preenchimento da combo.
+  this._bFilled = this._bStatic;
+
+  g_aCombo[g_aCombo.length] = this;
+
+  this.focus                = drivecombobox.focus;
+  this.load                 = drivecombobox.load;
+  this.loadData             = drivecombobox.loadData;
+  this.setReadOnly          = drivecombobox.setReadOnly;
+  this.clear                = drivecombobox.clear;
+  this.setWidth             = drivecombobox.setWidth;
+  this.getJsonValue         = drivecombobox.getJsonValue;
+  this.getText              = drivecombobox.getText;
+  this.getValue             = drivecombobox.getValue;
+  this.getKey               = drivecombobox.getKey;
+  this.setJsonValue         = drivecombobox.setJsonValue;
+  this.selectItemByValue    = drivecombobox.selectItemByValue;
+  this.showShield           = drivecombobox.showShield;
+  this.hideShield           = drivecombobox.hideShield;
+  this.handleDelayedFill    = drivecombobox.handleDelayedFill;
+  this.setItem              = drivecombobox.setItem;
+  this.getSourceCompName    = drivecombobox.getSourceCompName;
+  this.unselectCombo        = drivecombobox.unselectCombo;
+  this.doLoadJson           = drivecombobox.doLoadJson;
+  this.loadJson             = drivecombobox.loadJson;
+  this.setOnchangeFunction  = drivecombobox.setOnchangeFunction;
+  this.loadCallback         = drivecombobox.loadCallback;
+  this.isLoading            = drivecombobox.isLoading;
+  this.isStatic             = drivecombobox.isStatic;
+  this.getSelectedIndex     = drivecombobox.getSelectedIndex;
+  this.selectIndex          = drivecombobox.selectIndex;
+  this.setBlankItem         = drivecombobox.setBlankItem;
+  this.setLoading           = drivecombobox.setLoading;
+  this.finish               = drivecombobox.finish;
+  this.reload               = drivecombobox.reload;
+  this.afterLoad            = drivecombobox.afterLoad;
+  this.closeDropDown        = drivecombobox.closeDropDown;
+  this.unload               = drivecombobox.unload;
+  this.isEmpty              = drivecombobox.isEmpty;
+
+  this.clear( );
+
+  return this;
+}
+
+drivecombobox.isLoading = function( )
+{
+  return !this.loadFinish;
+}
+
+drivecombobox.closeDropDown = function( )
+{
+  $( "#select_" + this.internalName ).selectmenu( "close" );
+}
+
+drivecombobox.finish = function( )
+{
+  this.selectIndex( -1 );
+
+  var combobox = this;
+  
+  $( "#select_" + this.internalName ).selectmenu(
+    {
+      maxHeight: 400,
+      soloOptionDisable: false,
+      useTypeahead: false,
+      noSelectNode: true,
+      escapeHtml: true,
+      align: combobox.strAlign,
+      focus: function( e, object )
+      {
+        if( !combobox._bFilled && !combobox._bReadOnly )
+          combobox.focus( );
+      },
+      change: function( e, object )
+      {
+        if( combobox.onchangeFunction )
+          combobox.onchangeFunction.apply( combobox, [] );
+      }
+    } );
+}
+
+drivecombobox.reload = function( )
+{
+  $( "#select_" + this.internalName ).selectmenu( );
+}
+
+drivecombobox.load = function( )
+{
+  var json = stringToJson( this.getJsonValue( ) );
+
+  this.json = json;
+
+  this.clear( );
+  this.loadJson( );
+}
+
+drivecombobox.clear = function( )
+{
+  this._bFilled = this._bStatic;
+  this._combo.options.length = 0;
+
+  this.selectIndex( -1 );
+
+  if( !this._bFilled )
+    this.setBlankItem( );
+}
+
+// Mantive esta função para não criar condições dentro dos componentes que chamam.
+// AFAZER: retirar quando o suporte ao IE7 for descontinuado.
+drivecombobox.doLoadJson = function( )
+{
+  this.loadJson( );
+}
+
+drivecombobox.loadJson = function( pr_json )
+{
+  var json;
+
+  this.setLoading( true );
+
+  if( !pr_json )
+  {
+    var strQueryString      = buildQueryString( this.aSource, false );
+    var strPrm              = 'ID1=' + this.Id1 + '&ID2=' + this.IdSvc + '&ID3=' + strQueryString/* + '&CBCompName=' + this.internalName*/;
+    var strAuxSourceName    = "";
+    var strAuxExternalValue = "";
+    var strAuxParentName    = "";
+
+    if( this.getSourceCompName( ) != undefined )
+      strAuxSourceName = '&SourceName=' + this.getSourceCompName( );
+
+    // Nome do inputPortfolio pai do controle que disparou o evento
+    if( this.strParentCompName )
+      strAuxParentName += '&ParentCompName=' + this.strParentCompName;
+
+    // Se algum valor foi definido para ser enviado ao servlet
+    if( this.externalValue )
+      strAuxExternalValue += '&externalValue=' + this.externalValue;
+
+    json = postContent( g_strURL, strPrm + strAuxSourceName + strAuxExternalValue + strAuxParentName );
+  }
+  else
+    json = pr_json;
+
+  this.loadData( json );
+}
+
+drivecombobox.loadData = function( pr_data )
+{
+  var self = this;
+
+  var lst  = stringToJson( pr_data );
+  var size = lst.length;
+
+  self.lstComboboxData = lst || [];
+
+  if( size > 0 )
+    $( "#select_" + self.internalName ).selectmenu( "newJsonData", lst );
+  else
+    $( "#select_" + self.internalName ).selectmenu( "newJsonData", [ { text:"" } ] );
+
+  self._bFilled = true;
+  self.loadCallback( );
+}
+
+drivecombobox.setLoading = function( pr_isLoading )
+{
+  this.loadFinish = !pr_isLoading;
+
+  if( pr_isLoading )
+  {
+    $( "#select_" + this.internalName ).selectmenu( "delayOpening" );
+    $( "#select_" + this.internalName ).selectmenu( "newJsonData", [ { text:"<img border='0' src='" + getContextURL( ) + "Obj/comboloader.gif'/>" } ] );
+
+    this.reload( );
+    this.selectIndex( 0 );
+  }
+  else
+  {
+    this.reload( );
+    if( this.json )
+    {
+      if( this.json.value )
+        this.selectItemByValue( this.json.value );
+      else if( this.json.plainValue )
+        this.selectItemByValue( this.json.plainValue );
+      else
+        this.selectIndex( -1 );
+    }
+    else
+      this.selectIndex( -1 );
+  }
+}
+
+drivecombobox.loadCallback = function( )
+{
+  var self = this;
+  
+  this.setLoading( false );
+  this.hideShield( );
+  
+  setTimeout( function( ){ self.afterLoad( ); }, 1 );
+}
+
+drivecombobox.afterLoad = function( )
+{
+  this.reload( );
+
+  $( "#select_" + this.internalName ).selectmenu( "delayedOpen" );
+}
+
+drivecombobox.setOnchangeFunction = function( pr_onchangeFunction )
+{
+  this.onchangeFunction = pr_onchangeFunction;
+}
+
+drivecombobox.focus = function( )
+{
+  if( !this._bFilled && !this._bReadOnly )
+  {
+    this.showShield( );
+    this._bFilled = true;
+
+    this.load( true );
+  }
+}
+
+drivecombobox.setBlankItem = function( )
+{
+  this.lstComboboxData = [ { text:" " } ];
+  $( "#select_" + this.internalName ).selectmenu( "newJsonData", this.lstComboboxData );
+  this.reload( );
+}
+
+drivecombobox.setItem = function( json )
+{
+  this.lstComboboxData = [ json ];
+  $( "#select_" + this.internalName ).selectmenu( "newJsonData", this.lstComboboxData );
+  this.reload( );
+}
+
+drivecombobox.setReadOnly = function( b )
+{
+  if( this._bReadOnly == b )
+    return;
+
+  if( this._parent.readonly == 'true' && !b )
+    return;
+
+  this._bReadOnly      = b;
+  this._combo.disabled = b;
+
+  $( "#select_" + this.internalName ).selectmenu( b ? "disable" : "enable" );
+
+  if( b && this.bClearOnReadOnly )
+    this.unselectCombo( );
+}
+
+drivecombobox.isReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+drivecombobox.isStatic = function( )
+{
+  return this._bStatic;
+}
+
+drivecombobox.unselectCombo = function( )
+{
+  this.selectIndex( -1 );
+}
+
+drivecombobox.setWidth = function( nWidth )
+{
+  this._nW                = nWidth
+  this._combo.style.width = ( nWidth - 1 ) + "px";
+}
+
+drivecombobox.getJsonValue = function( bComplete )
+{
+  var strValue = this.getKey( ) == undefined ? "plainValue" : "value";
+  var strJson  = strValue + ":'" + this.getValue( ) + "', text:'" + this.getText( ) + "'";
+
+  if( bComplete )
+    strJson = "{ type:" + this._type + ", setup: { readOnly: " + this._bReadOnly + ", value: { " + strJson + " } } }";
+  else
+    strJson = "{ type:" + this._type + ", " + strJson + " }";
+
+  return strJson;
+}
+
+drivecombobox.getText = function( )
+{
+  var index = this.getSelectedIndex( );
+
+  if( index > -1 && !this.isEmpty( ) )
+      return this.lstComboboxData[index].text;
+  else
+    return '';
+}
+
+drivecombobox.getValue = function( )
+{
+  var index = this.getSelectedIndex( );
+
+  if( index > -1 && !this.isEmpty( ) )
+  {
+    if( this.lstComboboxData[index].value )
+      return this.lstComboboxData[index].value;
+    else if( this.lstComboboxData[index].plainValue )
+      return this.lstComboboxData[index].plainValue;
+    else
+      return '';
+  }
+  else
+    return '';
+}
+
+drivecombobox.getKey = function( )
+{
+  var index = this.getSelectedIndex( );
+
+  if( index > -1 && !this.isEmpty( ) )
+    return this.lstComboboxData[index].value;
+  else
+    return '';
+}
+
+drivecombobox.setJsonValue = function( json )
+{
+  if( json.setup )
+  {
+    this.setReadOnly( json.setup.readOnly );
+
+    if( json.setup.clear )
+      this.clear( );
+
+    if( json.setup.unselect )
+      this.unselectCombo( );
+    else if( json.setup.value )
+      this.setJsonValue( json.setup.value );
+    else
+      this.reload( );
+  }
+  else
+  {
+    if( json.value == "" )
+      this.unselectCombo( );
+    else
+    {
+      g_bSettingJasonValue = true;
+
+      if( !this._bFilled )
+      {
+        this.setItem( json );
+
+        if( json.value != undefined )
+          this.selectItemByValue( json.value );
+        else if( json.plainValue != undefined )
+          this.selectItemByValue( json.plainValue );
+      }
+      else
+      {
+        if( json.value != undefined )
+          this.selectItemByValue( json.value );
+        else if( json.plainValue != undefined )
+          this.selectItemByValue( json.plainValue );
+      }
+
+      g_bSettingJasonValue = false;
+    }
+  }
+}
+
+drivecombobox.selectItemByValue = function( value )
+{
+  if( this.lstComboboxData.length > 0 )
+  {
+    var key;
+
+    for( var i = 0; i < this.lstComboboxData.length; i++ )
+    {
+      if( this.lstComboboxData[i].value )
+        key = this.lstComboboxData[i].value;
+      else if( this.lstComboboxData[i].plainValue )
+        key = this.lstComboboxData[i].plainValue;
+
+      if( key == value )
+      {
+        this.selectIndex( i );
+        return;
+      }
+    }
+  }
+
+  this.selectIndex( -1 );
+}
+
+drivecombobox.isEmpty = function( )
+{
+  return this.lstComboboxData.length == 0;
+}
+
+drivecombobox.showShield = function( )
+{
+  this._divShield.style.width      = document.body.offsetWidth  - 25;
+  this._divShield.style.height     = document.body.offsetHeight - 10;
+  this._divShield.style.zIndex     = 100;
+  this._divShield.style.visibility = "visible";
+  this._divShield.style.cursor     = "wait";
+}
+
+drivecombobox.hideShield = function( )
+{
+  this._divShield.style.width      = 0;
+  this._divShield.style.height     = 0;
+  this._divShield.style.zIndex     = -100;
+  this._divShield.style.cursor     = "default";
+  this._divShield.style.visibility = "hidden";
+}
+
+drivecombobox.handleDelayedFill = function( )
+{
+  this.clear( );
+}
+
+drivecombobox.getSourceCompName = function( )
+{
+  return this._sourceCompName;
+}
+
+drivecombobox.selectIndex = function( pr_nIndex )
+{
+  $( "#select_" + this.internalName ).selectmenu( "index", pr_nIndex );
+}
+
+drivecombobox.getSelectedIndex = function( )
+{
+  return $( "#select_" + this.internalName ).selectmenu( "index" );
+}
+
+drivecombobox.unload = function( )
+{
+  $( "#select_" + this.internalName ).selectmenu( "destroy" );
+}

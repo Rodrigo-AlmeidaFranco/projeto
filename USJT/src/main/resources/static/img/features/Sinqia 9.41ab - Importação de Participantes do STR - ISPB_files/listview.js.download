@@ -1,0 +1,3209 @@
+var g_focusListview;
+
+//Inicialização do componente.
+$( function( )
+{
+  var div = document.getElementById( "divMensagemListviewLoading" );
+  
+  if( !div )
+  {
+    var elm;
+    
+    div = document.createElement( "div" );
+    div.id = "divMensagemListviewLoading";
+    div.style.display = "none";
+    
+    elm = document.createElement( "h3" );
+    elm.innerHTML = _( "Carregando dados, por favor aguarde..." );
+    div.appendChild( elm );
+    
+    elm = document.createElement( "div" );
+    elm.className = "loader";
+    div.appendChild( elm );
+    
+    elm = document.createElement( "h6" );
+    elm.innerHTML = _( "Ou clique aqui para cancelar." );
+    div.appendChild( elm );
+    
+    document.body.appendChild( div );
+  }
+
+  registry.ui.listview.loadShield = $( div );
+});
+
+listview = function( pr_arg )
+{
+  return listview.__constructor( pr_arg )
+}
+//------------------------------------------------------------------------------
+listview.__constructor = function( pr_arg )
+{
+  var e = document.createElement( "SPAN" );
+
+  e._constructor = listview._constructor;
+  e._constructor( pr_arg );
+
+  return e;
+}
+
+listview._constructor = function( arg )
+{
+  var self = this;
+
+  var nContHint = sufixoSeguinte( );
+  
+  this.aSort               = [];
+  this.aSortAux            = [];
+  this.iSortPosAtu         = 0;
+  this.nPosScrollLeft      = 0;
+  this.oldHeight           = 0;
+  this._parent             = document.getElementById( arg["parent"] );
+  this._bPaginated         = false;
+  this.getScrollBarWidth   = listview.getScrollBarWidth;
+  this._barSize            = this.getScrollBarWidth( );
+  this.strBtCancelSortHint = g_bEnglish ? "Cancel Sort" : "Cancelar Classificação";
+  this._className          = arg["className"];
+  
+  /**
+   * Usado para contabilizar a largura não contada pelo usuário, por exemplo, as checkboxes de um checkboxlist,
+   * ou futuras implementações nas listas.
+   */
+  this._nDataTableAddons   = 0;
+
+  this._divListView                = document.createElement("DIV");
+  this._divListView.style.overflow = "hidden";
+  this._divListView._parent        = this;  //CAUSA LEAK
+  this._parent.appendChild( this._divListView );
+  this._divListView.oncontextmenu = function( ){ };
+  this._divListView.id = arg["name"] + "-main-listview";
+
+  this._divHeader                 = document.createElement("DIV");
+  this._divHeader.className       = "lvHeaderContainer";
+  this._divListView.appendChild( this._divHeader );
+
+  this._divData           = document.createElement("DIV");
+  this._divData.className = "lvDataContainer";
+  this._divListView.appendChild( this._divData );
+  this._divData.onscroll = function( ) //CAUSA LEAK
+  {
+    this.parentNode._parent._divHeader.scrollLeft = this.scrollLeft;
+    this.parentNode._parent.nPosScrollLeft        = this.scrollLeft;
+  }
+
+  this._imgArrowFirst    = getContextURL( ) + 'Obj/arrow-first.gif';
+  this._imgArrowPrevious = getContextURL( ) + 'Obj/arrow-previous.gif';
+  this._imgArrowNext     = getContextURL( ) + 'Obj/arrow-next.gif';
+  this._imgArrowLast     = getContextURL( ) + 'Obj/arrow-last.gif';
+
+  this._imgArrowFirstDisable    = getContextURL( ) + 'Obj/arrow-first-dis.gif';
+  this._imgArrowPreviousDisable = getContextURL( ) + 'Obj/arrow-previous-dis.gif';
+  this._imgArrowNextDisable     = getContextURL( ) + 'Obj/arrow-next-dis.gif';
+  this._imgArrowLastDisable     = getContextURL( ) + 'Obj/arrow-last-dis.gif';
+
+  this._divFooter           = document.createElement("DIV");
+  this._divFooter.className = "lvFooterContainer";
+  this._divFooter._parent   = this;  //CAUSA LEAK
+
+  this._divListView.appendChild( this._divFooter );
+  this._divFooter.innerHTML =
+    "<table id='tableFooter" + this._parent.id + "' class='lvFooter' cellpadding=1 cellspacing=0 border=0>" +
+    "<tr valign='middle'>" +
+    "<td align=left><div id='divNavigation" + this._parent.id + "' class='pageNavigation' style='display:none;'>" +
+      "<img id='imgFirst" + this._parent.id + "' src=" + this._imgArrowFirst +  " border=0 " +
+          "onClick='parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode._parent.handleNavigation(0);' />" +
+      "<img id='imgPrev" + this._parent.id + "' src=" + this._imgArrowPrevious +  " border=0  " +
+          "onClick='parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode._parent.handleNavigation(1);' />" +
+          "<label id='lbCurrPag"  + this._parent.id + "'>0</label>" +
+          "<input id='txtCurrPag" + this._parent.id + "' style='display:none;' size=7 maxlength=7 " +
+          		"onContextMenu='parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode._parent.cancelEventBubble( event );'onContextMenu='parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode._parent.cancelEventBubble( event );' />" +
+      "<img id='imgNext" + this._parent.id + "' src=" + this._imgArrowNext +  " border=0 " +
+          "onClick='parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode._parent.handleNavigation(3);' />" +
+      "<img id='imgLast" + this._parent.id + "' src=" + this._imgArrowLast +  " border=0 " +
+          "onClick='parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode._parent.handleNavigation(4);' />" +
+    "</div></td>" +
+
+    "<td align=right><label id='tdTotReg" + this._parent.id + "'>" + ( g_bEnglish ? "Records: " : "Registros: " ) + " 0&nbsp;</label></td>" +
+
+    "</tr></table>";
+  
+  this._divFooter.tableFooter   = document.getElementById( "tableFooter"   + this._parent.id );
+  this._divFooter.tdTotReg      = document.getElementById( "tdTotReg"      + this._parent.id );
+  this._divFooter.lbCurrPage    = document.getElementById( "lbCurrPag"     + this._parent.id );
+  this._divFooter.txtCurrPage   = document.getElementById( "txtCurrPag"    + this._parent.id );
+  this._divFooter.divNavigation = document.getElementById( "divNavigation" + this._parent.id );
+  this._divFooter.imgFirst      = document.getElementById( "imgFirst"      + this._parent.id );
+  this._divFooter.imgPrev       = document.getElementById( "imgPrev"       + this._parent.id );
+  this._divFooter.imgNext       = document.getElementById( "imgNext"       + this._parent.id );
+  this._divFooter.imgLast       = document.getElementById( "imgLast"       + this._parent.id );
+
+  var nLastFooterCell = this._divFooter.tableFooter.rows[0].cells.length - 1;
+
+  this._divFooter.tableFooter.rows[0].cells[0]              .style.borderLeft = "0px";
+  this._divFooter.tableFooter.rows[0].cells[nLastFooterCell].style.borderRight = "0px";
+
+  this._divShield           = document.createElement( "DIV" );
+  this._divShield.innerHTML =
+    "<table width='100%' height='100%' cellpadding=0 cellspacing=0><tr><td onClick='event.cancelBubble=true;'></td></tr></table>";
+  this._divShield.style.overflow   = "hidden";
+  this._divShield.style.position   = "absolute";
+  this._divShield.style.top        = 0;
+  this._divShield.style.left       = 0;
+  this._divShield.style.width      = document.body.offsetWidth - this._barSize - 4;
+  this._divShield.style.height     = document.body.offsetHeight - 4;
+  this._divShield.style.visibility = "hidden";
+  this._divShield.style.cursor     = "default";
+  this._divListView.appendChild( this._divShield );
+
+  this._divCancelSort           = document.createElement("DIV");
+  this._divCancelSort.innerHTML =
+    "<img id=_CancelSortImg src=" + getContextURL( ) + "Obj/bt_cancelSort.gif alt='" + this.strBtCancelSortHint + "' border=0>";
+  this._divCancelSort.className = "hidden";
+  this._divCancelSort.style.overflow   = "hidden";
+  this._divCancelSort.style.position   = "absolute";
+  this._divCancelSort.style.top        = 0;
+  this._divCancelSort.style.left       = 0;
+  this._divCancelSort.style.width      = 16;
+  this._divCancelSort.style.height     = 14;
+  this._divCancelSort.style.zIndex     = 10;
+  this._divListView.appendChild( this._divCancelSort );
+
+  var img       = document.getElementById( "_CancelSortImg" );
+  img.onclick   = function( )
+  {
+     self.cancelSort( );
+  }
+
+  this._type                 = registry.ui.types.listview;
+  this._nDataTableWidth      = 0;
+  this._nWidth               = 0;
+  this._nHeight              = 0;
+  this._nNumCols             = 0;
+  this._nLastSortCol         = undefined;
+  this._bSortUp              = true;
+  this._iSelectedRow         = -1;
+  this._strName              = "lv";
+  this._bHeaderClick         = false;
+  this._bFilled              = false;
+  this.bCancelSort           = false;
+  this.bMultiSelect          = false;
+  this.aSelectedRows         = new Array( );
+  this.bForm                 = false;
+  this._nSort                = 0;
+  this._nCurrPage            = 1;
+  this._nTotalPages          = 1;
+  this._nTotalRows           = 0;
+  this._nRows                = 0;
+  this._strUrl               = "";
+  this._strPrm               = "";
+  this._isMultipleRowsInsert = false;
+  this._isRefreshing         = false;
+  this._isFiringEvent        = false;
+  this._bKeyboardNavigation  = false;
+  // Seta essa nome com o default para Listview de Cadastro.
+  // É usado na ordenação
+  this._cpName = 'grid';
+
+  this._aSortOrder = new Array( );
+
+  this._aEffects = new Array( ); // Array de objetos com os efeitos que devem ser aplicados a cada linha
+
+  this.loadHeaderFromJson           = listview.loadHeaderFromJson;
+  this.buildHeaderHtml              = listview.buildHeaderHtml;
+  this.loadData                     = listview.loadData;
+  this.doLoadData                   = listview.doLoadData;
+  this.buildDataHtml                = listview.buildDataHtml;
+  this.loadNewPage                  = listview.loadNewPage;
+  this.clear                        = listview.clear;
+  this.updateFooter                 = listview.updateFooter;
+  this.buildSortOrder               = listview.buildSortOrder
+  this.resetSortOrder               = listview.resetSortOrder;
+  this.configureKeyboardNavigation  = listview.configureKeyboardNavigation;
+  this.cancelSort                   = listview.cancelSort;
+  this.scrollToRow                  = listview.scrollToRow;
+  this.selectRow                    = listview.selectRow;
+  this.unselectRow                  = listview.unselectRow;
+  this.unselectAllRows              = listview.unselectAllRows;
+  this.insertRows                   = listview.insertRows;
+  this.insertRow                    = listview.insertRow;
+  this.updateRows                   = listview.updateRows;
+  this.updateRow                    = listview.updateRow;
+  this.deleteRows                   = listview.deleteRows;
+  this.updateSelectedRow            = listview.updateSelectedRow;
+  this.removeSelectedRow            = listview.removeSelectedRow;
+  this.resetHeader                  = listview.resetHeader;
+  this.resetColumn                  = listview.resetColumn;
+  this.doSort                       = listview.doSort;
+  this.sortInvert                   = listview.sortInvert;
+  this.sort                         = listview.sort;
+  this.buildSortArray               = listview.buildSortArray;
+  this.rebuildSortOrder             = listview.rebuildSortOrder;
+  this.sortUpdate                   = listview.sortUpdate;
+  this.swapNodes                    = listview.swapNodes;
+  this.showCancelDiv                = listview.showCancelDiv;
+  this.hideCancelDiv                = listview.hideCancelDiv;
+  this.showShield                   = listview.showShield;
+  this.hideShield                   = listview.hideShield;
+  this.trataResize                  = listview.trataResize;
+  this.configureMenuEnabled         = listview.configureMenuEnabled;
+  this.atualizaGrid                 = listview.atualizaGrid;
+  this.configureMenu                = listview.configureMenu;
+  this.selectAllRows                = listview.selectAllRows;
+  this.handleNavigation             = listview.handleNavigation;
+  this.adjustFooter                 = listview.adjustFooter;
+  this.adjustSortUpDown             = listview.adjustSortUpDown;
+  this.showSortUp                   = listview.showSortUp;
+  this.unload                       = listview.unload;
+  this.adjustKeys                   = listview.adjustKeys;
+  this.applyEffects                 = listview.applyEffects;
+  this.applyRowEffects              = listview.applyRowEffects;
+  this.applyCellEffects             = listview.applyCellEffects;
+  this.applyDefaults                = listview.applyDefaults;
+  this.onResize                     = listview.trataResize;
+  this.moveUp                       = listview.moveUp;
+  this.moveDown                     = listview.moveDown;
+  this.moveSelectUp                 = listview.moveSelectUp;
+  this.moveSelectDown               = listview.moveSelectDown;
+  this.moveSelectHome               = listview.moveSelectHome;
+  this.moveSelectEnd                = listview.moveSelectEnd;
+  this.openMenu                     = listview.openMenu;
+  this.cancelEventBubble            = listview.cancelEventBubble;
+  this.configHint                   = listview.configHint;
+  this.attachHeaderHint             = listview.attachHeaderHint;
+  this.attachDataHint               = listview.attachDataHint;
+  this.asyncAttachDataHint          = listview.asyncAttachDataHint;
+  this.configPageData               = listview.configPageData;
+  this.adjustHeight                 = listview.adjustHeight;
+  this.configureAttachEvents        = listview.configureAttachEvents;
+  this.configureDetachEvents        = listview.configureDetachEvents;
+  this.configKeyboardNavigationMenu = listview.configKeyboardNavigationMenu;
+  this.configPageButton             = listview.configPageButton;
+  this.configMaxHeight              = listview.configMaxHeight;
+  this.refreshRowsStyles            = listview.refreshRowsStyles;
+  this.toggleWritePage              = listview.toggleWritePage;
+  this.toggleInfoPage               = listview.toggleInfoPage;
+  this.refreshRowStyles             = listview.refreshRowStyles;
+
+  // event functions
+  this.onFocus                     = function( pr_event ){ this.setFocus( true  ); };
+  this.onBlur                      = function( pr_event ){ this.setFocus( false ); };
+  this.setFocus                    = listview.setFocus;
+  this.onHeaderClick               = listview.onHeaderClick;
+  this.onDblClick                  = listview.onDblClick;
+  this.fireDblClickEvent           = listview.fireDblClickEvent;
+  this.fireSelectEvent             = listview.fireSelectEvent;
+  this.fireUnselectEvent           = listview.fireUnselectEvent;
+  this.fireRowsUpdateEvent         = listview.fireRowsUpdateEvent;
+  
+  // about style functions
+  this.highlight                   = listview.highlight;
+  this.unhighlight                 = listview.unhighlight;
+  this.select                      = listview.select;
+  this.rowFocus                    = listview.rowFocus;
+  this.rowBlur                     = listview.rowBlur;
+
+  // get functions
+  this.isMenuItemReadonly          = listview.isMenuItemReadonly;
+  this.isSelected                  = listview.isSelected;
+  this.getJsonValue                = listview.getJsonValue;
+  this.getSortOrder                = listview.getSortOrder;
+  this.getKey                      = listview.getKey;
+  this.getKeyAt                    = listview.getKeyAt;
+  this.getKeys                     = listview.getKeys;
+  this.getSelectedRow              = listview.getSelectedRow;
+  this.getRowFromEvent             = listview.getRowFromEvent;
+  this.getColumnValue              = listview.getColumnValue;
+  this.getRealKey                  = listview.getRealKey;
+  this.getRealKeyAt                = listview.getRealKeyAt;
+  this.getIndexByKey               = listview.getIndexByKey;
+  this.getName                     = listview.getName;
+  this.getSource                   = listview.getSource;
+  this.getTotRows                  = listview.getTotRows;
+  this.getCurrPage                 = listview.getCurrPage;
+  this.getTotalRows                = listview.getTotalRows;
+  this.getTotalPages               = listview.getTotalPages;
+
+  // set functions
+  this.setMultiSelect = listview.setMultiSelect;
+  this.setHeight      = listview.setHeight;
+  this.setJsonValue   = listview.setJsonValue;
+  this.setOldKey      = listview.setOldKey;
+  this.setPaginated   = listview.setPaginated;
+  this.setPrm         = listview.setPrm;
+  this.setReadOnly    = listview.setReadOnly;
+  this.setURL         = listview.setURL;
+  this.setWidth       = listview.setWidth;
+
+  this.configHint( );
+  
+  return this;
+}
+
+listview.configHint = function( )
+{
+  var self = this;
+  
+  var position =  
+  {
+    target: "event",
+    at: "top center",
+    my: "bottom center"
+  };  
+
+  attachHint( "#imgFirst" + this._parent.id,
+              "",
+              function( ) {
+                if( self._divFooter.imgFirst._disabled )
+                  return false;
+                
+                return g_bEnglish ? "First page"    : "Primeira página";
+              }, false, undefined, position );
+
+  attachHint( "#imgPrev" + this._parent.id,
+              "",
+              function( ) {
+                if( self._divFooter.imgPrev._disabled )
+                  return false;
+                
+                return g_bEnglish ? "Previous page" : "Página anterior";
+              }, false, undefined, position );
+  
+  attachHint( "#imgNext" + this._parent.id,
+              "",
+              function( ) {
+                if( self._divFooter.imgNext._disabled )
+                  return false;
+                
+                return g_bEnglish ? "Next page" : "Próxima página";
+              }, false, undefined, position );
+  
+  attachHint( "#imgLast" + this._parent.id,
+              "",
+              function( ) {
+                if( self._divFooter.imgLast._disabled )
+                  return false;
+                
+                return g_bEnglish ? "Last page" : "Última página";
+              }, false, undefined, position );
+  
+  attachHint( "#lbCurrPag" + this._parent.id,
+              "",
+              function( ) {
+                if( g_bEnglish )
+                  return "Page " + self.getCurrPage( ) + " of " + self.getTotalPages( );
+                else
+                  return "Página " + self.getCurrPage( ) + " de " + self.getTotalPages( );
+              }, false, undefined, position );
+}
+
+listview.configPageButton = function( )
+{
+   //Isso tem que sair daqui para ser chamado em outro lugar e o finalize da listView tambem.
+  this._imgArrowFirst    = getContextURL( ) + "Obj/" + ( this.bForm ? "gray-" : "" ) + "arrow-first"    + ( this.bForm ? ".png" : ".gif" );
+  this._imgArrowPrevious = getContextURL( ) + "Obj/" + ( this.bForm ? "gray-" : "" ) + "arrow-previous" + ( this.bForm ? ".png" : ".gif" );
+  this._imgArrowNext     = getContextURL( ) + "Obj/" + ( this.bForm ? "gray-" : "" ) + "arrow-next"     + ( this.bForm ? ".png" : ".gif" );
+  this._imgArrowLast     = getContextURL( ) + "Obj/" + ( this.bForm ? "gray-" : "" ) + "arrow-last"     + ( this.bForm ? ".png" : ".gif" );
+
+  this._imgArrowFirstDisable    = getContextURL( ) + "Obj/" + ( this.bForm ? "gray-" : "" ) + "arrow-first-dis"    + ( this.bForm ? ".png" : ".gif" );
+  this._imgArrowPreviousDisable = getContextURL( ) + "Obj/" + ( this.bForm ? "gray-" : "" ) + "arrow-previous-dis" + ( this.bForm ? ".png" : ".gif" );
+  this._imgArrowNextDisable     = getContextURL( ) + "Obj/" + ( this.bForm ? "gray-" : "" ) + "arrow-next-dis"     + ( this.bForm ? ".png" : ".gif" );
+  this._imgArrowLastDisable     = getContextURL( ) + "Obj/" + ( this.bForm ? "gray-" : "" ) + "arrow-last-dis"     + ( this.bForm ? ".png" : ".gif" );
+}
+
+listview.setPaginated = function( pr_bPaginated )
+{
+  var self = this;
+  this._bPaginated = pr_bPaginated;
+
+  if( pr_bPaginated )
+  {
+    this._divFooter.lbCurrPage .onclick   = function( pr_event ){ self.toggleWritePage( ); };
+    this._divFooter.txtCurrPage.onblur    = function( pr_event ){ self.toggleInfoPage ( ); };
+    this._divFooter.txtCurrPage.onkeydown = function( pr_event )
+                                            {
+                                              if( !pr_event )
+                                                pr_event = window.event;
+                                              
+                                              var key = pr_event.which || pr_event.keyCode;
+
+                                              if( key == 13 )
+                                                this.blur( );
+                                              else if( key == 27 )
+                                              {
+                                                self._bCancelPageWrite = true;
+                                                
+                                                this.blur( );
+                                              }
+                                              else
+                                                return key >= 48 && key <= 57  ||
+                                                       key >= 96 && key <= 105 ||
+                                                       key >= 37 && key <= 40  ||
+                                                       key == 46 ||
+                                                       key == 8;
+                                            }
+  }
+}
+
+listview.toggleWritePage = function( )
+{
+  this._divFooter.lbCurrPage .style.display = "none";
+  this._divFooter.txtCurrPage.style.display = "";
+  
+  this._divFooter.txtCurrPage.value = this._divFooter.lbCurrPage.innerHTML;
+  this._divFooter.txtCurrPage.focus( );
+}
+
+listview.toggleInfoPage = function( )
+{
+  this._divFooter.lbCurrPage .style.display = "";
+  this._divFooter.txtCurrPage.style.display = "none";
+
+  if( this._bCancelPageWrite )
+  {
+    this._bCancelPageWrite = undefined;
+    return;
+  }
+
+  var g_nCurrPage = this._divFooter.txtCurrPage.value.replace( new RegExp( "[^0-9]", "g" ), "" );
+
+  if( this.bForm )
+    this.loadNewPage( "&pag=" + g_nCurrPage + "&order=" + this.getSortOrder( ) );
+  else
+    loadData( this._strUrl, this._strPrm + "&pag=" + g_nCurrPage + "&order=" + this.getSortOrder( ), true );
+}
+
+listview.loadHeaderFromJson = function( json )
+{
+  var self = this;
+
+  this._nDataTableWidth = json.width + this._nDataTableAddons;
+  this._nNumCols        = json.numCols;
+
+  this._divHeader.style.width = this._nDataTableWidth + "px";
+  
+  var html = this.buildHeaderHtml( json );
+  this._divHeader.innerHTML = html;
+
+  var headerId      = "headerTable_" + ( this.internalName ? this.internalName : "Registry" );
+  this._headerTable = document.getElementById( headerId );
+
+  this.attachHeaderHint( );
+  
+  this._headerTable.oncontextmenu = this._divListView.oncontextmenu;
+  this._headerTable.listView      = this;  //CAUSA LEAK
+
+  this._divFooter.style.width             = this._nDataTableWidth + "px";
+  this._divFooter.tableFooter.style.width = this._nDataTableWidth + "px";
+  
+  this._divFooter.tableFooter.rows[0].oncontextmenu = function( pr_event ){ self.openMenu( -1, pr_event || window.event ); };
+
+  var nLastCell = this._headerTable.rows[0].cells.length - 1;
+  
+  this._headerTable.rows[0].cells[0]        .style.borderLeft  = "0px";
+  this._headerTable.rows[0].cells[nLastCell].style.borderRight = "0px";
+
+  this.clear( );
+}
+
+listview.attachHeaderHint = function( )
+{
+  var length = this._headerTable.rows[0].cells.length;
+  var originalWidth;
+  var div;
+  var lstName = this.internalName ? this.internalName + "_" : "";
+  
+  for( var i = 0; i < length; i++ )
+  {
+    div  = document.getElementById( lstName + "header_txt" + i );
+    
+    originalWidth = div.scrollLeft++;
+    
+    if( div.scrollLeft-- > originalWidth )
+    {
+      if( !div.bHasHint )
+        attachHint( "#" + lstName + "header_txt" + i, div.innerHTML );
+      
+      div.bHasHint = true;
+    }
+    else
+    {
+      if( div.bHasHint )
+        detachHint( "#" + lstName + "header_txt" + i );
+
+      div.bHasHint = false;
+    }
+  }
+}
+
+listview.buildHeaderHtml = function( json )
+{
+  var html;
+  var i      = 0;
+  var data;
+  var length = json.data.length;
+  var strClk;
+  var tableId = "headerTable_" + ( this.internalName ? this.internalName : "Registry" );
+  
+  var lstName = this.internalName ? this.internalName + "_" : "";
+  
+  html  = "<table id='" + tableId + "' class='lvHeader' style='width:" + this._nDataTableWidth + "px;' align='left' border='0' cellspacing='0' cellpadding='1'>";
+  html += "<tr onContextMenu='this.parentNode.parentNode.listView.openMenu( -1, event );'>";
+
+  for( var i = 0; i < length; i++ )
+  {
+      data = json.data[i];
+
+      strClk = "onClick='this.parentNode.parentNode.parentNode.parentNode.listView.onHeaderClick( " + i + ", event, " + ( data.isAllowSort && !this._bMoveRowUpDown ) + " );'";
+
+      if( data.width == 0 )
+        html += "<td width=" + data.width + " style='display:none'>";
+      else
+        html += "<td width=" + data.width + ">";
+      
+      html += "<div "      + strClk     + " style='width:" + data.width + "px;' align='" + data.align + "'>";
+
+      if( data.align == "right" )
+        html += "<img id='" + lstName + "header_img" + i + "' src='" + getContextURL( ) + "Obj/sortup.gif' height='8px' width='8px' style='border:0;display:none;' />";
+
+      html += "<div id='" + lstName + "header_txt" + i + "' style='width:" + data.width + "px;'>";
+      html += data.text;
+      html += "</div>";
+
+      if( data.align != "right" )
+        html += "&nbsp;<img id='" + lstName + "header_img" + i + "' src='" + getContextURL( ) + "Obj/sortup.gif' height='8px' width='8px' style='border:0;display:none;' />";
+
+      html += "</div>";
+      html += "</td>";
+  }
+
+  html += "</tr>";
+  html += "</table>";
+
+  return html;
+}
+
+listview.applyEffects = function( )
+{
+  var aRows = this._dataTable.rows;
+
+  for( var i = 0; i < aRows.length; i++ )
+    this.applyRowEffects( i );
+}
+
+listview.applyDefaults = function( pr_row )
+{
+  if( pr_row.customClass )
+  {
+    $( pr_row ).removeClass( pr_row.customClass );
+
+    for( var i = 0; i < pr_row.cells.length; i++ )
+      $( pr_row.cells[i].childNodes[0] ).removeClass = pr_row.customClass;
+    
+    pr_row.customClass = undefined;
+  }
+}
+
+listview.applyRowEffects = function( pr_index )
+{
+  var row = this._dataTable.rows[pr_index];
+  
+  if( this._aEffects[pr_index] && this._aEffects[pr_index].font )
+  {
+    var className;
+    var font = this._aEffects[pr_index].font;
+
+    // Cor default
+    this.applyDefaults( row );
+
+    className = createCustomClassFromFont( font );
+    $( row ).addClass( className );
+
+    row.customClass = className;
+
+    this.applyCellEffects( row, className );
+  }
+}
+
+listview.applyCellEffects = function( pr_row, pr_className )
+{
+  for( var i = 0; i < pr_row.cells.length; i++ )
+    $( pr_row.cells[i].childNodes[0] ).addClass( pr_className );
+}
+
+listview.fireDblClickEvent = function( pr_event )
+{
+  if( !this._isRefreshing )
+  {
+    if( !this.bReadOnly && this.aOnDblClickEventListener && this.aOnDblClickEventListener.length )
+    {
+      this._isFiringEvent = true;
+      this.aEventListener = this.aOnDblClickEventListener;
+      fireEvent.apply( this, [] );
+      this._isFiringEvent = false;
+      
+      return;
+    }
+
+    if( !this._mn )
+      return;
+
+    // Atualiza os estados do menu, para não acionar um item que está readonly.
+    this._mn.prepare( );
+    this.configureMenuEnabled( );
+
+    if( pr_event.ctrlKey )
+    {
+      if( this.secondaryDblClickMenuItem && !this.isMenuItemReadonly( this.secondaryDblClickMenuItem ) )
+        this.secondaryDblClickMenuItem.childNodes[0].click( );
+    }
+    else
+    {
+      if( this.primaryDblClickMenuItem && !this.isMenuItemReadonly( this.primaryDblClickMenuItem ) )
+        this.primaryDblClickMenuItem.childNodes[0].click( );
+      else if( this.secondaryDblClickMenuItem && !this.isMenuItemReadonly( this.secondaryDblClickMenuItem ) )
+        this.secondaryDblClickMenuItem.childNodes[0].click( );
+    }
+  }
+}
+
+listview.isMenuItemReadonly = function( pr_menuItem )
+{
+  var bReadOnly = false;
+
+  if( this._dataTable.rows[this.getSelectedRow( )]._menuState )
+  {
+    var menuState = findMenuState( this._dataTable.rows[this.getSelectedRow( )]._menuState, pr_menuItem._parent._level );
+    bReadOnly = menuState.states.charAt( pr_menuItem.position ) == "1";
+  }
+  else
+    bReadOnly = pr_menuItem.isReadOnly( );
+
+  return bReadOnly;
+}
+
+listview.fireSelectEvent = function( )
+{
+  if( !this._isRefreshing && this.aOnSelectEventListener && !this.bReadOnly )
+  {
+    this._isFiringEvent = true;
+    this.aEventListener = this.aOnSelectEventListener;
+    fireEvent.apply( this, [] );
+    this._isFiringEvent = false;
+  }
+}
+
+listview.fireUnselectEvent = function( )
+{
+  if( !this._isRefreshing && this.aOnUnselectEventListener && !this.bReadOnly )
+  {
+    this._isFiringEvent = true;
+    this.aEventListener = this.aOnUnselectEventListener;
+    fireEvent.apply( this, [] );
+    this._isFiringEvent = false;
+  }
+}
+
+listview.fireRowsUpdateEvent = function( )
+{
+  if( !this._isRefreshing && this.aOnRowsUpdateEventListener && this.aOnRowsUpdateEventListener.length > 0 && !this.bReadOnly )
+  {
+    this._isFiringEvent = true;
+    this.aEventListener = this.aOnRowsUpdateEventListener;
+    fireEvent.apply( this, [] );
+    this._isFiringEvent = false;
+    this.nTpEvento = -1;
+
+    return true;
+  }
+
+  return false;
+}
+
+listview.adjustKeys = function( )
+{
+  for( var i = 0; i < this._dataTable.rows.length; i++ )
+    this._dataTable.rows[i].setAttribute( "_key", i );
+}
+
+listview.loadData = function( data, bInternal, bKeepSorting )
+{
+  //var nEntrada = (new Date).getTime( );
+  this.aSelectedRows = new Array( );
+
+  if( !data || !data.rows.length )
+  {
+    this.clear( );
+    this.hideShield( );
+    this.resetHeader( );
+    this.adjustFooter( );
+
+    this._iSelectedRow = -1;
+
+    return;
+  }
+
+  this.doLoadData( data, bInternal, bKeepSorting );
+  //var nSaida = (new Date).getTime( );
+  //alert( "Tempo: " + (nSaida - nEntrada) );
+}
+
+//Bando de ifs pra IE8 porque ele é muito lento na manipulação de classes e por isso, quando for IE8, eu trato as cores de fundo manualmente.
+listview.highlight = function( row )
+{
+  var jRow = $( row );
+
+  if( isTouchDevice( ) || jRow.hasClass( "focus" ) || row.bFocus )
+    return;
+
+  if( !isIE7( ) && !isIE8( ) && !isIE8Compat( ) )
+    jRow.addClass( "highlight" );
+  else if( this.bFocus || !this.internalName )
+    jRow.css( "background-color", "#cbe2ff" );
+  else
+    jRow.css( "background-color", "#d0def9" );
+}
+
+listview.unhighlight = function( row )
+{
+  var jRow = $( row );
+
+  if( isTouchDevice( ) || ( !jRow.hasClass( "highlight" ) && !isIE7( ) && !isIE8( ) && !isIE8Compat( ) ) || row.bFocus )
+    return;
+
+  if( !isIE7( ) && !isIE8( ) && !isIE8Compat( ) )
+    jRow.removeClass( "highlight" );
+  else
+    jRow.css( "background-color", "" );
+}
+
+listview.rowFocus = function( row )
+{
+  var jRow = $( row );
+
+  this.unhighlight( row );
+
+  if( !isIE7( ) && !isIE8( ) && !isIE8Compat( ) )
+    jRow.addClass( "focus" );
+  else
+  {
+    if( jRow.hasClass( "par" ) )
+      jRow.css( "background-color", this.bFocus ? "#a0c4f7" : "#b0bed9" );
+    else
+      jRow.css( "background-color", this.bFocus ? "#aaceff" : "#9fafd1" );
+
+    row.bFocus = true;
+  }
+}
+
+listview.rowBlur = function( row )
+{
+  var jRow = $( row );
+
+  if( !isIE7( ) && !isIE8( ) && !isIE8Compat( ) )
+    jRow.removeClass( "focus" );
+  else
+  {
+    jRow.css( "background-color", "" );
+    row.bFocus = false;
+  }
+}
+
+/**
+ * Row selection event
+ */
+listview.select = function( row, pr_event )
+{
+  var nOldSelected = this._iSelectedRow;
+  var nNewSelected = row.rowIndex;
+  
+  this._iOldRow = nOldSelected;
+  
+  if( !pr_event )
+    pr_event = window.event;
+
+  if( (nOldSelected != nNewSelected) || this.bMultiSelect )
+  {
+    this.fireUnselectEvent( );
+    this.selectRow( row, pr_event );
+    this.fireSelectEvent( );
+  }
+  else if( isTouchDevice( ) )
+  {
+    this.openMenu( row, pr_event );
+    pr_event.cancelBubble = true;
+  }
+  else if( this._bKeyboardNavigation && row && !this.bFocus )
+    this.setFocus( true );
+}
+
+listview.openMenu = function( row, pr_event )
+{
+  if( !pr_event )
+    pr_event = window.event;
+
+  // Caso seja menu aberto clicando no cabeçalho, a linha enviada será -1
+  if( row != -1 )
+  {
+    // Caso seja menu aberto pelo botão de menu do teclado, a linha enviada será undefined
+    if( !row )
+    {
+      row = this._dataTable.rows[this._iSelectedRow];
+      
+      var position = calcOffset( row );
+
+      pr_event.clientX = position[0] + ( $( row ).width ( ) / 3 * 2 );
+      pr_event.clientY = position[1] + ( $( row ).height( ) / 3 * 2 );
+    }
+    
+    var nOldSelected = this._iSelectedRow;
+    var nNewSelected = row.rowIndex;
+  
+    if( nOldSelected != nNewSelected )
+    {
+      this.fireUnselectEvent( );
+      this.selectRow( row, pr_event );
+      this.fireSelectEvent( );
+    }
+  }
+
+  if( this._mn )
+    this._mn.open( pr_event );
+
+  if( pr_event.preventDefault )
+    pr_event.preventDefault( );
+
+  return false;
+}
+
+listview.cancelEventBubble = function( pr_event )
+{
+  return pr_event.stopPropagation();
+}
+
+listview.doLoadData = function( data, bInternal, bKeepSorting )
+{
+  this._divData.style.visibility = "visible";
+  this._divData.style.width      = this._nDataTableWidth + "px";
+
+  var html       = this.buildDataHtml( data );
+  var pageData   = data.pageData;
+  this._divData.innerHTML = html;
+  var tableId             = "dataTable_" + ( this.internalName ? this.internalName : "Registry" );
+
+  this._dataTable = document.getElementById( tableId );
+
+  if( this._className )
+    $( this._dataTable ).addClass( this._className );
+
+  if( this == g_focusListview )
+    $( this._dataTable ).addClass( "focus" );
+
+  if( this.bReadOnly )
+    $( this._dataTable ).addClass( "readonly" );
+
+  this._dataTable.oncontextmenu = this._divListView.oncontextmenu;
+  this._dataTable.listView      = this; //CAUSA LEAK
+
+  if( data.rows.length && ( data.rows.length * data.rows[0].cells.length ) < registry.ui.listview.syncDataHintRowsLimit )
+    this.attachDataHint( );
+  else
+    this.asyncAttachDataHint( );
+
+  this.trataResize( );
+
+  if( pageData )
+    this.configPageData( pageData );
+
+  //Atualiza o hint do botão de alteração de Linhas por Página
+  if( this._nRowsPerPage && this._nRowsPerPageHint )
+    updateImgRowsPerPage( this._nRowsPerPageUser, this._nRowsPerPageMax );
+
+  this.adjustFooter( );
+
+  this._bFilled = ( this._dataTable.rows.length > 0 );
+
+  try
+  {
+    if( window.addEventListener )
+      window.addEventListener( "onresize", handleResize, false );
+    else
+      window.attachEvent( "onresize", handleResize );
+  }
+  catch( e )
+  { }
+
+  if( bInternal != undefined && !bInternal && bKeepSorting != undefined && !bKeepSorting )
+    this.resetHeader( );
+
+  this.updateFooter( );
+  this.hideShield( );
+
+  // Aplica os efeitos na listview
+  this.applyEffects( );
+
+  // aqui a lista já está preenchida
+  this.fireUnselectEvent( );
+
+  if( this.getTotRows( ) )
+    this._divHeader.style.overflowX = "hidden";
+
+  var nIndex;
+
+  if( this._dataTable.getAttribute( "_SelectedIndex" ) && this._dataTable.getAttribute( "_SelectedIndex" ) != -1 && this._dataTable.getAttribute( "_SelectedIndex" ) < this._dataTable.rows.length )
+    nIndex = this._dataTable.getAttribute( "_SelectedIndex" );
+  else if( data && data.currentRow && data.currentRow > 0 && data.currentRow < this._dataTable.rows.length )
+    nIndex = data.currentRow;
+  else if( this.oldKey )
+    nIndex = this.getIndexByKey( this.oldKey );
+  else
+    nIndex = 0;
+
+  if( nIndex == -1 )
+    nIndex = 0;
+
+  this.selectRow( this._dataTable.rows[nIndex] );
+
+  //Copia todos os dados de row para as próprias Rows
+  if( this._menuState != undefined )
+    for( var i = 0; i < this._menuState.length; i++ )
+      this._dataTable.rows[i]._menuState = this._menuState[i];
+
+  this._menuState = [];
+
+  this.fireSelectEvent( );
+
+  this._divHeader.scrollLeft = this.nPosScrollLeft;
+  this._divData.scrollLeft   = this.nPosScrollLeft;
+}
+
+listview.configPageData = function( pageData )
+{
+  this._nCurrPage        = pageData.currPage;
+  this._nTotalPages      = pageData.totalPages;
+  this._nTotalRows       = pageData.totalRows;
+  this._nRowsPerPage     = pageData.rowsPerPage;
+  this._nRowsPerPageUser = pageData.rowsPerPageUser;
+  this._nRowsPerPageMax  = pageData.rowsPerPageMax;
+}
+
+listview.attachDataHint = function( )
+{
+  var originalWidth;
+  var div;
+  var lstName = this.internalName ? this.internalName + "_" : "";
+  
+  for( var i = 0; i < this._dataTable.rows.length; i++ )
+  {
+    for( var j = 0; j < this._dataTable.rows[i].cells.length; j++ )
+    {
+      div = this._dataTable.rows[i].cells[j].childNodes[0];
+      
+      originalWidth = div.scrollLeft++;
+
+      if( div.scrollLeft-- > originalWidth )
+        attachHint( div, div.innerHTML );
+    }
+  }
+}
+
+listview.asyncAttachDataHint = function( pr_index )
+{
+  var self = this;
+
+  if( typeof pr_index === "undefined" )
+  {
+    setTimeout( function( ){ self.asyncAttachDataHint( 0 ); }, registry.ui.listview.asyncAttachDataHintWaitTime );
+    return;
+  }
+
+  var rowsLength = this._dataTable.rows.length,
+    row        = this._dataTable.rows.length,
+    cellsLength,
+    originalWidth,
+    div,
+    lstName = this.internalName ? this.internalName + "_" : "",
+    cont1,
+    cont2;
+  
+  for( cont1 = 0; pr_index < rowsLength && cont1 < registry.ui.listview.asyncAttachDataHintCycle; pr_index++ )
+  {
+    row         = this._dataTable.rows[pr_index];
+    cellsLength = row.cells.length;
+
+    for( cont2 = 0; cont2 < cellsLength && cont1 < registry.ui.listview.asyncAttachDataHintCycle; cont1++, cont2++ )
+    {
+      div = row.cells[cont2].childNodes[0];
+      
+      originalWidth = div.scrollLeft++;
+
+      if( div.scrollLeft-- > originalWidth )
+        attachHint( div, div.innerHTML );
+    }
+  }
+  
+  if( pr_index < rowsLength )
+  {
+    setTimeout( function( ){ self.asyncAttachDataHint( pr_index ); }, registry.ui.listview.asyncAttachDataHintWaitTime );
+  }
+}
+
+/**
+ * Aqui foram utilizados Arrays para concatenação de Strings devido ao alto número de registros, diferente do cabeçalho
+ * que é apenas uma linha. 
+ */
+listview.buildDataHtml = function( data )
+{
+  var html       = [];
+  var rowsLength = data.rows.length;
+  var cellsLength;
+  var row;
+  var cell;
+  var cellIdSufix = this.internalName ? "_" + this.internalName : "_Registry";
+  var tableId = "dataTable_" + ( this.internalName ? this.internalName : "Registry" );
+  var lstName = this.internalName ? this.internalName + "_" : "";
+
+  html.push( "<table id='" );
+  html.push( tableId       );
+  html.push( "' border='0' cellspacing='0' cellpadding='1' style='width:" );
+  html.push( data.width );
+  html.push( "px;'>"    );
+
+  for( var i = 0; i < rowsLength; i++ )
+  {
+      row         = data.rows[i];
+      cellsLength = row.cells.length;
+
+      html.push( "<tr ezaKey='" );
+      html.push( row.ezaKey     );
+      html.push( "' _key='"     );
+      html.push( row.key        );
+      html.push( "' class='"    );
+      html.push( ( i % 2 ? "impar" : "par" ) );
+      html.push( "' onmouseover='this.parentNode.parentNode.listView.highlight( this );'" );
+      html.push( " onmouseout='this.parentNode.parentNode.listView.unhighlight( this );'" );
+      html.push( " onclick='this.parentNode.parentNode.listView.select( this, event );'"  );
+      html.push( " ondblclick='this.parentNode.parentNode.listView.onDblClick( this, event );'"   );
+      html.push( " oncontextmenu='this.parentNode.parentNode.listView.openMenu( this, event );'>" );
+
+      for( var j = 0; j < cellsLength; j++ )
+      {
+        cell      = row.cells[j];
+
+        html.push( "<td id='"  );
+        html.push( "td_"       );
+        html.push( i           );
+        html.push( j           );
+        html.push( cellIdSufix );
+        html.push( "'"         );
+
+        if( cell.value )
+        {
+          html.push( " value='" );
+          html.push( cell.value );
+          html.push( "'"        );
+        }
+
+        html.push( " align='"  );
+        html.push( cell.align  );
+        html.push( "' style='" );
+        html.push( "width:"    );
+        html.push( cell.width  );
+        html.push( "px;"       );
+
+        if( j == cellsLength - 1 )
+          html.push( "border-right:0px;"  );
+        
+        if( cell.width == 0 )
+          html.push( "display:none;"  );
+
+        html.push( "'>" );
+
+        html.push( "<div id='" );
+        html.push( lstName     );
+        html.push( "data_txt"  );
+        html.push( i           );
+        html.push( j           );
+        html.push( "' style='" );
+        html.push( "width:"    );
+        html.push( cell.width  );
+        html.push( "px;"       );
+
+        html.push( "'>"      );
+        html.push( cell.text );
+
+        html.push( "</div>" );
+        html.push( "</td>"  );
+      }
+
+      html.push( "</tr>" );
+  }
+
+  html.push( "</table>" );
+
+  return html.join( "" );
+}
+
+listview.getIndexByKey = function( pr_key )
+{
+  var nIndex = -1;
+  try
+  {
+    var rows = this._dataTable.rows;
+    
+    for( var i = 0; i < rows.length; i++ )
+      if( this.getRealKeyAt( i ) == pr_key )
+      {
+        nIndex = i;
+        break;
+      }
+  }
+  catch( e ){}
+
+  return nIndex;
+}
+
+listview.setOldKey = function( pr_oldKey )
+{
+  this.oldKey = pr_oldKey;
+}
+
+listview.clear = function( str )
+{
+  var tableId = "dataTable_" + ( this.internalName ? this.internalName : "Registry" );
+  var str;
+  var dataTableClass = this._className + ( this._className ? " " : "" ) + ( g_focusListview == this ? "focus" : "" );
+
+  if( !this.bForm )
+    str =
+      "<table id='" + tableId + "' width=" + this._nDataTableWidth + " border='0' cellspacing='0' cellpadding='1' bordercolor='white'>" +
+      "</table>";
+  else
+    str =
+    "<table id='"   + tableId + "' " +
+    			 "border='0' "      +
+    			 "cellspacing='0' " +
+    			 "cellpadding='1' " +
+    			 "class='" + dataTableClass + "' " +
+    			 "style='width:" + this._nDataTableWidth + "px;'>" +
+    "</table>";
+
+  this._nTotalRows   = 0;
+  this._nCurrPage    = 0;
+  this.aSelectedRows = new Array( );
+  
+  if( this._dataTable )
+    this._nCurrPage = 0;
+
+  this._divData.innerHTML   = str;
+  this._dataTable = document.getElementById( tableId );
+  this._dataTable.listView  = this; //CAUSA LEAK
+
+  if( this._className )
+    $( this._dataTable ).addClass( this._className );
+  
+  if( this == g_focusListview )
+    $( this._dataTable ).addClass( "focus" );
+  
+  if( this.bReadOnly )
+    $( this._dataTable ).addClass( "readonly" );
+
+  this._bFilled = false;
+
+  this.updateFooter( );
+  this.trataResize( );
+
+  try
+  {
+    addEvent( window, "resize", handleResize, false );
+  }
+  catch(e){};
+}
+
+listview.updateFooter = function( )
+{
+  var nCurrPage = this.getCurrPage( );
+  var nPageIni  = this._nRowsPerPage * ( nCurrPage - 1 );
+
+  this._divFooter.lbCurrPage.innerHTML = nCurrPage;
+
+  if( this._nRowsPerPage )
+    if( g_bEnglish )
+      this._divFooter.tdTotReg.innerHTML = "Records: "   + ( nPageIni >= 0 ? nPageIni + 1 : 0 ) + "&nbsp;to&nbsp;" + ( ( nPageIni >= 0 ? nPageIni : 0 ) + this.getTotRows( ) ) + "&nbsp;of&nbsp;" + this.getTotalRows( );
+    else
+      this._divFooter.tdTotReg.innerHTML = "Registros: " + ( nPageIni >= 0 ? nPageIni + 1 : 0 ) + "&nbsp;a&nbsp;"  + ( ( nPageIni >= 0 ? nPageIni : 0 ) + this.getTotRows( ) ) + "&nbsp;de&nbsp;" + this.getTotalRows( );
+  else
+    if( g_bEnglish )
+      this._divFooter.tdTotReg.innerHTML = "Records: " + this.getTotRows( );
+    else
+      this._divFooter.tdTotReg.innerHTML = "Registros: " + this.getTotRows( );
+}
+
+listview.getTotRows = function( )
+{
+  if( this._bFilled && this._dataTable )
+    return this._dataTable.rows.length;
+  else
+    return 0;
+}
+
+listview.getCurrPage = function( )
+{
+  if( this._bFilled && this._nCurrPage )
+    return this._nCurrPage;
+  else
+    return 0;
+}
+
+listview.getTotalRows = function( )
+{
+  if( this._bFilled && this._nTotalRows != undefined )
+    return this._nTotalRows;
+  else
+    return 0;
+}
+
+listview.getTotalPages = function( )
+{
+  if( this._bFilled && this._nTotalPages != undefined )
+    return this._nTotalPages;
+  else
+    return 0;
+}
+
+listview.getKey = function( )
+{
+  if( this._iSelectedRow == -1 || this._dataTable.rows.length < this._iSelectedRow )
+    return undefined;
+
+  return this._dataTable.rows[this._iSelectedRow].getAttribute( "_key" );
+}
+
+/**
+ * Implementado pois a chave guardada na _key não necessariamente é a chave.
+ */
+listview.getRealKey = function( )
+{
+  if( this._iSelectedRow == -1 )
+    return undefined;
+
+  return this._dataTable.rows[this._iSelectedRow].getAttribute( "ezaKey" );
+}
+
+listview.getKeyAt = function( nPos )
+{
+  return this._dataTable.rows[nPos].getAttribute( "_key" );
+}
+
+/**
+ * Implementado pois a chave guardada na _key não necessariamente é a chave.
+ */
+listview.getRealKeyAt = function( nPos )
+{
+  if( nPos == -1 )
+    return undefined;
+
+  return this._dataTable.rows[nPos].getAttribute( "ezaKey" );
+}
+
+listview.getKeys = function( )
+{
+  var aKeys = [];
+  
+  for( var i = 0; i < this.aSelectedRows.length; i++ )
+    aKeys.splice( i, 0, this._dataTable.rows[this.aSelectedRows[i]].getAttribute( "_key" ) );
+
+  return "{aKeys:{type:4,value:\"[" + aKeys + "]\"}}"; //uma String com um Array dentro
+}
+
+listview.getSelectedRow = function( )
+{
+  return parseInt( this._iSelectedRow );
+}
+
+listview.getName = function( )
+{
+  return this.getAttribute( "internalName" );
+}
+
+listview.getSource = function( )
+{
+  return this.getAttribute( "aSource" );
+}
+
+listview.onHeaderClick = function( pr_nCol, pr_event, pr_bSort )
+{
+  if( !this.getTotRows( ) && isIPad( ) )
+  {
+    this.openMenu( -1, pr_event );
+    pr_event.cancelBubble = true;
+  }
+  else if( !pr_bSort )
+    return;
+
+  // O KeyboardNavigation serve para a navegacao do Swapbox.
+  // Somente ele define o método setFocus do Listview.
+  if( this._bKeyboardNavigation && !this.bFocus )
+    this.setFocus( true );
+
+  if( !this._bDisableSort )
+  {
+    if( pr_nCol != undefined )
+      this.doSort( pr_nCol );
+    else
+      this.doSort( 0 );
+
+    this.attachHeaderHint( );
+  }
+}
+
+listview.configureKeyboardNavigation = function( pr_bKeyboardNavigation )
+{
+  this._bKeyboardNavigation = pr_bKeyboardNavigation;
+}
+
+listview.onDblClick = function( pr_row, pr_event )
+{
+  var nSelected = this._iSelectedRow;
+
+  this.fireDblClickEvent( pr_event || window.event );
+}
+
+listview.getRowFromEvent = function( pr_event )
+{
+  if( !pr_event )
+    pr_event = window.event;
+
+  var src = pr_event.srcElement ? pr_event.srcElement : pr_event.target;
+
+  row = src.parentNode;
+
+  if( src.tagName == 'DIV' )
+    row = src.parentNode.parentNode;
+  else if( src.tagName == 'TR' )
+    row = src;
+  else
+    row = src.parentNode;
+
+  return row;
+}
+
+listview.scrollToRow = function( pr_index )
+{
+  var row = this._dataTable.rows[pr_index];
+  
+  if( row.offsetTop - this._dataTable.parentNode.scrollTop > this._dataTable.parentNode.clientHeight ||
+      row.offsetTop < this._dataTable.parentNode.scrollTop )
+    this._dataTable.parentNode.scrollTop = row.offsetTop;
+
+  if( this._dataTable.parentNode.clientHeight - row.offsetTop + this._dataTable.parentNode.scrollTop < row.clientHeight )
+    this._dataTable.parentNode.scrollTop += row.clientHeight - ( this._dataTable.parentNode.clientHeight - row.offsetTop + this._dataTable.parentNode.scrollTop );
+}
+
+listview.selectRow = function( row, pr_event )
+{
+  if( this.bMultiSelect )
+  {
+    try
+    {
+      document.selection.empty( );
+    }
+    catch( e )
+    { }
+  }
+
+  if( !isNaN( row ) )
+    row = this._dataTable.rows[row];
+
+  try
+  {
+    if( row )
+    {
+      // Verifico se o evento não é nulo para apenas dar o foco caso haja clique, para que não receba foco por simplesmente
+      // selecionar uma linha
+      if( this._bKeyboardNavigation && !this.bFocus )
+        this.setFocus( true );
+      
+      this.selectedRow   = row;
+      this._iSelectedRow = row.rowIndex;
+      
+      if( this.bMultiSelect && pr_event && ( ( pr_event.shiftKey || pr_event.ctrlKey ) && pr_event.type == "click" ) )
+      {
+        if( pr_event.shiftKey && pr_event.ctrlKey ) // CTRL+SFT+LB
+        {
+          if( this._iOldRow != this._iSelectedRow )
+            this.selectAllRows( ( this._iOldRow < this._iSelectedRow ? 1 : -1 ), true );
+        }
+        else if( pr_event.shiftKey ) //SFT+LB
+        {
+          this.unselectAllRows( );
+          this.aSelectedRows = new Array( );
+
+          this.selectAllRows(
+            ( this._iOldRow < this._iSelectedRow ? 1 : this._iOldRow > this._iSelectedRow ? -1 : 0 ), true );
+        }
+        else if( pr_event.ctrlKey ) //CTRL+LB
+        {
+          this._iOldRow = this._iSelectedRow;
+
+          var bSelected = this.isSelected( this._iSelectedRow );
+          if( bSelected )
+          {
+            this.unselectRow( i );
+            this.aSelectedRows.splice( i, 1 );
+          }
+          else
+          {
+            this.rowFocus( row );
+            this.aSelectedRows[this.aSelectedRows.length] = this._iSelectedRow;
+          }
+        }
+      }
+      else if( this.bMultiSelect && pr_event && pr_event.type == "contextmenu" && !pr_event.shiftKey &&
+        ( pr_event.ctrlKey || this.isSelected( this._iSelectedRow ) ) ) {} //CTRL+RB || RB(LINHASEL)
+      else //LB || SFT+RB || CTRL+SFT+RB || RB(!LINHASEL)
+      {
+        if( this.bMultiSelect )
+          this.unselectAllRows( );
+        else
+          this.unselectRow( this._iOldRow );
+
+        this._iOldRow = this._iSelectedRow;
+        
+        this.rowFocus( row );
+        this.aSelectedRows.splice( 0, this.aSelectedRows.length );
+        this.aSelectedRows[this.aSelectedRows.length] = this._iSelectedRow;
+      }
+    }
+  }
+  catch( e ){};
+}
+
+listview.selectAllRows = function( nCondition, bCheck )
+{
+  if( nCondition == 1 )
+  {
+    for( var i = this._iOldRow; i <= this._iSelectedRow; i++ )
+    {
+      this.rowFocus( this._dataTable.rows[i] );
+
+      if( bCheck == true )
+      {
+        if( !this.isSelected( i ) )
+          this.aSelectedRows[this.aSelectedRows.length] = i;
+      }
+      else
+        this.aSelectedRows[this.aSelectedRows.length] = i;
+    }
+  }
+  else if( nCondition == -1 )
+  {
+    for( var i = this._iOldRow; i >= this._iSelectedRow; i-- )
+    {
+      this.rowFocus( this._dataTable.rows[i] );
+
+      if( bCheck == true )
+      {
+        if( !this.isSelected( i ) )
+          this.aSelectedRows[this.aSelectedRows.length] = i;
+      }
+      else
+        this.aSelectedRows[this.aSelectedRows.length] = i;
+    }
+  }
+  else if( nCondition == 0 )
+  {
+    this.rowFocus( this._dataTable.rows[this._iSelectedRow] );
+    this.aSelectedRows[this.aSelectedRows.length] = this._iSelectedRow;
+  }
+}
+
+listview.unselectRow = function( row )
+{
+  try
+  {
+    if( !isNaN( row ) )
+      row = this._dataTable.rows[row];
+
+    if( row )
+      this.rowBlur( row );
+  }
+  catch( e ){};
+}
+
+listview.unselectAllRows = function( )
+{
+    for( var i = 0; i < this.aSelectedRows.length; i++ )
+      this.unselectRow( this.aSelectedRows[i] );
+
+    this.aSelectedRows = [];
+}
+
+listview.isSelected = function( j )
+{
+    for( var i = 0; i < this.aSelectedRows.length; i++ )
+      if( this.aSelectedRows[i] == j )
+        return true;
+
+    return false;
+}
+
+listview.insertRows = function( aRows, aEffects, aMenuState )
+{
+  if( aRows )
+  {
+    this._isMultipleRowsInsert = true;
+
+    for( var i = 0; i < aRows.length; i++ )
+      if( aMenuState != undefined )
+        this.insertRow( aRows[i], aEffects[i], aMenuState[i] );
+      else
+        this.insertRow( aRows[i], aEffects[i], undefined );
+
+    if( aRows.length > 1 )
+    {
+      this.fireUnselectEvent( );
+      this.selectRow( this._dataTable.rows[this._dataTable.rows.length - aRows.length] );
+      this.fireSelectEvent( );
+    }
+
+    this._isMultipleRowsInsert = false;
+    this.nTpEvento             = this.nTpEventoInclusao;
+
+    this.fireRowsUpdateEvent( );
+  }
+}
+
+listview.insertRow = function( json, effects, menuState )
+{
+  var self = this;
+  var row = this._dataTable.insertRow( this._dataTable.rows.length );
+  var cell;
+  var cellsLength = json.cells.length;
+  var cellId;
+  var cellIdSufix = this.internalName ? "_" + this.internalName : "_Registry";
+  var div;
+  var originalWidth;
+  var rowsLength = this._dataTable.rows.length;
+
+  row.setAttribute( "ezaKey", json.ezaKey );
+  row.setAttribute( "_key"  , json.key    );
+  
+  row.className  = ( ( this._dataTable.rows.length - 1 ) % 2 ? "impar" : "par" );
+  row._menuState = menuState;
+
+  this._aEffects[this._aEffects.length] = effects;
+
+  row.onmouseover = function( pr_event )
+  {
+    self.highlight( this );
+  }
+
+  row.onmouseout = function( pr_event )
+  {
+    self.unhighlight( this );
+  }
+
+  row.onclick = function( pr_event )
+  {
+    self.select( this, pr_event || window.event );
+  }
+
+  row.oncontextmenu = function( pr_event )
+  {
+    self.openMenu( this, pr_event || window.event );
+  }
+  
+  row.ondblclick = function( pr_event )
+  {
+    self.onDblClick( this, pr_event || window.event );
+  }
+  
+  for( var i = 0; i < cellsLength; i++ )
+  {
+    cell   = row.insertCell( i );
+    cellId = "td_" + rowsLength + "" + i + "" + cellIdSufix;
+    cell.setAttribute( "id", cellId );
+    
+    if( json.cells[i].value )
+      cell.setAttribute( "value", json.cells[i].value );
+    
+    cell.setAttribute( "align", ( json.cells[i].align != undefined && json.cells[i].align != "none" ? json.cells[i].align : "" ) );
+
+    cell.style.width = json.cells[i].width + "px";
+    
+    if( i == cellsLength - 1 )
+      cell.style.borderRight = "0px";
+
+    div             = document.createElement( "div" );
+    div.style.width = ( parseInt( json.cells[i].width ) - 4 ) + "px";
+    div.innerHTML   = json.cells[i].text;
+    cell.appendChild( div );
+    
+    originalWidth = div.scrollLeft++;
+
+    if( div.scrollLeft-- > originalWidth )
+      attachHint( cell, div.innerHTML );
+  }
+
+  this._nTotalRows = parseInt( this._nTotalRows ) + 1;
+
+  this._bFilled = true;
+
+  this.applyRowEffects( row.rowIndex );
+  this.updateFooter( );
+  this.trataResize( );
+
+  if( !this._isMultipleRowsInsert )
+  {
+    this.fireUnselectEvent( );
+    this.selectRow( this._dataTable.rows[this._dataTable.rows.length - 1] );
+    this.fireSelectEvent( );
+  }
+  else
+    this.selectRow( this._dataTable.rows[this._dataTable.rows.length - 1] );
+
+  this.resetHeader( );
+
+  this.nTpEvento = this.nTpEventoInclusao;
+  this.fireRowsUpdateEvent( );
+}
+
+listview.updateRows = function( aUpdRow, aEffects, aMenuState )
+{
+  var bAchou = false;
+  if( aUpdRow )
+    for( var i = 0; i < aUpdRow.length; i++ )
+    {
+      bAchou = false;
+      for( var j = 0; !bAchou && (j < this.aSelectedRows.length); j++ )
+      {
+        if( aUpdRow[i].key == this.getKeyAt( this.aSelectedRows[j] ) )
+        {
+          if( aMenuState != undefined )
+            this.updateRow( aUpdRow[i], this.aSelectedRows[j], aEffects[i], aMenuState[i] );
+          else
+            this.updateRow( aUpdRow[i], this.aSelectedRows[j], aEffects[i], undefined );
+
+          bAchou = true;
+        }
+      }
+    }
+
+  if( bAchou )
+  {
+    this.nTpEvento = this.nTpEventoAlteracao;
+    this.fireRowsUpdateEvent( );
+  }
+}
+
+listview.updateRow = function( selRow, nPos, effects, menuState )
+{
+  var row = this._dataTable.rows[nPos];
+  var div;
+  var originalWidth;
+
+  if( selRow.key != 'undefined' )
+    row.setAttribute( "_key", selRow.key );
+
+  if( effects )
+    this._aEffects[nPos].font = effects.font;
+  else
+    this._aEffects[nPos].font = undefined;
+  
+  row._menuState = menuState;
+
+  for( var i = 0; i < selRow.cells.length; i++ )
+  {
+    row.cells[i].setAttribute( "value", selRow.cells[i].value );
+    row.cells[i].innerHTML = "";
+    
+    div             = document.createElement( "div" );
+    div.style.width = ( row.cells[i].clientWidth - 4 ) + "px";
+    div.innerHTML   = selRow.cells[i].text;
+    row.cells[i].appendChild( div );
+    
+    originalWidth = div.scrollLeft++;
+
+    if( div.scrollLeft-- > originalWidth )
+      attachHint( row.cells[i], div.innerHTML );
+  }
+  
+  this.applyRowEffects( nPos );
+  
+  this.resetHeader( );
+  
+  this.nTpEvento = this.nTpEventoAlteracao;
+  this.fireRowsUpdateEvent( );
+}
+
+listview.deleteRows = function( aDelRow )
+{
+  var nLastRow = 0;
+
+  this.unselectAllRows( );
+  
+  if( aDelRow )
+    for( var i = 0; i < aDelRow.length; i++ )
+    {
+      for( var j = 0; j < this._dataTable.rows.length; j++ )
+        if( aDelRow[i].key == this.getKeyAt( j ) )
+        {
+          this._dataTable.deleteRow( j );
+          
+          this._aEffects   = this._aEffects.slice(0,j).concat( this._aEffects.slice(j+1) );
+          this._nTotalRows = parseInt( this._nTotalRows ) - 1;
+          nLastRow = j;
+          break;
+        }
+    }
+
+  this._iSelectedRow = -1;
+  if( this.getTotRows( ) > 0 )
+    this.selectRow( this._dataTable.rows[Math.min( nLastRow, this._dataTable.rows.length - 1 )] );
+  else
+    this.clear( );
+
+  this.updateFooter( );
+  this.trataResize( );
+  this.fireSelectEvent( );
+    
+  this.nTpEvento = this.nTpEventoExclusao;
+  this.fireRowsUpdateEvent( );
+}
+
+listview.updateSelectedRow = function( selRow, effects, menuState )
+{
+  if( this._iSelectedRow == -1 )
+    return;
+
+  this.updateRow( selRow, this._iSelectedRow, effects, menuState );
+}
+
+listview.removeSelectedRow = function( )
+{
+  if( this._iSelectedRow == -1 )
+    return;
+
+  this._dataTable.deleteRow( this._iSelectedRow );
+  this._aEffects = this._aEffects.slice( 0,this._iSelectedRow ).concat( this._aEffects.slice( this._iSelectedRow + 1 ) );
+
+  // Verifica se é a última linha sendo excluida. Se for, chama um clear para resetar a listview
+  if( this._dataTable.rows.length == 0 )
+  {
+    this._iSelectedRow = -1;
+    this.clear( );
+  }
+
+  var iOldRow = this._iSelectedRow;
+  this._iSelectedRow = -1;
+  this.selectRow( this._dataTable.rows[Math.min( iOldRow, this._dataTable.rows.length - 1 )] );
+  this.fireSelectEvent( );
+  
+  this._nTotalRows = parseInt( this._nTotalRows ) - 1;
+
+  this.updateFooter( );
+  this.trataResize( );
+    
+  this.nTpEvento = this.nTpEventoExclusao;
+  this.fireRowsUpdateEvent( );
+}
+
+listview.resetHeader = function( )
+{
+  if( this._nLastSortCol != undefined )
+    this.resetColumn( this._nLastSortCol );
+
+  if( this.getTotRows( ) )
+    this._divHeader.style.overflowX = "hidden";
+  else
+    this._divHeader.style.overflowX = "auto";
+
+  this._nLastSortCol = undefined;
+  this._bSortUp      = true;
+}
+
+listview.resetColumn = function( nCol )
+{
+  var lstName = this.internalName ? this.internalName + "_" : "";
+
+  var imgName = lstName + "header_img" + nCol;
+  var txtName = lstName + "header_txt" + nCol;
+  
+  var img = document.getElementById( imgName );
+  var txt = document.getElementById( txtName );
+  img.style.display = "none";
+  
+  var width = parseInt( $( txt ).width( ) );
+  
+  txt.style.width = ( width + 12 ) + "px";
+}
+
+listview.doSort = function( nCol )
+{
+  if( this.getTotRows( ) < 2 )
+    return;
+
+  var self = this;
+  var bChangeOrder = false;
+
+  var lstName = this.internalName ? this.internalName + "_" : "";
+  var imgName = lstName + "header_img" + nCol;
+
+  var img = document.getElementById( imgName );
+
+  if( this._nLastSortCol == undefined || this._nLastSortCol != nCol )
+  {
+      if( this._nLastSortCol != undefined )
+        this.resetColumn( this._nLastSortCol )
+
+      this._nLastSortCol = nCol;
+      this._bSortUp      = true;
+
+      this.showSortUp( nCol, img );
+  }
+  else
+  {
+      this.adjustSortUpDown( img );
+      bChangeOrder = true;
+  }
+
+  if( this._nCurrPage >= 1 && this._bPaginated ) //Listview paginada
+  {
+    this.buildSortOrder( );
+
+    this._nSort = this._nLastSortCol + 1;
+    if( !this._bSortUp )
+      this._nSort = this._nSort * -1;
+
+    var strCmd = "";
+
+    if( this.bForm ) // Listview dentro de um form.
+    {
+      this.showShield( );
+
+      g_nCurrPage = 1;
+      strCmd      = this._cpName + ".loadNewPage( '&pag=" + g_nCurrPage + "&order=" + this.getSortOrder( ) + "' );";
+    }
+    else
+    {
+      g_nCurrPage = 0;
+      g_target    = this;
+      this._strPrm = 'ID1=' + this.Id1 + '&ID2=&ID3=' + buildQueryString( this.aSource );      
+      
+      strCmd = 'loadData( "' + this._strUrl + '","' + this._strPrm + '&pag=' + g_nCurrPage + '&order=' + this.getSortOrder( ) + '", true );';
+    }
+
+    setTimeout( strCmd, 1 );
+  }
+  else
+  {
+    this.showCancelDiv( img );
+    if( bChangeOrder )
+      setTimeout( function( ){ self.sortInvert( ); }, 1 );
+    else
+      setTimeout( function( ){ self.sort( nCol ); }, 1 );
+  }
+}
+
+listview.refreshRowStyles = function( )
+{
+  var dataRows = this._dataTable.rows;
+  var size     = dataRows.length;
+  
+  for( var i = 0; i < size; i++ )
+    $( dataRows[i] ).removeClass( "par impar" ).addClass( i % 2 ? "par" : "impar" );
+}
+
+listview.showSortUp = function( nCol, img )
+{
+  var lstName = this.internalName ? this.internalName + "_" : "";
+  var col     = document.getElementById( lstName + "header_txt" + nCol );
+  var width   = parseInt( $( col ).width( ) );
+
+  if( img.style.display == "none" )
+    if( width < 12 )
+      col.style.width = "0px";
+    else
+      col.style.width = ( width - 12 ) + "px";
+  
+  img.src = getContextURL( ) + "Obj/sortup.gif";
+  img.style.display = "inline";
+}
+
+listview.adjustSortUpDown = function( img )
+{
+  this._bSortUp = !this._bSortUp;
+
+  if( this._bSortUp )
+    img.src = getContextURL( ) + "Obj/sortup.gif";
+  else
+    img.src = getContextURL( ) + "Obj/sortdown.gif";
+}
+
+listview.cancelSort = function( )
+{
+  this.iSortPosAtu = 0;
+  this.bCancelSort = false;
+  this.hideCancelDiv( );
+  this.hideShield( );
+  this._dataTable.style.visibility = "visible";
+  this.resetHeader( );
+  this.refreshRowStyles( );
+  this.aSort    = [];
+  this.aSortAux = [];
+}
+
+listview.sortInvert = function( )
+{
+  if( this.bCancelSort )
+  {
+    this.refreshRowStyles( );
+    this.iSortPosAtu = 0;
+    this.bCancelSort = false;
+    this.hideCancelDiv( );
+    this.hideShield( );
+    this._dataTable.style.visibility = "visible";
+    this.resetHeader( );
+    return;
+  }
+
+  var nLen = this._dataTable.rows.length
+
+  var k = 0;
+  var i;
+  
+  if( isIE( ) )
+    for( i = this.iSortPosAtu; i < Math.floor( nLen / 2 ) && k < 20; i++, k++ )
+      this._dataTable.rows[i].swapNode( this._dataTable.rows[nLen - i - 1] );
+  else
+	for( i = this.iSortPosAtu; i < Math.floor( nLen / 2 ) && k < 20; i++, k++ )
+	  this.swapNodes( this._dataTable.rows[i], this._dataTable.rows[nLen - i - 1] );
+
+  this.iSortPosAtu += k;
+
+  if( i < Math.floor( nLen / 2 ) )
+    setTimeout( this._cpName + ".sortInvert( );", 1 );
+  else
+  {
+    this.refreshRowStyles( );
+    this._iSelectedRow = nLen - this._iSelectedRow - 1;
+    this.iSortPosAtu = 0;
+    this.hideCancelDiv( );
+    this.hideShield( );
+    this._dataTable.style.visibility = "visible";
+
+    for( i = 0; i < this.aSelectedRows.length; i++ )
+      this.aSelectedRows[i] = nLen - this.aSelectedRows[i] - 1;
+  }
+}
+
+listview.sort = function( nCol )
+{
+  this.buildSortArray( nCol );
+  this.sortUpdate( );
+  return;
+}
+
+listview.buildSortArray = function( nCol )
+{
+  var aRows = this._dataTable.rows;
+  var nColumn = nCol;
+
+  var bNum = aRows[0].cells[nColumn].getAttribute( "value" );
+
+  if( bNum )
+    for( var i = 0; i < aRows.length; i++ )
+    {
+      // Precisa verificar se veio na realidade um espaço em branco, pois ele também aparece com valor zero.
+      // Nesses casos, atribui como sendo o valor o menor valor possível no JavaScript.
+      if( aRows[i].cells[nColumn].childNodes[0].innerHTML == "" )
+        this.aSort[i] = {iPos:i,oVal:-Number.MAX_VALUE};
+      else
+        this.aSort[i] = {iPos:i,oVal:aRows[i].cells[nColumn].getAttribute( "value" )};
+
+      this.aSortAux[i] = i;
+    }
+  else
+    for( var i = 0; i < aRows.length; i++ )
+    {
+      this.aSort[i] = {iPos:i,oVal:aRows[i].cells[nColumn].childNodes[0].innerHTML};
+      this.aSortAux[i] = i;
+    }
+
+  if( bNum )
+    this.aSort.sort( compareNum );
+  else
+    this.aSort.sort( compareStr );
+}
+
+listview.rebuildSortOrder = function( strOrder )
+{
+  if( strOrder == undefined || strOrder == "" )
+    this._aSortOrder = new Array( );
+  else
+  {
+    this._aSortOrder = strOrder.split( ',' );
+
+    var temp           = parseInt( this._aSortOrder[0] );
+    var bUp            = temp > 0;
+    var firstCol       = Math.abs( temp ) - 1;
+    this._nLastSortCol = firstCol;
+    var lstName        = this.internalName ? this.internalName + "_" : "";
+
+    imgName = lstName + "header_img" + firstCol;
+    txtName = lstName + "header_txt" + firstCol;
+
+    var img   = document.getElementById( imgName );
+    var txt   = document.getElementById( txtName );
+    var width = parseInt( $( txt ).width( ) );
+
+    img.src = getContextURL( ) + ( bUp ? "Obj/sortup.gif" : "Obj/sortdown.gif" );
+    img.style.display = "inline";
+
+    if( width < 12 )
+      txt.style.width = "0px";
+    else
+      txt.style.width = ( width - 12 ) + "px";
+  }
+}
+
+listview.sortUpdate = function( )
+{
+  if( this.bCancelSort )
+  {
+    this.iSortPosAtu = 0;
+    this.aSort = [];
+    this.aSortAux = [];
+    this.bCancelSort = false;
+    this.hideCancelDiv( );
+    this.hideShield( );
+    this._dataTable.style.visibility = "visible";
+    this.resetHeader( );
+    this.refreshRowStyles( );
+    
+    return;
+  }
+
+  var k = 0;
+  var i;
+  var nAux;
+  var rowInsertPoint;
+  var bInsertRow;
+  var SelRow   = this._dataTable.rows[this._iSelectedRow];
+  var aSelRows = [];
+  var self     = this;
+  
+  for( i = 0; i < this.aSelectedRows.length; i++ )
+    aSelRows.splice( aSelRows.length, 0, this._dataTable.rows[this.aSelectedRows[i]] );
+
+  for( i = this.iSortPosAtu; i < this.aSort.length && k < 20; i++, k++ )
+    for( var j = 0; j < this.aSortAux.length; j++ )
+      if( this.aSort[i].iPos == this.aSortAux[j] && i != j )
+      {
+        nAux = this.aSortAux[j];
+        
+        this.aSortAux.splice( j, 1 );
+        this.aSortAux.splice( i, 0, nAux );
+
+        row = this._dataTable.rows[j];
+        
+        if( i == this._dataTable.rows.length - 1 )
+        {
+          rowInsertPoint = this.lvSource._dataTable.insertRow( -1 );
+          bInsertRow     = true;
+        }
+        else
+          rowInsertPoint = this._dataTable.rows[i];
+        
+        rowInsertPoint.parentNode.removeChild ( row );
+        rowInsertPoint.parentNode.insertBefore( row, rowInsertPoint );
+        
+        if( bInsertRow )
+          this._dataTable.deleteRow( this.getTotRows( ) - 1 );
+        
+        break;
+      }
+
+  if( SelRow )
+    this._iSelectedRow = SelRow.rowIndex;
+  if( aSelRows )
+  {
+    this.aSelectedRows = [];
+    for( var j = 0; j < aSelRows.length; j++ )
+      this.aSelectedRows[j] = aSelRows[j].rowIndex;
+  }
+
+  this.iSortPosAtu += k;
+
+  if( i < this.aSort.length )
+    setTimeout( function( ){ self.sortUpdate( ); }, 1 );
+  else
+  {
+    this.iSortPosAtu = 0;
+    this.aSort = [];
+    this.aSortAux = [];
+    this.hideCancelDiv( );
+    this.hideShield( );
+    this._dataTable.style.visibility = "visible";
+    this.refreshRowStyles( );
+  }
+}
+
+compareNum = function( a, b )
+{
+  return a.oVal-b.oVal;
+}
+
+compareStr = function( a, b )
+{
+  var strA = a.oVal.toLowerCase( );
+  var strB = b.oVal.toLowerCase( );
+
+  if( strA < strB )
+    return -1;
+  else if( strA > strB )
+    return 1
+  else
+    return 0;
+}
+
+listview.showCancelDiv = function( img )
+{
+  $( this._divCancelSort ).removeClass( "hidden" );
+
+  var bLeft = img.parentNode.align == "left";
+  var $img  = $( img );
+
+  this._divCancelSort.style.left = ( $img.offset( ).left - $img.outerWidth ( ) + (bLeft ? 0 : 6) ) + "px";
+  this._divCancelSort.style.top  = ( $img.offset( ).top  - $img.outerHeight( ) / 2 ) + "px";
+}
+
+listview.hideCancelDiv = function( )
+{
+  $( this._divCancelSort ).addClass( "hidden" );
+}
+
+listview.showShield = function( )
+{
+  this._divShield.style.cursor     = "wait";
+  this._divShield.style.visibility = "visible";
+}
+
+listview.hideShield = function( )
+{
+  this._divShield.style.cursor     = "default";
+  this._divShield.style.visibility = "hidden";
+}
+
+listview.setWidth = function( nWidth )
+{
+  this._nWidth                  = nWidth;
+  this._divListView.style.width = nWidth + "px";
+}
+
+listview.setHeight = function( nHeight )
+{
+  this._nHeight = nHeight;
+  
+  this.configMaxHeight( );
+}
+
+listview.configMaxHeight = function( bHasHorzBar )
+{
+  if( this._nHeight == 0 )
+    // Tratamento necessário pois o outerHeight me retorna a altura incluído padding, borda, margem e scroll.
+    // B32633: Inclusão do tamanho do scrollbar removido. Depois da troca do doctype, não foi mais necessário e apresentou problema no IE8
+    this._maxHeight = getWindowHeight( ) - $( this._divListView ).offset( ).top - $( this._divHeader ).outerHeight( ) + /*( bHasHorzBar ? this._barSize : 0 )*/ - $( this._divFooter ).outerHeight( );
+  else
+  {
+    this._divListView.style.height = this._nHeight + "px";
+
+    // Tratamento necessário na consulta da altura do cabeçalho pois o outerHeight retorna a altura incluído padding, borda, margem e scroll.
+    // B32633: Inclusão do tamanho do scrollbar removido. Depois da troca do doctype, não foi mais necessário e apresentou problema no IE8
+    this._maxHeight = this._nHeight - $( this._divHeader ).outerHeight( ) + /*( bHasHorzBar ? this._barSize : 0 )*/ - $( this._divFooter ).outerHeight( ) - 1;
+  }
+
+  if( this._maxHeight > 0 )
+    this._divData.style.maxHeight = this._maxHeight + "px";
+}
+
+listview.trataResize = function( )
+{ 
+  var self = this;
+  var offsetHeight = getWindowHeight( );
+  var offsetWidth  = getWindowWidth ( );
+  
+  if( this._divShield )
+  {
+    this._divShield.style.width  = offsetWidth  - 4 - this._barSize < 0 ? 0 : offsetWidth  - 4 - this._barSize;
+    this._divShield.style.height = offsetHeight - 4                 < 0 ? 0 : offsetHeight - 4;
+  }
+
+  var nMinWidth    = 100;
+  var nMinHeight   = 66;
+  // O IE em Modo Quirks calcula, quando a listview está vazia, diferente dos outros navegadores ou quando não está em modo Quirks.
+  //var nTotalWidth  = isIEQuirks( ) && !this._dataTable.rows.length ? $( this._dataTable ).width( ) : $( this._dataTable ).outerWidth( );
+  var nTotalWidth  = $( this._dataTable ).outerWidth( );
+  var nTotalHeight = $( this._dataTable ).outerHeight( ) + $( this._divHeader ).outerHeight( ) + $( this._divFooter ).outerHeight( );
+
+  // Inclui a borda da div container.
+  nTotalHeight += 1;
+  
+  var nAvailWidth;
+  if( this._nWidth != 0 )
+    // Retiro 2 referentes à borda do conteúdo.
+    nAvailWidth = this._divListView.clientWidth - 2;
+  else
+    nAvailWidth = document.body.clientWidth;
+
+  var nAvailHeight;
+  if( this._nHeight != 0 )
+    // Inclui a borda.
+    nAvailHeight = $( this._divListView ).outerHeight( ) + 1;
+  else
+    nAvailHeight = offsetHeight - $( this._divHeader ).offset( ).top;
+
+  var bHasHorzBar = nTotalWidth  > nAvailWidth;
+  var bHasVertBar = nTotalHeight > nAvailHeight;
+
+  nAvailHeight -= ( bHasHorzBar ? this._barSize : 0 );
+  nAvailWidth  -= ( bHasVertBar ? this._barSize : 0 );
+
+  var width  = Math.max( nMinWidth,  nAvailWidth  );
+
+  width = Math.min( width, nTotalWidth );
+
+  if( width == nMinWidth && bHasVertBar )
+    width -= this._barSize;
+ 
+  this._divHeader.style.width = width + "px";
+
+  if( !this.internalName )
+  {
+    $( this._divHeader ).removeClass( "fullScroll" );
+    this._divHeader.style.marginLeft = "0px";
+
+    if( bHasVertBar )
+      if( bHasHorzBar )
+        $( this._divHeader ).addClass( "fullScroll" );
+      else
+        this._divHeader.style.marginLeft = ( this._barSize * -1 ) + "px";
+  }
+
+  // Demais conteúdos tem seu tamanho acrescido da barra por terem o scroll incorporado ao container. 
+  this._divData.style.width               = width + ( bHasVertBar ? this._barSize : 0 ) + "px";
+  this._divFooter.style.width             = width + ( bHasVertBar ? this._barSize : 0 ) + "px";
+  this._divFooter.tableFooter.style.width = width + ( bHasVertBar ? this._barSize : 0 ) + "px";
+
+  // Reconfigura altura máxima
+  this.configMaxHeight( bHasHorzBar );
+
+  if( bHasHorzBar && this._dataTable.rows.length )
+    self._divData.style.overflowX = "scroll";
+  else
+    self._divData.style.overflowX = "hidden";
+
+  if( isIE( ) )
+  {
+    var barSize; 
+    var height;
+
+    if( !this._dataTable.rows.length && bHasHorzBar )
+    {
+      barSize = this._barSize;
+      height  = 0;
+    }
+    else
+    {
+      barSize = 0;
+
+      // Adiciona a borda do container.
+      height = $( this._dataTable ).outerHeight( ) + ( bHasHorzBar ? this._barSize : 0 ) + 1;
+    }
+
+    this._divData  .style.height = height > this._maxHeight && this._maxHeight > 0 ? this._maxHeight + "px" : height + "px";
+    this._divHeader.style.height = ( $( this._headerTable ).outerHeight( ) + barSize ) + "px";
+  }
+  else
+    setTimeout( function( ){ self.adjustHeight( ); }, 10 );
+}
+
+listview.adjustHeight = function( )
+{
+  var self   = this;
+  var height = $( this._dataTable ).height( );
+
+  if( !this.bForm )
+    this._divData.style.height = height + "px";
+  else if( height == 0 )
+    this._divData.style.height = "0px";
+  else if( height < this._nHeight )
+    if( this.oldHeight > height )
+      this._divData.style.height = height + "px";
+    else
+      this._divData.style.height = "";
+
+  this.oldHeight = height;
+
+  setTimeout( function( ){ self._divData.style.height = ""; }, 1 );
+}
+
+listview.getScrollBarWidth = function( )
+{
+  var nBarWidth = 0;
+  var e         = document.createElement( "DIV" );
+  var s         = e.style;
+  s.overflow    = "scroll";
+  s.width       = "300px";
+  s.height      = "100px";
+  s.visibility  = "hidden";
+  document.body.appendChild( e );
+  nBarWidth     = parseInt( 300 - e.scrollWidth );
+  e.parentNode.removeChild( e );
+
+  return nBarWidth;
+}
+
+listview.setJsonValue = function( json )
+{
+  var newJson;
+
+  if( json.value )
+    newJson = json.value;
+  else
+    newJson = json;
+
+  if( newJson.Effects )
+    this._aEffects = newJson.Effects;
+
+  this.loadData( newJson.Data.data );
+     
+  //Atualiza os states das linhas
+  if( newJson.menuState )
+    for( var i = 0; i < newJson.menuState.length; i++ )
+      this._dataTable.rows[i]._menuState = newJson.menuState[i];
+}
+
+listview.getColumnValue = function( nCol )
+{
+  return this._dataTable.rows[this._iSelectedRow].cells[nCol].childNodes[0].innerHTML;
+}
+
+listview.getJsonValue = function( bComplete )
+{
+  var strKeys = '';
+  var nType = this._type;
+
+  if( this._bReturnAllRows )
+    for( var i = 0, j = 0; i < this.getTotRows( ); i++ )
+      strKeys += (j++ > 0 ? "," : "") + "'" + this._dataTable.rows[i].getAttribute( "_key" ) + "'";
+  else
+    for( var i = 0, j = 0; i < this.aSelectedRows.length; i++ )
+      strKeys += (j++ > 0 ? "," : "") + "'" + this._dataTable.rows[this.aSelectedRows[i]].getAttribute( "_key" ) + "'";
+
+  try
+  {
+    if( cp__PickButtonLayout )
+      nType = cp__PickButtonLayout.value; // Tipo definido para o PickButton na classe DataTypes
+  }
+  catch( e ){}
+
+  var nKey = this.getKey( );
+
+  if( nKey == undefined )
+    nKey = -1;
+
+  var nTpEvento = ( this.nTpEvento != undefined ? this.nTpEvento : -1 );
+
+  var texto = "{ "           +
+                "type:"      + nType               +  ", " +
+                "value:["    + strKeys             + "], " +
+                "nSelIndex:" + this._iSelectedRow  +  ", " +
+                "nSelIdx:"   + nKey                +  ", " +
+                "bEvent:"    + this._isFiringEvent +  ", " +
+                "ezaKeySel:" + this.getRealKey( )  +  ", " +
+                "nTpEvento:" + nTpEvento           +   " " +
+              "}";
+
+  return texto;
+}
+
+listview.configureMenuEnabled = function( )
+{
+  var bHeaderClick = !this._bFilled;
+
+  for( var j = 0; j < g_aMenu.length; j++  )
+  {
+    var mn = g_aMenu[j];
+    mn._bReadOnly = this.bReadOnly;
+
+    for( i = 0; i < mn._items.length; ++i )
+    {
+      if( !mn._items[i]._isSeparator )
+      {
+        if( mn._items[i]._svc == 600 && mn._items[i]._workAsProperties )
+        {
+          if( !mn._items[i]._enabledWhenNoSelection )
+            mn._items[i].setReadOnly( bHeaderClick );
+          else
+            mn._items[i].setReadOnly( !bHeaderClick );
+        }
+        else if( ( mn._items[i]._bEnabled == false || mn._bReadOnly == true )&& mn._items[i]._svc != 50 )
+        {
+          mn._items[i].setReadOnly( true );
+        }
+        else if( !mn._items[i]._enabledWhenMultiSelected && this.aSelectedRows.length > 1 )
+        {
+          mn._items[i].setReadOnly( !mn._items[i]._enabledWhenMultiSelected );
+        }
+        else if( bHeaderClick == false )
+        {
+          mn._items[i].setReadOnly( false );
+
+          if( ( mn._items[i]._ordenation == "moveup" &&
+                this.getSelectedRow( ) == 0 ) ||
+
+              ( mn._items[i]._ordenation == "movedown" &&
+                this.getSelectedRow( ) >= this.getTotRows( ) - 1 ) )
+          {
+            mn._items[i].setReadOnly( true );
+          }
+        }
+        else if( !mn._items[i]._enabledWhenNoSelection )
+          mn._items[i].setReadOnly( !mn._items[i]._enabledWhenNoSelection );
+        else
+          mn._items[i].setReadOnly( !bHeaderClick );
+      }
+    }
+
+    if( mn._checkState && this.getSelectedRow( ) != undefined && this.getSelectedRow( ) != -1 )
+    {
+      var currentMenuState = findMenuState( this._dataTable.rows[this.getSelectedRow( )]._menuState, j );
+      configureMenuState( mn, currentMenuState );
+    }
+  }
+}
+
+function configureMenuState( menu, menuState )
+{
+  for( var i = 0; i < menu._items.length; i++ )
+  {
+    if( menuState.states.charAt(i) == '1' )
+      menu._items[i].setReadOnly( true );
+
+    if( menuState.labels != undefined )
+      for( var j = 0; j < menuState.labels.length; j++ )
+        if( menuState.labels[j][0] == i )
+          menu._items[i]._Label.innerHTML = menuState.labels[j][1];
+  }
+}
+
+function findMenuState( initialState, level )
+{
+  var l     = 0;
+  var state = initialState;
+
+  while( l != level )
+  {
+    l++;
+
+    var opSelected = g_aMenu[l]._clickedSubMenuOption;
+    var aMenus = state.subMenus;
+
+    for( var i = 0; i < aMenus.length; i++ )
+      if( aMenus[i][0] == opSelected )
+        state = aMenus[i][1];
+  }
+  return state;
+}
+
+function openListLayout( Id1, Id2, svc, nIdSvc, list )
+{
+  var key = svc != 10 ? list.getKey( ) : "";
+
+  if( top == self )
+    showForm( g_strURL, Id1, '&key='    + ( key == undefined ? "" : key ) +
+                             '&Name='   + list.internalName               +
+                             '&Id2='    + Id2                             +
+                             '&nIdSvc=' + nIdSvc                          +
+                             '&svc='    + svc                             );
+  else
+    parent.showForm( g_strURL, Id1, '&key='    + ( key == undefined ? "" : key ) +
+                                    '&Name='   + list.internalName               +
+                                    '&Id2='    + Id2                             +
+                                    '&nIdSvc=' + nIdSvc                          +
+                                    '&svc='    + svc                             );
+}
+
+listview.atualizaGrid = function( aRow, nSvc, bDeleteRow, bRefreshAllRows, aNewRow, aDeletedRow )
+{
+  //Só o serviço 600 aceita mais de 1 linha. Para os outros, passa a 1a (e única) linha.
+  if( bRefreshAllRows )
+    eval( g_strFilterBtnName + '.onclick( );' );
+  else
+  {
+    if( ( nSvc == 10 || nSvc == 40 ) )
+    {
+        if( aRow.menuState != undefined )
+          this.insertRow( aRow[0], aRow.effects[0], aRow.menuState[0] );
+        else
+          this.insertRow( aRow[0], aRow.effects[0], undefined );
+    }
+    else if( nSvc == 20 )
+    {
+      if( bDeleteRow )
+        this.removeSelectedRow( );
+      else if( aRow && aRow[0].cells && aRow[0].cells.length > 0 )
+      {
+        if( aRow.menuState != undefined )
+          this.updateSelectedRow( aRow[0], aRow.effects[0], aRow.menuState[0] );
+        else
+          this.updateSelectedRow( aRow[0], aRow.effects[0], undefined );
+      }
+
+    }
+    else if( nSvc == 600 )
+    {
+      this._isRefreshing = true;
+      
+      if( aRow        ) this.updateRows( aRow   , aRow.effects   , aRow.menuState    );
+      if( aNewRow     ) this.insertRows( aNewRow, aNewRow.effects, aNewRow.menuState );
+      if( aDeletedRow ) this.deleteRows( aDeletedRow                                 );
+
+      this._isRefreshing = false;
+    }
+    else if( nSvc == 30 )
+    {
+      if( aRow && aRow[0].cells && aRow[0].cells.length > 0 )
+      {
+        if( aRow.menuState )
+          this.updateSelectedRow( aRow[0], aRow.effects[0], aRow.menuState[0] );
+        else
+          this.updateSelectedRow( aRow[0], aRow.effects[0], undefined );
+      }
+      else
+      {
+        this.removeSelectedRow( );
+      }
+    }
+  }
+}
+
+listview.moveUp = function( list )
+{
+  var l     = eval( list );
+  var index = this.getSelectedRow( );
+  var nKeyAux;
+  var row         = this._dataTable.rows[index];
+  var previousRow = this._dataTable.rows[index - 1];
+
+  var table = row.parentNode;
+
+  this.unselectAllRows( );
+  table.removeChild( row );
+  table.insertBefore( row, previousRow );
+  this.selectRow( row );
+  
+  this.nTpEvento = this.nTpEventoMoverParaCima;
+  
+  if( !this.fireRowsUpdateEvent( ) )
+  {
+    this.refreshRowsStyles( );
+    return;
+  }
+}
+
+listview.moveDown = function( list )
+{
+  var l     = eval( list );
+  var index = this.getSelectedRow( );
+  var nKeyAux;
+  var row         = this._dataTable.rows[index];
+  var nextRow;
+  var bInsertRow = false;
+
+  if( this._dataTable.rows.length - 1 >= index + 2 )
+    nextRow = this._dataTable.rows[index + 2];
+  else
+  {
+    bInsertRow = true;
+    nextRow    = this._dataTable.insertRow( -1 );
+  }
+  
+  var table = row.parentNode;
+
+  this.unselectAllRows( );
+  table.removeChild( row );
+  table.insertBefore( row, nextRow );
+  this.selectRow( row );
+
+  if( bInsertRow )
+    table.removeChild( nextRow );
+
+  this.nTpEvento = this.nTpEventoMoverParaBaixo;
+  
+  if( !this.fireRowsUpdateEvent( ) )
+  {
+    this.refreshRowsStyles( );
+    return;
+  }
+}
+
+function buildSubMenu( lv, jsonMenu )
+{
+    var mn = drivepopupmenu( jsonMenu );
+    mn._listviewParent = lv;
+
+    var items = jsonMenu.items;
+    for( var i = 0; i < items.length; i++ )
+    {
+      if( items[i].type == "separator" )
+        items[i].isSeparator = true;
+      else
+      {
+        var svc = items[i].svc;
+        var Id1 = lv.Id1;
+        var Id2 = lv.Id2;
+        var nIdSvc = lv._nIdSvc;
+
+        if( lv.internalName == undefined ) // É uma Listview de Cadastro
+        {
+          if( svc != 600 ) // Não é um subProcesso
+            eval( "items[" + i + "].onselected = function( pr_event ){" + items[i].onselected + "; }" );
+          else
+            eval( "items[" + i + "].onselected = function( pr_event ){ g_Listview = this._parent._listviewParent;" + items[i].onselected + "; }" );
+        }
+        else
+        {
+          if( svc != 600 && svc != 110 && svc != 80 && svc != -100 ) // Não é um subProcesso
+            eval( "items[" + i + "].onselected = function( pr_event ){ openListLayout( '" + Id1 + "', " + Id2 + ", " + svc + ", " + nIdSvc + ", cp_" + lv.internalName + " ); }" );
+          else
+            eval( "items[" + i + "].onselected = function( pr_event ){ g_Listview = this._parent._listviewParent;" + items[i].onselected + "; }" );
+        }
+      }
+
+      mn.addItem( items[i] );
+    }
+
+    eval( 'g_aCacheMenu.' + mn.drvPmID + ' = mn;' );
+}
+
+listview.configureMenu = function( jsonMenu, bMoveRowUpDown )
+{
+  var self = this;
+  this._bMoveRowUpDown = bMoveRowUpDown;
+
+  if( jsonMenu.name )
+  {
+    this._mn = drivepopupmenu( jsonMenu );
+    this._mn.attach( this._divListView );
+    this._mn._listviewParent = this;
+
+    var items = jsonMenu.items;
+
+    for( var i = 0; i < items.length; i++ )
+    {
+      if( items[i].type == "separator" )
+        items[i].isSeparator = true;
+      else
+      {
+        var svc = items[i].svc;
+        var Id1 = this.Id1;
+        var Id2 = this.Id2;
+        var nIdSvc = this._nIdSvc;
+
+        if( svc == 3634 ) //Remote Report
+          eval( "items[" + i + "].onselected = function( pr_event ){ g_Listview = this._parent._listviewParent; " + items[i].onselected + "; }" );
+        else if( this.internalName == undefined ) // É uma Listview de Cadastro
+        {
+          if( svc != 600 ) // Não é um subProcesso
+            eval( "items[" + i + "].onselected = function( pr_event ){ " + items[i].onselected + "; }" );
+          else
+            eval( "items[" + i + "].onselected = function( pr_event ){ g_Listview = this._parent._listviewParent;" + items[i].onselected + "; }" );
+        }
+        else
+        {
+          if( svc != 600 && svc != 110 && svc != 80 && svc != -100 ) // Não é um subProcesso, ForeignLayout, GoToPrc e SubMenu
+            eval( "items[" + i + "].onselected = function( pr_event ){ openListLayout( '" + Id1 + "', " + Id2 + ", " + svc + ", " + nIdSvc + ", cp_" + this.internalName + " ); }" );
+          else
+            eval( "items[" + i + "].onselected = function( pr_event ){ g_Listview = this._parent._listviewParent;" + items[i].onselected + "; }" );
+        }
+      }
+
+      var divItem = this._mn.addItem( items[i] );
+      divItem.position = i;
+      
+      if( items[i].bPrimaryDblClickAction )
+        this.primaryDblClickMenuItem = divItem;
+      
+      if( items[i].bSecondaryDblClickAction )
+        this.secondaryDblClickMenuItem = divItem;
+    }
+
+    if( jsonMenu.subMenus )
+      for( var i = 0; i < jsonMenu.subMenus.length; i++ )
+        buildSubMenu( this, jsonMenu.subMenus[i] );
+  }
+
+  if( bMoveRowUpDown )
+  {
+    if( items == undefined )
+    {
+      this._mn = drivepopupmenu( );
+      this._mn.attach(this._divListView);
+      this._mn._listviewParent = this;
+
+      var items = [];
+    }
+    else
+    {
+      items[items.length] = {isSeparator:true};
+      this._mn.addItem( items[items.length - 1] );
+    }
+
+    var strList = "cp_" + this.internalName;
+
+    items[items.length] = eval({text:( g_bEnglish == true ? "Move Up" : "Mover para cima" ),enabled:true,
+                                enabledWhenNoSelection:false,readOnly:false,onselected:""});
+    items[items.length - 1].onselected = function( ){ self.moveUp( strList ) };
+
+    this._mn.addItem( items[items.length - 1] );
+    this._mn._items[ this._mn._items.length - 1 ]._ordenation = "moveup";
+
+    items[items.length] = eval({text:( g_bEnglish == true ? "Move Down" : "Mover para baixo" ),enabled:true,
+                                enabledWhenNoSelection:false,readOnly:false,ordenation:"movedown",onselected:""});
+    items[items.length - 1].onselected = function( ){ self.moveDown( strList ) };
+
+    this._mn.addItem( items[items.length - 1] );
+    this._mn._items[ this._mn._items.length - 1 ]._ordenation = "movedown";
+  }
+}
+
+listview.loadNewPage = function( pagePrm )
+{
+  var strPrm = "ID1=" + this._nIdSvcPageContent + "&ID2=" + this._nIdSvc + "&ID3=" + buildQueryString( this.aSource ) + "&name=" + this.internalName;
+
+  postContentAsync( g_strURL, strPrm + pagePrm, listview.setJsonValue, this, null, true );
+}
+
+listview.handleNavigation = function( i )
+{
+  this.oldKey = "";
+  
+  var nBeginTime = (new Date( )).getTime( );
+  if( this.bForm ) // Listview dentro de um form.
+  {
+    switch( i )
+    {
+      case 0: // Primeira Página
+        if( this._divFooter.imgFirst._disabled )
+          return;
+
+        g_nCurrPage = 1;
+        this.loadNewPage( "&pag=" + g_nCurrPage + "&order=" + this.getSortOrder( ) );
+        break;
+      case 1: // Página anterior
+        if( this._divFooter.imgPrev._disabled )
+          return;
+        
+        g_nCurrPage = parseInt( this.getCurrPage( ) ) - 1;
+        this.loadNewPage( "&pag=" + g_nCurrPage + "&order=" + this.getSortOrder( ) );
+        break;
+      case 2:
+        break;
+      case 3: // Próxima Página
+        if( this._divFooter.imgNext._disabled )
+          return;
+        
+        g_nCurrPage = parseInt( this.getCurrPage( ) ) + 1;
+        this.loadNewPage( "&pag=" + g_nCurrPage + "&order=" + this.getSortOrder( ) );
+        break;
+      case 4: // Última página
+        if( this._divFooter.imgLast._disabled )
+          return;
+
+        g_nCurrPage = 999999;
+        this.loadNewPage( "&pag=" + g_nCurrPage + "&order=" + this.getSortOrder( ) );
+        break;
+    }
+  }
+  else // Listview de Cadastro
+  {
+    switch( i )
+    {
+      case 0: // Primeira Página
+        if( this._divFooter.imgFirst._disabled )
+          return;
+
+        g_nCurrPage = 0;
+        loadData( this._strUrl, this._strPrm + "&pag=" + g_nCurrPage + "&order=" + this.getSortOrder( ), true );
+        break;
+      case 1: // Página anterior
+        if( this._divFooter.imgPrev._disabled )
+          return;
+
+        g_nCurrPage = parseInt( this.getCurrPage( ) ) - 1;
+        loadData( this._strUrl, this._strPrm + "&pag=" + g_nCurrPage + "&order=" + this.getSortOrder( ), true );
+        break;
+      case 2:
+        break;
+      case 3: // Próxima Página
+        if( this._divFooter.imgNext._disabled )
+          return;
+
+        g_nCurrPage = parseInt( this.getCurrPage( ) ) + 1;
+        loadData( this._strUrl, this._strPrm + "&pag=" + g_nCurrPage + "&order=" + this.getSortOrder( ), true );
+        break;
+      case 4: // Última página
+        if( this._divFooter.imgLast._disabled )
+          return;
+
+        g_nCurrPage = 999999;
+        loadData( this._strUrl, this._strPrm + "&pag=" + g_nCurrPage + "&order=" + this.getSortOrder( ), true );
+        break;
+    }
+  }
+  var nEndTime = (new Date( )).getTime( );
+  //alert( "Tempo Completo:" + (nEndTime - nBeginTime) );
+}
+
+listview.adjustFooter = function( )
+{
+  if( this._nCurrPage >= 1 && this._bPaginated )
+  {
+    this._divFooter.divNavigation.style.display = '';
+
+    if( !this._nTotalPages || this._nTotalPages <= 1 )
+    {
+      this._divFooter.imgFirst.src = this._imgArrowFirstDisable;
+      this._divFooter.imgFirst._disabled = true;
+      this._divFooter.imgPrev.src = this._imgArrowPreviousDisable;
+      this._divFooter.imgPrev._disabled = true;
+      this._divFooter.imgNext.src = this._imgArrowNextDisable;
+      this._divFooter.imgNext._disabled = true;
+      this._divFooter.imgLast.src = this._imgArrowLastDisable;
+      this._divFooter.imgLast._disabled = true;
+    }
+    else if( this._nCurrPage == 1 )
+    {
+      this._divFooter.imgFirst.src = this._imgArrowFirstDisable;
+      this._divFooter.imgFirst._disabled = true;
+      this._divFooter.imgPrev.src = this._imgArrowPreviousDisable;
+      this._divFooter.imgPrev._disabled = true;
+      this._divFooter.imgNext.src = this._imgArrowNext;
+      this._divFooter.imgNext._disabled = false;
+      this._divFooter.imgLast.src = this._imgArrowLast;
+      this._divFooter.imgLast._disabled = false;
+    }
+    else if( this._nCurrPage == this._nTotalPages )
+    {
+      this._divFooter.imgFirst.src = this._imgArrowFirst;
+      this._divFooter.imgFirst._disabled = false;
+      this._divFooter.imgPrev.src = this._imgArrowPrevious;
+      this._divFooter.imgPrev._disabled = false;
+      this._divFooter.imgNext.src = this._imgArrowNextDisable;
+      this._divFooter.imgNext._disabled = true;
+      this._divFooter.imgLast.src = this._imgArrowLastDisable;
+      this._divFooter.imgLast._disabled = true;
+    }
+    else
+    {
+      this._divFooter.imgFirst.src = this._imgArrowFirst;
+      this._divFooter.imgFirst._disabled = false;
+      this._divFooter.imgPrev.src = this._imgArrowPrevious;
+      this._divFooter.imgPrev._disabled = false;
+      this._divFooter.imgNext.src = this._imgArrowNext;
+      this._divFooter.imgNext._disabled = false;
+      this._divFooter.imgLast.src = this._imgArrowLast;
+      this._divFooter.imgLast._disabled = false;
+    }
+  }
+  else
+  {
+    this._divFooter.divNavigation.style.display = 'none';
+  }
+}
+
+listview.buildSortOrder = function( )
+{
+  var nSort = this._nLastSortCol + 1;
+  if( !this._bSortUp )
+    nSort = nSort * -1;
+
+  if( this._aSortOrder.length > 0 && (Math.abs( this._aSortOrder[0] ) == this._nLastSortCol + 1) )
+    this._aSortOrder[0] = nSort;
+  else
+  {
+    this._aSortOrder.splice( 0, 0, nSort );
+
+    for( i = 1; i < this._aSortOrder.length; i++ )
+    {
+      if( Math.abs( this._aSortOrder[i] ) == Math.abs( this._aSortOrder[0] ) )
+        this._aSortOrder.splice( i, this._aSortOrder.length - i );
+    }
+  }
+}
+
+listview.resetSortOrder = function( )
+{
+  this._aSortOrder = new Array( );
+}
+
+listview.getSortOrder = function( )
+{
+  var strSort = "";
+
+  if( this._aSortOrder.length > 0 )
+    strSort += this._aSortOrder[0];
+
+  for( i = 1; i < this._aSortOrder.length; i++ )
+  {
+    strSort = strSort + "," + this._aSortOrder[i];
+  }
+
+  return strSort;
+}
+
+listview.setURL = function( strUrl )
+{
+  this._strUrl = strUrl;
+}
+
+listview.setPrm = function( strPrm )
+{
+  this._strPrm = strPrm;
+}
+
+listview.setMultiSelect = function( pr_bMultiSelect )
+{
+  this.bMultiSelect = pr_bMultiSelect;
+}
+
+listview.setReadOnly = function( pr_bReadOnly )
+{
+  this.bReadOnly = pr_bReadOnly;
+
+  if( pr_bReadOnly )
+    $( this._dataTable ).addClass( "readonly" );
+  else
+    $( this._dataTable ).removeClass( "readonly" );
+}
+
+listview.setFocus = function( pr_bFocus )
+{
+  if( this._bSettingFocus )
+    return;
+
+  this._bSettingFocus = true;
+
+  if( pr_bFocus )
+  {
+    if( document.activeElement.tagName != "BODY" )
+      document.body.focus( );
+ 
+    if( g_focusListview )
+      g_focusListview.setFocus( false );
+
+    g_focusListview = this;
+    
+    this.configureAttachEvents( );
+
+    if( !isIE7( ) && !isIE8( ) && !isIE8Compat( ) )
+      $( this._dataTable ).addClass( "focus" );
+    else
+    {
+      var row  = this._dataTable.rows[this.getSelectedRow( )];
+      var jRow = $( row );
+
+      if( jRow.hasClass( "par" ) )
+        jRow.css( "background-color", "#a0c4f7" );
+      else
+        jRow.css( "background-color", "#aaceff" );
+    }
+  }
+  else
+  {
+    if( g_focusListview == this )
+      g_focusListview = undefined;
+
+    this.configureDetachEvents( );
+
+    if( !isIE7( ) && !isIE8( ) && !isIE8Compat( ) )
+      $( this._dataTable ).removeClass( "focus" );
+    else if( this.internalName )
+    {
+      var row  = this._dataTable.rows[this.getSelectedRow( )];
+      var jRow = $( row );
+
+      if( jRow.hasClass( "par" ) )
+        jRow.css( "background-color", "#b0bed9" );
+      else
+        jRow.css( "background-color", "#9fafd1" );
+    }
+  }
+
+  this.bFocus         = pr_bFocus;
+  this._bSettingFocus = false;
+}
+
+listview.configureAttachEvents = function( )
+{
+  addEvent( document, "keydown", listview.onkeydown      , false );
+  addEvent( document, "click"  , listview.onDocumentClick, false );
+}
+
+listview.configureDetachEvents = function( )
+{
+  removeEvent( document, "keydown", listview.onkeydown      , false );
+  removeEvent( document, "click"  , listview.onDocumentClick, false );
+}
+
+listview.onDocumentClick = function( pr_event )
+{
+  if( !pr_event )
+    pr_event = window.event;
+
+  if( !$( g_focusListview._divListView ).find( pr_event.srcElement ).length )
+    g_focusListview.setFocus( false );
+}
+
+listview.refreshRowsStyles = function( )
+{
+  for( var i = 0; i < this._dataTable.rows.length; i++ )
+    this._dataTable.rows[i].className = i % 2 ? "impar" : "par";
+
+  if( this._dataTable.rows.length )
+		this.rowFocus( this._dataTable.rows[this.getSelectedRow( )] );
+}
+
+listview.unload = function( )
+{
+  this._headerTable.listView = null;
+  this._divFooter._parent    = null;
+  this._divListView._parent  = null;
+
+  this._divHeader.innerHTML     = "";
+  this._divData.innerHTML       = "";
+  this._divFooter.innerHTML     = "";
+  this._divShield.innerHTML     = "";
+  this._divCancelSort.innerHTML = "";
+
+  this._divListView.innerHTML = "";
+
+  this._divHeader     = null;
+  this._divData       = null;
+  this._divFooter     = null;
+  this._divShield     = null;
+  this._divCancelSort = null;
+
+  this._divListView = null;
+}
+
+listview.onkeydown = function( pr_event )
+{
+  var key;
+
+  if( pr_event )
+  {
+    key = pr_event.which;
+
+    if( !key )
+      key = pr_event.keyCode;
+  }
+  else
+  {
+    pr_event = window.event;
+    key = pr_event.keyCode;
+  }
+
+  if ( pr_event.ctrlKey && key == 35 ) // Tecla END
+    g_focusListview.moveSelectEnd( );
+  else if ( pr_event.ctrlKey && key == 36 ) // Tecla HOME
+    g_focusListview.moveSelectHome( );
+  else if ( key == 38 ) // Seta p/ Cima
+    g_focusListview.moveSelectUp( );
+  else if ( key == 40 ) // Seta p/ Baixo
+    g_focusListview.moveSelectDown( );
+//  else if ( key == 17 ) // Ctrl
+//    g_focusListview.configKeyboardNavigationMenu( pr_event );
+  else
+    return;
+
+  pr_event.cancelBubble = true;
+
+  if( pr_event.preventDefault )
+    pr_event.preventDefault( );
+
+  return false;
+}
+
+listview.configKeyboardNavigationMenu = function( pr_event )
+{
+//  this    .setFocus( false );
+//  this._mn.setFocus( true  );
+  
+  return this.openMenu( undefined, pr_event );
+}
+
+listview.moveSelectUp = function( )
+{
+  var index = this.getSelectedRow( );
+  var row;
+
+  if( index > 0 )
+  {
+    this.fireUnselectEvent( );
+    this.selectRow( index - 1 );
+    this.fireSelectEvent( );
+
+    setTimeout( this._cpName + ".scrollToRow( " + ( index - 1 ) + " );", 1 );
+  }
+}
+
+listview.moveSelectDown = function( )
+{
+  var index = this.getSelectedRow( );
+  var row;
+
+  if ( index < this._dataTable.rows.length - 1 )
+  {
+    this.fireUnselectEvent( );
+    this.selectRow( index + 1 );
+    this.fireSelectEvent( );
+
+    setTimeout( this._cpName + ".scrollToRow( " + ( index + 1 ) + " );", 1 );
+  }
+}
+
+listview.moveSelectHome = function( )
+{
+  if( this.getSelectedRow( ) == 0 )
+    return;
+
+  this.fireUnselectEvent( );
+  this.selectRow( 0 );
+  this.fireSelectEvent( );
+
+  setTimeout( this._cpName + ".scrollToRow( 0 );", 1 );
+}
+
+listview.moveSelectEnd = function( )
+{
+  if( this.getSelectedRow( ) == this._dataTable.rows.length - 1 )
+    return;
+
+  this.fireUnselectEvent( );
+  this.selectRow( this._dataTable.rows.length - 1 );
+  this.fireSelectEvent( );
+
+  setTimeout( this._cpName + ".scrollToRow( " + ( this._dataTable.rows.length - 1 ) + " );", 1 );
+}
+
+listview.swapNodes = function(item1,item2)
+{
+    var itemtmp = item1.cloneNode(1);
+    var parent = item1.parentNode;
+    item2 = parent.replaceChild(itemtmp,item2);
+    parent.replaceChild(item2,item1);
+    parent.replaceChild(item1,itemtmp);
+    itemtmp = null;
+}

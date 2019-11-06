@@ -1,0 +1,137 @@
+foreignLayoutArea = function( pr_arg )
+{
+  return foreignLayoutArea.__constructor( pr_arg );
+}
+
+foreignLayoutArea.__constructor = function( pr_arg )
+{
+  var e = document.createElement( "SPAN" );
+
+  e._constructor = foreignLayoutArea._constructor;
+  e._constructor( pr_arg );
+
+  return e;
+}
+
+foreignLayoutArea._constructor = function(arg)
+{
+  this._parent = document.getElementById( arg["parent"] );
+  this._parent.appendChild( this );
+  this._ID1       = arg["id1"      ];
+  this._IDHandler = arg["idHandler"];
+
+  this._type        = registry.ui.types.foreignLayoutArea;
+  this.internalName = arg["name"];
+  this._bReadOnly   = false;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  this._div = document.createElement("DIV");
+  this.appendChild( this._div );
+  this._div.style.overflow = "auto";
+  this._div.innerHTML = "";
+  this._div.style.display = "none";
+  this._nProcess = undefined;
+  this._bLoaded = false;
+  
+  this._svcBefore = 1;
+  this._svcAfter  = 2;
+
+  this.setReadOnly  = foreignLayoutArea.setReadOnly;
+  this.getReadOnly  = foreignLayoutArea.getReadOnly;
+  this.doGetLayout  = foreignLayoutArea.doGetLayout;
+  this.getJsonValue = foreignLayoutArea.getJsonValue;
+  this.setJsonValue = foreignLayoutArea.setJsonValue;
+}
+
+foreignLayoutArea.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+foreignLayoutArea.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+}
+
+foreignLayoutArea.getJsonValue = function( bComplete )
+{
+  var str = "{type:" + this._type;
+
+  if( this._nProcess == undefined )
+    str += ", process:0, internalData:{}";
+  else
+  {
+    str += ", process:" + this._nProcess + ", internalData:";
+
+    str += unescape( this.buildQueryString( this.aSource, true, undefined, this._nProcess ) );
+  }
+
+  str += "}";
+
+  return str;
+}
+
+foreignLayoutArea.doGetLayout = function( )
+{
+  if( this._bLoaded == false )
+  {
+    removeForeignCompNames( this.internalName );
+    $(this._div).empty( ); //MANTIS#36417
+    this._div.innerHTML = "";
+
+    var ID3 = '&ID3=' + this.buildQueryString( this.aSource );
+
+    //Envia para o Servlet o aviso que o FLA vai começar a ser montado.
+    postContent( g_strURL, 'ID1=' + this._IDHandler + ID3 + '&ID2=' + this._svcBefore + '&_name=' + this.internalName + '&_svc=' + nSvc + '&_loading=true' );
+
+    var str = postContent( g_strURL, 'ID1=' + this._ID1 + '&_name=' + this.internalName + '&_svc=' + nSvc );
+
+    eval( str );
+
+    this._div.innerHTML = json.html;
+    this._div.style.display = "";
+
+    eval( json.js );
+
+    this._bLoaded = true;
+    g_nFLACount++;
+
+    if( window.frameElement )
+    {
+      resizeDialog( );
+      centralizeDialog( );
+    }
+
+    this.aSource = getDataForeignCompNames( this.internalName );
+
+    ID3 = '&ID3=' + this.buildQueryString( this.aSource, true );
+
+    //Envia para o Servlet o aviso que o FLA terminou de ser montado e os componentes estão montados.
+    var json = postContent( g_strURL, 'ID1=' + this._IDHandler + ID3 + '&ID2=' + this._svcAfter + '&_name=' + this.internalName + '&_svc=' + nSvc );
+
+    var f = eval( "document.frames" );
+
+    try
+    {
+      parent.document.updateObjects( f, json );
+    }
+    catch( e )
+    {
+      document.updateObjects( f, json );
+    }
+  }
+}
+
+foreignLayoutArea.setJsonValue = function( json )
+{
+  //Mesmo que seja o mesmo processo, o componente deve ser recarregado, pois existem processos que carregam layout dinamicamente. 
+  if( json.process != undefined )
+  {
+    this._bLoaded = false;
+    this._nProcess = json.process;
+
+    if( this._nProcess != 0 )
+        this.doGetLayout( );
+  }
+}

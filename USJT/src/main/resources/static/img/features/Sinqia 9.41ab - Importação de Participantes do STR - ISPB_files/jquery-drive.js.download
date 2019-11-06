@@ -1,0 +1,55 @@
+/*
+ * @(#)jquery-drive.js
+ *
+ * Copyright 2011, Drive Consultoria e Informática Ltda.
+ * Rua da Alfândega, 91 andar 9
+ * Rio de Janeiro - RJ - 20070-003
+ * BRASIL
+ *
+ * Todos os direitos reservados.
+ * 
+ * Biblioteca de funções utilitárias da Drive.
+ */
+
+function bloquearUI( )
+{
+  $.blockUI({ 
+    css:{ border:         '1px solid #000', 
+          backgroundColor:'#ccc' },
+    overlayCSS:{opacity: 0},
+    fadeIn:300, 
+    fadeOut:300,
+    baseZ:6000,
+    message: '<div class="block-ui"><img src="' + g_strBaseUrl + 'BarraEsperaDriveAMnet.gif"/></div>' 
+  });
+}
+
+function notificarUsuario( pr_titulo, pr_msg )
+{
+  $.blockUI({ 
+    theme: true,
+    fadeIn:false,
+    overlayCSS: { opacity: 0.3 },
+    themedOverlayCSS: { opacity: 0.3 },
+    title:   pr_titulo,
+    message: "<p class='notify-msg'>" + pr_msg + "</p>" +
+             "<button id='btnClose' class='notify-btn' onClick='$.unblockUI({ fadeOut:200 })'>" + i18n.t( "home:btnFechar" ) + "</button>"
+  });
+}
+
+function exibirMensagem( pr_title, pr_url, pr_width, pr_height )
+{
+  var win = addWindow( pr_url, {
+	    closeOnShieldClick: isTouchDevice( ),
+	    closeButton: true,
+	    center: true,
+	    draggable: true,
+	    width: pr_width,
+	    height: pr_height,
+	    title: pr_title
+	  } );
+
+  win.show( );
+  
+  return win;
+}

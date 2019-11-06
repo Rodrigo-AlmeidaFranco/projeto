@@ -1,0 +1,87 @@
+function modalformbuttonEvents( )
+{
+  switch( this.ID2 )
+  {
+    case 1 : modalformbuttonOpenDialog.apply( this, [] ); break;
+    case 2 : modalformbuttonConfirm   .apply( this, [] ); break;
+  }  
+}
+
+function modalformbuttonOpenDialog( )
+{
+  var param = buildQueryString( this.aSource, true );
+  var id    = postContent( g_strURL, 'ID1=' + g_nSvcSaveObjecID + '&ID3=' + param );
+
+  showForm( g_strURL,
+	          this.Id1,
+			      '&Param='    + id                          + 
+            '&Name='     + this.internalName           + 
+            '&Id2='      + this.ID2                    +
+            '&ReadOnly=' + this.isLayoutContentReadOnly,
+            g_strMfbHelpName                           );
+}
+
+function modalformbuttonConfirm( )
+{
+  var strAux = "";
+
+  if( this._isConfirmed == true )
+    strAux = "&ID5=true";
+  else
+    g_buttonSubmit = this;
+
+  var aResp = stringToJson( postContent( g_strURL, 'ID1='       + this.Id1                           +
+                                                   '&Id2='      + this.ID2                           +
+                                                   '&ID3='      + buildQueryString( aDataCompNames ) +
+                                                   '&Name='     + g_SuperCompName                    +
+                                                   '&LayoutId=' + g_nLayoutId + strAux )             );
+
+  if( aResp.InvalidLayout )
+    showDialog( aResp.SvcID, true );
+  else
+  {
+    var f = parent.frames;
+
+    for( var i in aResp )
+    {
+      var bOk = false;
+      var a;
+      var c;
+      var j = 0;
+      try
+      {
+        while( f != undefined && c == undefined && j < f.length )
+        {
+          c = eval( "f[" + j + "].cp_" + i );
+          j++;
+        }
+
+         c.setJsonValue(aResp[i]);
+         bOk = true;
+      }
+      catch( e ){ c = eval( "parent.frames.cp_" + i  ); }
+
+      if( c != undefined && bOk == false )
+        c.setJsonValue(aResp[i]);
+
+      c = undefined;
+    }
+
+    closeDialog( );
+  }
+}
+
+function modalformbuttonSetJsonValue( json )
+{
+  if( json.setup )
+  {
+    if( json.setup.visibleWhenReadOnly != undefined )
+      this.bVisibleWhenReadOnly = json.setup.visibleWhenReadOnly;
+
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+
+    if( json.setup.enabled != undefined )
+      this.setEnabled( json.setup.enabled );
+  }
+}

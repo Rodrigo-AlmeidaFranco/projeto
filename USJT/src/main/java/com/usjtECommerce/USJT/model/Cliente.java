@@ -2,22 +2,10 @@ package com.usjtECommerce.USJT.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-@Entity
 public class Cliente implements Serializable{
-	@Id
-	@GeneratedValue(strategy=GenerationType.IDENTITY)
+	
 	private long id;
-	private Integer codUser;
+	private Integer Id_codUser;
 	private String nome;
 	private String cpf;
 	private String telefone;
@@ -30,11 +18,23 @@ public class Cliente implements Serializable{
 	private String dataNasc;
 	
 	
-	public Integer getCodUser() {
-		return codUser;
+	
+	
+	
+	public Cliente() {
+		super();
 	}
-	public void setCodUser(Integer codUser) {
-		this.codUser = codUser;
+	public long getId() {
+		return id;
+	}
+	public void setId(long id) {
+		this.id = id;
+	}
+	public Integer getId_codUser() {
+		return Id_codUser;
+	}
+	public void setId_codUser(Integer id_codUser) {
+		Id_codUser = id_codUser;
 	}
 	public String getNome() {
 		return nome;
@@ -99,5 +99,6 @@ public class Cliente implements Serializable{
 	
 	
 	
+
 	
 }

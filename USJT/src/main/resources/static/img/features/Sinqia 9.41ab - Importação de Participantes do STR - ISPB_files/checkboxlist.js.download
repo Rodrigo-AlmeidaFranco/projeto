@@ -1,0 +1,534 @@
+
+checkboxlist = function(arg){return checkboxlist.__constructor(arg)};
+//------------------------------------------------------------------------------
+checkboxlist.__constructor = function(arg)
+{
+  arg["className"] = "regularListview checkboxlist";
+  
+  var e = listview( arg );
+
+  e._bStateChanged = false;
+
+  if( arg["width"] )
+    e.setWidth( arg["width"] );
+
+  if( arg["height"] )
+    e.setHeight( arg["height"] );
+
+  e._divFooter.tableFooter.className = "lvFooter";
+
+  e._type = 7;
+
+  /**
+  * Esse 3 representa borda e padding.
+  */
+  e._nCheckboxAddon   = 25;
+  e._nDataTableAddons = e._nCheckboxAddon + 3;
+
+  e.doCbClk             = checkboxlist.doCbClk;
+  e.doChangeState       = checkboxlist.doChangeState;
+  e.doClickAll          = checkboxlist.doClickAll;
+  e.getJsonValue        = checkboxlist.getJsonValue;
+  e.loadNewPage         = checkboxlist.loadNewPage;
+  e.setCkAllValue       = checkboxlist.setCkAllValue;
+  e.setJsonValue        = checkboxlist.setJsonValue;
+  e.setReadOnly         = checkboxlist.setReadOnly;
+  e.setVisibleSelectAll = checkboxlist.setVisibleSelectAll;
+  e.buildHeaderHtml     = checkboxlist.buildHeaderHtml;
+  e.buildDataHtml       = checkboxlist.buildDataHtml;
+  e.configPageData      = checkboxlist.configPageData;
+
+  return e;
+}
+
+checkboxlist.configPageData = function( pageData )
+{
+  this._nCurrPage        = pageData.currPage;
+  this._nTotalPages      = pageData.totalPages;
+  this._nTotalRows       = pageData.totalRows;
+  this._nTotalChecked    = pageData.totalChecked;
+  this._nRowsPerPage     = pageData.rowsPerPage;
+  this._nRowsPerPageMax  = pageData.rowsPerPageMax;
+}
+
+checkboxlist.buildHeaderHtml = function( json )
+{
+  var html;
+  var i      = 0;
+  var data;
+  var length = json.data.length;
+  var strClk;
+  var tableId = "headerTable_" + ( this.internalName ? this.internalName : "Registry" );
+  var border;
+  var lstName = this.internalName ? this.internalName + "_" : "";
+  
+  html  = "<table id='" + tableId + "' class='lvHeader' style='width:" + this._nDataTableWidth + "px;' align='left' border='0' cellspacing='0' cellpadding='1'>";
+  html += "<tr onContextMenu='return false;'>";
+
+  html += "<td align='center' style='width:" + this._nCheckboxAddon + "px;'>" +
+          "<div id='" + lstName + "header_txt" + "0' style='height:18px;width:" + this._nCheckboxAddon + "px;'>" + 
+          "<input type='checkbox' class='checkbox' id='ckAll_" + this.internalName + "' onClick='this.parentNode.parentNode.parentNode.parentNode.parentNode.listView.doClickAll( this, event );'>" +
+          "</div>" +
+          "</td>";
+
+  for( var i = 0; i < length; i++ )
+  {
+      data   = json.data[i];
+      border = i == length - 1 ? "border-right:0px;" : "";
+      
+      if( data.isAllowSort && !this._bMoveRowUpDown )
+        strClk = "onClick='this.parentNode.parentNode.parentNode.parentNode.listView.onHeaderClick( " + ( i + 1 ) + ", event, true );'";
+      else
+        strClk = "";
+
+      html += "<td style='width:" + data.width + "px;" + border + "'>"; 
+      html += "<div "      + strClk     + " style='width:" + data.width + "px' align='" + data.align + "'>";
+
+      if( data.align == "right" )
+        html += "<img id='" + lstName + "header_img" + ( i + 1 ) + "' src='" + getContextURL( ) + "Obj/sortup.gif' height='8px' width='8px' style='border:0; display:none;'>";
+
+      html += "<div id='" + lstName + "header_txt" + ( i + 1 ) + "' style='width:" + data.width + "px'>";
+      html += data.text;
+      html += "</div>";
+
+      if( data.align != "right" )
+        html += "&nbsp;<img id='" + lstName + "header_img" + ( i + 1 ) + "' src='" + getContextURL( ) + "Obj/sortup.gif' height='8px' width='8px' style='border:0; display:none;'>";
+
+      html += "</div>";
+      html += "</td>";
+  }
+  
+  html += "</tr>";
+  html += "</table>";
+  
+  return html;
+}
+
+/**
+ * Aqui foram utilizados Arrays para concatenação de Strings devido ao alto número de registros, diferente do cabeçalho
+ * que é apenas uma linha. 
+ */
+checkboxlist.buildDataHtml = function( data )
+{
+  var html       = [];
+  var rowsLength = data.rows.length;
+  var cellsLength;
+  var row;
+  var cell;
+  var cellIdSufix = this.internalName ? "_" + this.internalName : "_Registry";
+  var tableId     = "dataTable_" + ( this.internalName ? this.internalName : "Registry" );
+  var lstName     = this.internalName ? this.internalName + "_" : "";
+  
+  html.push( "<table id='" );
+  html.push( tableId       );
+  html.push( "' border='0' cellspacing='0' cellpadding='1' class='" );
+  html.push( this._className   );
+  html.push( "' style='width:" );
+  html.push( this._nDataTableWidth );
+  html.push( "px;'>" );
+
+  for( var i = 0; i < rowsLength; i++ )
+  {
+      row         = data.rows[i];
+      cellsLength = row.cells.length;
+
+      html.push( "<tr ezaKey='" );
+      html.push( row.ezaKey );
+      html.push( "' _key='" );
+      html.push( row.key    );
+      html.push( "' class='"    );
+      html.push( ( i % 2 ? "impar" : "par" ) );
+      html.push( "' onmouseover='this.parentNode.parentNode.listView.highlight( this );'" );
+      html.push( " onmouseout='this.parentNode.parentNode.listView.unhighlight( this );'" );
+      html.push( " oncontextmenu='return false;'>" );
+
+      html.push( "<td value='" );
+      html.push( row.selected ? row.selected : false );
+      html.push( "' style='width:25px;' align='center' valign='middle'>" );
+      html.push( "<div id='" );
+      html.push( lstName     );
+      html.push( "data_txt"  );
+      html.push( i );
+      html.push( "0' style='width:25px;'>" );
+
+      html.push( "<input type='checkbox' class='checkbox' " );
+
+      if( row.readonly )
+        html.push( "disabled='disabled' " );
+
+      if( row.selected )
+        html.push( "checked='checked' " );
+      
+      html.push( "onClick='this.parentNode.parentNode.parentNode.parentNode.parentNode.listView.doCbClk( event );'>" );
+
+      html.push( "</div>" );
+      html.push( "</td>"  );
+
+      for( var j = 0; j < cellsLength; j++ )
+      {
+        cell = row.cells[j];
+
+        html.push( "<td id='"  );
+        html.push( "td_"       );
+        html.push( i           );
+        html.push( j           );
+        html.push( cellIdSufix );
+        html.push( "' "        );
+
+        if( cell.value )
+        {
+          html.push( "value='"  );
+          html.push( cell.value );
+          html.push( "'"        );
+        }
+
+        html.push( " align='"  );
+        html.push( cell.align  );
+        html.push( "' style='" );
+        html.push( "width:"    );
+        html.push( cell.width  );
+        html.push( "px;"       );
+
+        if( j == cellsLength - 1 )
+          html.push( "border-right:0px;"  );
+
+        html.push( "'>" );
+
+        html.push( "<div id='" );
+        html.push( lstName     );
+        html.push( "data_txt"  );
+        html.push( i           );
+        html.push( ( j + 1 )   );
+        html.push( "' style='" );
+        html.push( "width:"    );
+        html.push( cell.width  );
+        html.push( "px;"       );
+
+        if( cell.width == 0 )
+          html.push( "display:none;"  );
+
+        html.push( "'>"      );
+        html.push( cell.text );
+
+        html.push( "</div>" );
+        html.push( "</td>"  );
+      }
+
+      html.push( "</tr>"  );
+  }
+
+  html.push( "</table>" );
+
+  return html.join( "" );
+}
+
+checkboxlist.setReadOnly = function( bReadOnly )
+{
+  this._bReadOnly = bReadOnly;
+  document.getElementById( 'ckAll_' + this.internalName ).disabled = bReadOnly;
+}
+
+checkboxlist.setCkAllValue = function( )
+{
+  var aRows = this._dataTable.rows;
+
+  if( aRows.length < 1 )
+    document.getElementById( 'ckAll_' + this.internalName ).checked = false;
+  else if( this._bPaginated )
+  {
+     if( this._nTotalRows == this._nTotalChecked )
+       document.getElementById( 'ckAll_' + this.internalName ).checked = true;
+     else
+       document.getElementById( 'ckAll_' + this.internalName ).checked = false;
+  }
+  else
+  {
+    for( var i = 0; i < aRows.length; i++ )
+      if( aRows[i].cells[0].getAttribute( "value" ) == undefined || !aRows[i].cells[0].getAttribute( "value" ).booleanValue( ) )
+      {
+        document.getElementById( 'ckAll_' + this.internalName ).checked = false;
+        return;
+      }
+
+    document.getElementById( 'ckAll_' + this.internalName ).checked = true;
+  }
+}
+
+checkboxlist.setVisibleSelectAll = function( pr_bVisibleSelectAll )
+{
+  this.bVisibleSelectAll = pr_bVisibleSelectAll;
+  
+  document.getElementById( 'ckAll_' + this.internalName ).style.display = pr_bVisibleSelectAll ? "" : "none";
+}
+
+checkboxlist.doClickAll = function( pr_ck, pr_event )
+{
+  this.showShield( );
+
+  var cmd = 'executeDoClickAll( cp_' + this.internalName + ',' + pr_ck.checked + ');';
+
+  setTimeout( cmd, 1 );
+}
+
+function executeDoClickAll( checkboxlist, bChecked )
+{
+  var strKeys = "";
+  var strCmd  = "";
+
+  if( !checkboxlist._bReadOnly )
+  {
+    var aRows = checkboxlist._dataTable.rows;
+
+    for( var i = 0; i < aRows.length; i++ )
+      if( aRows[i].cells[0].childNodes[0] != undefined )
+      {
+        aRows[i].cells[0].setAttribute( "value", bChecked + "" );
+        aRows[i].cells[0].valueOld = !bChecked + "";
+
+        aRows[i].cells[0].childNodes[0].childNodes[0].checked = bChecked;
+      }
+
+    if( checkboxlist._bPaginated )
+    {
+      if( bChecked )
+        checkboxlist._nTotalChecked = checkboxlist._nTotalRows;
+      else
+        checkboxlist._nTotalChecked = 0;
+    }
+  }
+
+  if( checkboxlist._bPaginated )
+  {
+    if( bChecked )
+      strCmd = "1"; //CmdAllSet
+    else
+      strCmd = "2"; //CmdAllReset
+
+    var strPrm = 'ID1=' + checkboxlist._nIdSvcChange + '&ID2=' + checkboxlist._nIdSvc + '&ID3=' + buildQueryString( checkboxlist.aSource ) + '&name=' + checkboxlist.internalName+ '&bCheckedAll=' + bChecked;
+
+    strPrm += '&eCmd=' + strCmd;
+
+    postContent( g_strURL, strPrm );
+  }
+
+  checkboxlist.hideShield( );
+}
+
+checkboxlist.doCbClk = function( pr_event )
+{
+  if( this._nLastSortCol == 0 )
+    this.resetHeader( );
+
+  this.doChangeState( pr_event );
+}
+
+checkboxlist.doChangeState = function( pr_event )
+{
+  var target  = pr_event.target || pr_event.srcElement;
+  var td      = target.parentNode.parentNode;
+  var iRow    = td.parentNode.rowIndex;
+  var aValues = "";
+  var aRows   = this._dataTable.rows;
+
+  if( pr_event.shiftKey )
+  {
+    var strValue = ( pr_event.altKey ? '0' : '1' );
+
+    //Atualiza a quantidade de checked, removendo todos os marcados, antes de rodar o algoritmo.
+    if( this._bPaginated )
+    {
+      for( var i = 0, j = 0; i < aRows.length; i++ )
+      {
+        if( aRows[i].childNodes[0].getAttribute( "value" ).booleanValue( ) )
+          this._nTotalChecked--;
+      }
+    }
+
+    //Faz a atualização da marcação
+    if( this._oldRow != undefined )
+    {
+      if( this._oldRow < iRow )
+      {
+        for( var i = this._oldRow; i <= iRow; i++ )
+        {
+          aRows[i].childNodes[0].setAttribute( "value", !pr_event.altKey + "" );
+          aRows[i].childNodes[0].childNodes[0].childNodes[0].checked = !pr_event.altKey;
+
+          if( aValues.length > 0 )
+            aValues += ",";
+
+          aValues += "{ key: " + aRows[i].getAttribute( "_key" ) + ", value: " + !pr_event.altKey + " }";
+        }
+      }
+      else
+      {
+        for( var i = this._oldRow; i >= iRow; i-- )
+        {
+          aRows[i].childNodes[0].setAttribute( "value", !pr_event.altKey + "" );
+          aRows[i].childNodes[0].childNodes[0].childNodes[0].checked = !pr_event.altKey;          
+
+          if( aValues.length > 0 )
+            aValues += ",";
+
+          aValues += "{ key: " + aRows[i].getAttribute( "_key" ) + ", value: " + !pr_event.altKey + " }";
+        }
+      }
+    }
+    else
+    {
+      target.checked = true
+      td.setAttribute( "value", true + "" );
+
+      if( aValues.length > 0 )
+        aValues += ",";
+
+      aValues += "{ key: " + td.parentNode.getAttribute( "_key" ) + ", value: true }";
+    }
+
+    this._oldRow = iRow;
+
+    //Atualiza a quantidade de checked, contando quantos estão marcados depois do algoritmo
+    if( this._bPaginated )
+    {
+      var aRows = this._dataTable.rows;      
+      for( var i = 0; i < aRows.length; i++ )
+      {
+        if( aRows[i].childNodes[0].getAttribute( "value" ).booleanValue( ) )
+          this._nTotalChecked++;
+      }
+    }
+  }
+  else
+  {
+    if( !target.checked )
+    {
+      td.setAttribute( "value", false + "" );
+
+      if( aValues.length > 0 )
+        aValues += ",";
+
+      aValues += "{ key: " + td.parentNode.getAttribute( "_key" ) + ", value: false }";
+
+      if( this._bPaginated )
+        this._nTotalChecked--;
+    }
+    else
+    {
+      td.setAttribute( "value", true + "" );
+
+      if( aValues.length > 0 )
+        aValues += ",";
+
+      aValues += "{ key: " + td.parentNode.getAttribute( "_key" ) + ", value: true }";
+
+      if( this._bPaginated )
+        this._nTotalChecked++;      
+    }
+    
+    this._oldRow = iRow;
+  }
+
+  aValues = "[ " + aValues + " ]";
+
+  if( this._bPaginated )
+    postContent( g_strURL, "ID1=" + this._nIdSvcChange + "&ID2=" + this._nIdSvc + "&name=" + this.internalName + "&aValues=" + aValues + "&eCmd=0" );
+
+  this.setCkAllValue( );
+}
+
+checkboxlist.getJsonValue = function( )
+{
+  var strKeys = '';
+  var aRows   = this._dataTable.rows;
+
+  if( this._bPaginated )
+  {
+    for( var i = 0, j = 0; i < aRows.length; i++ )
+    {
+      var valueNew = aRows[i].childNodes[0].getAttribute( "value" ).booleanValue( );
+      var valueOld = aRows[i].childNodes[0].valueOld;
+
+      if( valueNew != valueOld )
+        strKeys += (j++ > 0 ? "," : "") + "'" + aRows[i].getAttribute( "_key" ) + "'";
+    }
+
+    return "{type:" + this._type + ",value:[" + strKeys + "]" + ",bPaginated:" + this._bPaginated + ",ID2:" + this._nIdSvc + "}";
+  }
+  else
+  {
+    for( var i = 0, j = 0; i < aRows.length; i++ )
+      if( aRows[i].cells[0].getAttribute( "value" ).booleanValue( ) )
+        strKeys += (j++ > 0 ? "," : "") + "'" + aRows[i].getAttribute( "_key" ) + "'";
+
+    return "{type:" + this._type + ",value:[" + strKeys + "]" + ",bPaginated:" + this._bPaginated + "}";
+  }
+}
+
+checkboxlist.setJsonValue = function( json )
+{
+  var newJson;
+
+  if( json.value )
+    newJson = json.value;
+  else
+    newJson = json;
+
+  if( newJson.Effects )
+    this._aEffects = newJson.Effects;
+
+  this.loadData( newJson.Data.data );
+
+  //Inicializa o old value das checks para ficar igual.
+  //Caso não seja reinicializado, a flag todos não é corretamente tratada.
+  if( this._bPaginated )
+  {
+    var aRows = this._dataTable.rows;
+    
+    for( var i = 0; i < aRows.length; i++ )
+      aRows[i].childNodes[0].valueOld = aRows[i].childNodes[0].getAttribute( "value" ).booleanValue( );
+  }
+
+  this.setCkAllValue( );
+}
+
+checkboxlist.loadNewPage = function( pagePrm )
+{
+  this.showShield( );
+
+  var cmd = 'executeLoadNewPage.apply( cp_' + this.internalName + ', [ "' + pagePrm  + '" ] );';
+
+  setTimeout( cmd, 1 );
+}
+
+function executeLoadNewPage( pagePrm )
+{
+  var strKeys = '';
+  var aRows   = this._dataTable.rows;
+
+  for( var i = 0, j = 0; i < aRows.length; i++ )
+  {
+      var valueNew = aRows[i].childNodes[0].getAttribute( "value" ).booleanValue( );
+      var valueOld = aRows[i].childNodes[0].valueOld;
+      if( valueNew != valueOld )
+          strKeys += (j++ > 0 ? "," : "") + aRows[i].getAttribute( "_key" );
+  }
+
+  var strAux  = 'ID1='  + this._nIdSvcChange;
+  var strAux2 = '&ID2=' + this._nIdSvc + '&ID3=' + buildQueryString( this.aSource ) + '&name=' + this.internalName + '&keys=' + strKeys + '&eCmd=0';
+  var strPrm  = strAux  + strAux2;
+
+  postContent( g_strURL, strPrm );
+
+  strAux = 'ID1=' + this._nIdSvcPageContent;
+
+  strPrm = strAux + strAux2;
+
+  var page = stringToJson( postContent( g_strURL, strPrm + pagePrm ) );
+
+  if( page.Effects )
+     this._aEffects = page.Effects;
+
+  this.setJsonValue( page );
+
+  this.hideShield( );
+}

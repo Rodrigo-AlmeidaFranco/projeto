@@ -1,0 +1,48 @@
+.window-header
+{
+  background:#0080AA;
+  color:white;
+  font-family:arial;
+  font-size:14px;
+  font-weight:bold;
+}
+
+.window-header-selected
+{
+  background:#005680;
+}
+
+.notify-title
+{
+	font-family:arial;
+	font-size:14px;
+	font-weight:bold;
+	text-align:left;
+}
+
+.notify-msg
+{
+	font-family:arial;
+	font-size:12px;
+	text-align:left;
+}
+
+.notify-btn
+{
+  box-sizing:border-box;
+  cursor:default;
+  display:inline-block;
+  float:right;
+  font:10pt arial,sans-serif !important;
+  margin-left:0;
+  margin-right:0;
+  padding:2px 3px 3px 4px;
+  zoom:1;
+}
+
+.dialog-msg
+{
+	font-family:arial;
+	font-size:12px;
+	text-align:left;
+}

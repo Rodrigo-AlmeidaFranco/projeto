@@ -1,0 +1,240 @@
+inputInvestor = function(arg){return inputInvestor.__constructor(arg)};
+//------------------------------------------------------------------------------
+
+inputInvestor.__constructor = function(arg)
+{
+  var e = document.createElement("SPAN");
+
+  e._constructor = inputInvestor._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+inputInvestor._constructor = function(arg)
+{
+  this._parent = document.getElementById( arg["parent"] );
+
+  this._parent.appendChild( this );
+
+  this._divDig = document.createElement("DIV");
+
+  this._bReadOnly = false;
+  this._type = 3;
+  this._nSearchInvestorCodeName = arg["nSearchInvestorCodeName"];
+  this._nOpenSelectScreen  = arg["nOpenSelectScreen"];
+  this._strIdSvcinputInvestor = arg["strIdSvcinputInvestor"]; // Id de serviços do inputInvestor
+  this._bOnlyShowSearchButton = arg["bOnlyShowSearchButton"];
+
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField, bPortugues;
+  var strValue;
+
+  cpName          = arg["cpName"];          // Nome do componente no JavaScript
+  elName          = "el_" + arg["name"];    // Nome do componente no HTML
+  strName         = arg["name"];            // Nome do componente, nome dado ao componente no java
+  strTdClass      = arg["tdClass"];         // CSS para as TD do HTML
+  strCssField     = arg["cssField"];        // CSS para campos não ReadOnly
+  strCssROField   = arg["cssROField"];      // CSS para campos ReadOnly
+  bPortugues      = arg["bPortugues"];      // Indica se o sistema está rodando em português
+
+  this.internalName   = strName;
+  this._strCssField   = strCssField;
+  this._strCssROField = strCssROField;
+  this.bOnFocus       = false;
+  this.internalValue  = arg["nValue"];  // Esse eh o ID do cliente!
+  this.valueSelected  = false;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  // Início da construção do DIV principal
+  // ----------------------------------------
+  this.appendChild( this._divDig );
+
+  this._divDig.innerHTML = "<table border=0 cellspacing=0 cellpadding=0>" +
+                             "<tr>" +
+                               "<td class='" + strTdClass + "'>" +
+                                 "<div id='" + elName + "_dvSearch'><input type=text id='" + elName + "_cpSearch' class='" + strCssROField + "' maxlength='40' size='40'></div>" +
+                               "</td>" +
+                               "<td id='" + elName + "_tdButton' class='" + strTdClass + "'></td>" +
+                             "</tr>" +
+                           "</table>";
+
+  // Div da Busca
+  this._divDig._dvSearch = document.getElementById(elName + "_dvSearch");
+  if( this._bOnlyShowSearchButton )
+    this._divDig._dvSearch.style.display = "none";
+
+  // Investor
+  this._divDig._txInvestor = document.getElementById(elName + "_cpSearch");
+  this._divDig._txInvestor._type = 4;
+  this._divDig._txInvestor._parent = this;
+  this._divDig._txInvestor.setJsonValue = function( json ){ this.value = json.value; };
+  this._divDig._txInvestor.getJsonValue = function( ){ return '{ type:' + this._type + ', value:\"' + this.value + '\" }' };
+  this._divDig._txInvestor.internalName=strName + "_cpSearch";
+  this._divDig._txInvestor.onpaste = Input_Paste;
+  this._divDig._txInvestor.onkeypress = Input_KeyPress;
+  this._divDig._txInvestor.onchange = function( )
+                                   {
+                                     this._parent.internalValue = 0;
+                                     this._parent.valueSelected = false;
+                                   }
+  this._divDig._txInvestor.onfocus = function( )
+                                   {
+                                     this._parent.bOnFocus = true;
+                                     if( !this._parent._isSelecting )
+                                       this._parent.oldValue = this.value.toUpperCase( );
+                                     else
+                                       this._parent._isSelecting = false;
+                                   };
+  this._divDig._txInvestor.onblur = function( )
+                                  {
+                                    this._parent.bOnFocus = false;
+
+                                    if( !this._parent.valueSelected && this._parent.oldValue != this.value.toUpperCase( ) )
+                                    {
+                                      this._parent.getInvestorCode( );
+                                      this._parent.onchange( );
+                                    }
+                                  };
+
+  // BOTÃO
+  this._divDig._tdButton = document.getElementById( elName + "_tdButton" );
+
+  if( isIE8( ) )
+    this._divDig._button = document.createElement( "INPUT" );
+  else
+  {
+    this._divDig._button = document.createElement( "BUTTON" );
+    this._divDig._button.innerHTML = "...";
+  }
+  
+  this._divDig._button.setAttribute( "value", "..."    );
+  this._divDig._button.setAttribute( "type",  "button" );  
+  
+  this._divDig._button.labelvalue   = "...";
+  this._divDig._button.style.height = "21px";
+  this._divDig._button._parent      = this;
+
+  this._divDig._tdButton.appendChild( this._divDig._button );
+  this._divDig._button._parent = this;
+  this._divDig._button.onfocus = function( )
+                                {
+                                  if( !this._parent.bOnFocus )
+                                    this._parent.oldValue = this._parent._divDig._txInvestor.value.toUpperCase( );
+                                  this._parent.bOnFocus = true;
+                                };
+
+  this._divDig._button.onblur = function( )
+                                {
+                                  if( document.activeElement != this._parent._divDig._txInvestor &&
+                                      !this._parent._isSelecting &&
+                                      this._parent.oldValue != this._parent._divDig._txInvestor.value.toUpperCase( ) )
+                                  {
+                                    this._parent.oldValue = "";
+                                    this._parent.bOnFocus = false;
+                                    this._parent.onchange( );
+                                  }
+                                };
+
+  this._divDig._button.onclick = function()
+  {
+    this._parent._isSelecting = true;
+    this._parent.openSelectDialog( );
+    event.cancelBuble=true;
+  }
+
+  // ---------------------------------------
+  // Final da construção do DIV principal
+
+  this.onchange         = fireEvent;
+  this.getJsonValue     = inputInvestor.getJsonValue;
+  this.setJsonValue     = inputInvestor.setJsonValue;
+  this.setReadOnly      = inputInvestor.setReadOnly;
+  this.getReadOnly      = inputInvestor.getReadOnly;
+  this.openSelectDialog = inputInvestor.openSelectDialog;
+  this.getInvestorCode  = inputInvestor.getInvestorCode;
+
+  this.setJsonValue( { value:this.internalValue } );
+}
+
+inputInvestor.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+  this._divDig._button.disabled = b;
+  this._divDig._txInvestor.readOnly = b;
+  this._divDig._txInvestor.className = ( b == true ? this._strCssROField : this._strCssField );
+}
+
+inputInvestor.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputInvestor.getJsonValue = function( bComplete )
+{
+  return "{type:" + this._type + ", value:'" + this.internalValue + "', name:'" + this._divDig._txInvestor.value + "'}";
+}
+
+inputInvestor.setJsonValue = function( json )
+{
+  if( json.setup ) // Veio pelo Setup
+  {
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+  }
+  var jsonAux = ( json.setup ? json.setup : json );
+
+  if( jsonAux.value != undefined )
+  {
+    this.internalValue = jsonAux.value;
+    if( this.internalValue == 0.0 )
+      this._divDig._txInvestor.value = "";
+  }
+
+  if( jsonAux.name != undefined )
+      this._divDig._txInvestor.value = jsonAux.name;
+}
+
+// Valida se o inputinteger deve disparar o evento de mudança de carteira
+inputInvestor.validateEvent = function( )
+{
+  return true;
+}
+
+inputInvestor.openSelectDialog = function( )
+{
+  getTopWindow( ).g_inputInvestor = this;
+  showDialog( this._strIdSvcinputInvestor, true, '&ID2=' + this._nOpenSelectScreen +
+              "&CompName=" + this.internalName +
+              "&value=" + escape( adjustComponentValue( this._divDig._txInvestor ) ) );
+}
+
+inputInvestor.getInvestorCode = function( )
+{
+  var aResp = stringToJson( postContent( g_strURL, 'ID1=' + this._strIdSvcinputInvestor + '&ID2=' + this._nSearchInvestorCodeName + "&CompName=" + this.internalName +
+                                              '&investor=' + (this._divDig._txInvestor.value == "" ? 0 : escape( this._divDig._txInvestor.value ) ) ) );
+  if( aResp["name"] != '' )
+      this._divDig._txInvestor.value = aResp["name"];
+  this.internalValue = aResp["value"];
+}
+
+function inputInvestorSelect( )
+{
+  var cpinputInvestor = parent.g_inputInvestor;
+
+  if( eval( "cp_" + g_SuperCompName + "_lsSearch.getTotRows( )" ) > 0 )
+  {
+    cpinputInvestor._divDig._txInvestor.value = formatHTMLtoJS( eval( "cp_" + g_SuperCompName + "_lsSearch.getColumnValue(0)" ) );
+    cpinputInvestor.internalValue =  eval( "cp_" + g_SuperCompName + "_lsSearch.getColumnValue(3)" );
+    cpinputInvestor.onchange( ); //chamando evento de mudança que ira colocar no PropertiesData os eventos executados pelo processo
+
+    cpinputInvestor.valueSelected = true;   
+  }
+  cpinputInvestor._isSelecting = true;
+  if( !cpinputInvestor._bOnlyShowSearchButton )
+    cpinputInvestor._divDig._txInvestor.focus( );
+
+  parent.g_inputInvestor = undefined;
+
+  closeDialog( );
+}

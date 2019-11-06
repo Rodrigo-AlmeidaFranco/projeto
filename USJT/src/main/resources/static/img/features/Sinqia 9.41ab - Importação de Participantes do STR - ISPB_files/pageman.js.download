@@ -1,0 +1,4 @@
+if( isIE7( ) )
+  registry.loadUnit( "pageman-ie7" );
+else
+  registry.loadUnit( "pageman-x" );

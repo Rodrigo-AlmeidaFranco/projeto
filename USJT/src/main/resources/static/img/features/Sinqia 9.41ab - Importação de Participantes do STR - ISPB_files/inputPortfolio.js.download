@@ -1,0 +1,1038 @@
+/**
+ * Drive inputPortfolio versão 1.0
+ * 
+ * Browsers compatíveis:
+ * Firefox 10.0
+ * Chrome 17.0.963.46 m
+ * IE9 (documento em modo Quirks)
+ * Safari 5.1.2 (7534.52.7)
+ * Opera 11.60
+ */
+
+var g_inputPortfolio = undefined;
+
+inputPortfolio = function( arg )
+{
+  return inputPortfolio.__constructor(arg)
+}
+//------------------------------------------------------------------------------
+
+inputPortfolio.__constructor = function( arg )
+{
+  var e = document.createElement( "SPAN" );
+
+  e._constructor = inputPortfolio._constructor;
+  e._constructor( arg );
+  e.style.width = 0;
+
+  return e;
+}
+
+inputPortfolio._constructor = function( arg )
+{
+  this._parent = document.getElementById( arg["parent"] );
+
+  this._parent.appendChild( this );
+
+  this._divDig       = document.createElement( "DIV" );
+  this._divDigInc    = document.createElement( "DIV" );
+  this._divSelLst    = document.createElement( "DIV" );
+  this._divSelAltLst = document.createElement( "DIV" );
+  
+  this.createListLayout = inputPortfolio.createListLayout;
+  this.setReadOnly      = inputPortfolio.setReadOnly;
+  this.getReadOnly      = inputPortfolio.getReadOnly;
+  this.getJsonValue     = inputPortfolio.getJsonValue;
+  this.setJsonValue     = inputPortfolio.setJsonValue;
+  this.setFirstList     = inputPortfolio.setFirstList;
+  this.buildListJson    = inputPortfolio.buildListJson;
+  this.validateEvent    = inputPortfolio.validateEvent;
+  this.focus            = inputPortfolio.focus;
+  this.load             = inputPortfolio.load;  
+
+  this._bReadOnly              = false;
+  this._nViewSel               = 0; //0: Visao Carteira, 1: Visao Lista, 2: Visao Lista Alternativa
+  this._type                   = 10;
+  this._allPortfoliosChange    = false;
+  this._consolidatedChange     = false;
+  this._accountIncludeChange   = false;
+  this._portfolioDefaultChange = false;
+  this._isRefreshing           = false;
+  this._showAccount            = false;
+  this._showInvalidPortMsg     = false;
+  this.bIsBasket               = false;
+  this._isLinearLayout         = arg["bLinearLayout"];
+  this._showAlternateList      = arg["bShowAlternateList"];
+  this._showPortfolioList      = arg["bShowPortfolioList"];
+  
+  this._strAlternateListFieldCaption = arg["strAltListFieldCaption"];
+  this._strAlternateListLinkCaption  = arg["strAltListLinkCaption"];
+
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField, bPortugues, strIdSvcInputPortfolio;
+  
+  cpName        = arg["cpName"];       // Nome do componente no JavaScript
+  elName        = "el_" + arg["name"]; // Nome do componente no HTML
+  strName       = arg["name"];         // Nome do componente, nome dado ao componente no java
+  strPortLabel  = arg["portLabel"];    // Label que será usado no componente (para Carteira)
+  strTdClass    = arg["tdClass"];      // CSS para as TD do HTML
+  strCssField   = arg["cssField"];     // CSS para campos não ReadOnly
+  strCssROField = arg["cssROField"];   // CSS para campos ReadOnly
+  bPortugues    = arg["bPortugues"];   // Indica se o sistema está rodando em português
+  strIdSvcInputPortfolio = arg["strIdSvcInputPortfolio"];   // Id de serviço de preenchimento das combos de Lista e Carteira
+
+  // Guarda parametros que serão usados em outros métodos
+  this._bPortugues         = arg["bPortugues"];
+  this._showInvalidPortMsg = arg["bShowInvalidPortMsg"];
+
+  this.internalName = strName;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  // Início da construção do DIV de digitação
+  // ----------------------------------------
+  this.appendChild( this._divDig );
+
+  // Previne bugs caso não seja informado uma classe para as TDs. Nesse caso, usa o mesmo dos Fields.
+  if( strTdClass == 'null' )
+    strTdClass = strCssField;
+  
+  this._divDig.innerHTML = 
+    "<table border=0 width='350px' cellspacing=0 cellpadding=0>" +
+      "<tr>" +
+        "<td class='" + strTdClass + "'>" +
+          "<table width='100%' cellspacing=0 cellpadding=0>" +
+            "<tr>" +
+              "<td id='" + elName + "_lbCod"  + "' class='" + strTdClass + "' align='left'  height=16 >" + strPortLabel + "</td>" +
+              "<td id='" + elName + "_lbList" + "' class='" + strTdClass + "' align='right' height=16 ></td>" +
+            "</tr>" +
+          "</table>" +
+        "</td>" +
+      "</tr>" +
+      "<tr>" +
+        "<td class='" + strTdClass + "'>" +
+          "<table width='350px' cellspacing=0 cellpadding=0 style='padding-top:2px'>" +
+            "<tr>" +
+              "<td id='" + elName + "_tdiiCod' align='left' style='padding-right:4px'></td>" +
+              "<td class='" + strTdClass + "' align='left'>" +
+                "<input type='text' id='" + elName + "_txName" + "' readonly='readonly' tabindex='-1' class='ReadOnlyField' style='width:279px;'>" +
+              "</td>" +
+            "</tr>" +
+          "</table>" +
+        "</td>" +
+      "</tr>" +
+    "</table>";
+
+  // Selecionar por Lista - Label
+  tdTemp = document.getElementById( elName + "_lbList" );
+  
+  if( this._showAlternateList )
+  {
+    this._divDig._lbAlternateList = document.createElement( "A" );
+    tdTemp.appendChild( this._divDig._lbAlternateList );
+    this._divDig._lbAlternateList.className = strTdClass;
+    this._divDig._lbAlternateList.innerHTML = this._strAlternateListLinkCaption;
+    this._divDig._lbAlternateList.href = "#";
+    this._divDig._lbAlternateList.onclick = inputPortfolio.selectByList;
+    this._divDig._lbAlternateList.nView = 2;
+    this._divDig._lbAlternateList._parent = this;
+    this._divDig._lbAlternateList.tabIndex += 2;
+  }
+
+  if( this._showPortfolioList )
+  {
+    this._divDig._lbList = document.createElement( "A" );
+    tdTemp.appendChild( this._divDig._lbList );
+    this._divDig._lbList.className = strTdClass;
+    this._divDig._lbList.innerHTML = bPortugues ? "Selecionar por lista" : "Select by list";
+    this._divDig._lbList.href = "#";
+    this._divDig._lbList.onclick = inputPortfolio.selectByList;
+    this._divDig._lbList.nView = 1;
+    this._divDig._lbList._parent = this;
+
+    //Mantis #19819
+    //Foi aumentado o valor do tabIndex para que, quando pressionada a tecla TAB, o foco não saia do campo
+    //de dígito de carteira para o link de selecionar por lista, pois, assim ocorrendo, o evento de onChange
+    //não é disparado devido à validação de eventos (validateEvent).
+    this._divDig._lbList.tabIndex += 2;
+  }
+  
+  //Insere uma separação entre os dois, se houver dois
+  if( this._showAlternateList && this._showPortfolioList )
+    this._divDig._lbAlternateList.style.paddingRight = '6px';
+
+  // Código da Carteira - InputInteger
+  this._divDig._txName = document.getElementById( elName + "_txName" );
+  var obj              = {jsName:cpName + "_iiCod",parentName:elName + "_tdiiCod"};
+  createInputInteger( obj );
+
+  this._divDig._iiCod = eval( cpName + "_iiCod" );
+  obj = {
+          jsValue:{ value:arg['nPortCode'] },
+          strInternalName:strName + "_iiCod",
+          nMaxLen:9,
+          nWidth:70,
+          bSigned:false,
+          strCssClassRO:strCssROField,
+          strCssClassRW:strCssField,
+          bReadOnly:false,
+          aEventListener:[]
+        }
+
+  finalizeInputInteger.apply( this._divDig._iiCod, [obj] );
+
+  this._divDig._iiCod._parent           = this;
+  this._divDig._iiCod.isComponenteChild = true;
+  this._divDig._iiCod.ID1               = strIdSvcInputPortfolio;
+  this._divDig._iiCod.oldValue          = 0;
+  
+  this._divDig._iiCod.onBlurEvent = this._divDig._iiCod.onblur;
+
+  this._divDig._iiCod.onblur = function( )
+  {
+    this.onBlurEvent( );
+
+    if( document.activeElement != this )
+      inputPortfolio.getPortfolioName.apply( this, [] );
+  };
+
+  this._divSelLst._showAccount = arg["bAccount"];
+  this._divSelLst._showAllPort = arg["bTodasCart"];
+  this._divSelLst._showConsol  = arg["bConsol"];
+  this._divSelLst._showPortDef = arg["bPortDef"];
+  
+  this._divSelAltLst._showAccount = arg["bAccountAltList"];
+  this._divSelAltLst._showAllPort = arg["bTodasCartAltList"];
+  this._divSelAltLst._showConsol  = arg["bConsolAltList"];
+  this._divSelAltLst._showPortDef = arg["bPortDefAltList"];
+  
+  this._showAccount = this._divSelLst._showAccount || this._divSelAltLst._showAccount;
+  
+  if( !this._isLinearLayout )
+  {
+    if( this._showAccount )
+    {
+      //---------------------------------------
+      this._divDig.appendChild( this._divDigInc );
+      this._divDigInc.innerHTML = 
+        "<table width='100%' border=0 cellspacing=0 cellpadding=0>" +
+          "<tr>" +
+            "<td class='" + strTdClass + "'>" +
+              "<table border=0 cellspacing=0 cellpadding=0 width='358' >" +
+                "<tr>" +
+                  "<td id='" + elName + "_ckInc" + "' class='" + strTdClass + "' align='right' height=16 valign='middle'></td>" +
+                "</tr>" +
+              "</table>" +
+            "</td>" +
+            "<td>&nbsp;</td>"+
+          "</tr>" +
+        "</table>";
+
+      // Check Box de Inclui (Exibido junto com Digitação de Carteira)
+      createCheckbox(cpName + "_ckAccountDig", elName + "_ckInc", bPortugues ? "Inclui Contábil" : "Account Include", false );
+      finalizeCheckbox.apply(eval(cpName + "_ckAccountDig"), [ 99, 0, "'" + strName + "'", strCssField, "left", false, this.bIgnoreEvents, {}, [] ]);
+      this._divDigInc._ckAccountDig = eval(cpName + "_ckAccountDig");
+      this._divDigInc._ckAccountDig._parent = this;
+      this._divDigInc._ckAccountDig.setEvent( function( )
+                                              {                                                  
+                                                if( !( this.bIgnoreEvents && g_isLoading ) )
+                                                {
+                                                  if( !this.isReadOnly( ) )
+                                                  {
+                                                    if( this._parent._accountIncludeChange == false )
+                                                    {
+                                                      this._parent._accountIncludeChange = true;
+                                                      fireEvent.apply( this, [] );
+                                                      this._parent._accountIncludeChange = false;
+                                                    }
+                                                  }
+                                                }                                                  
+                                              });
+    // ---------------------------------------
+    // Final da construção do DIV de digitação
+    }
+  }
+  
+  // ---------------------------------------
+  // Início da construção das Seleções por Lista
+  this.appendChild( this._divSelLst );
+  this.createListLayout( this._divSelLst, ( bPortugues ? "Lista" : "List" ), 1, arg );
+  
+  this.appendChild( this._divSelAltLst );
+  this.createListLayout( this._divSelAltLst, this._strAlternateListFieldCaption, 2, arg );
+  // ---------------------------------------
+  // Final da construção das Seleções por Lista
+  
+  //Deixa tudo oculto para não piscar a tela no finalize
+  this._divDigInc.style.display    = "none";  
+  this._divDig.style.display       = "none";
+  this._divSelLst.style.display    = "none";
+  this._divSelAltLst.style.display = "none";
+
+  this._divDig._iiCod.setJsonValue( {value:0} );
+}
+
+inputPortfolio.changeView = function( pr_view )
+{
+  if( pr_view == 1 )
+  {
+    if( this._showAccount )
+      this._divDigInc.style.display = "none";
+    
+    this._divDig.style.display       = "none";
+    this._divSelLst.style.display    = "";
+    this._divSelAltLst.style.display = "none";
+  }
+  else if( pr_view == 2 )
+  {
+    if( this._showAccount )
+      this._divDigInc.style.display = "none";
+    
+    this._divDig.style.display       = "none";
+    this._divSelLst.style.display    = "none";
+    this._divSelAltLst.style.display = "";
+  }
+  else
+  {
+    if( this._showAccount )
+      this._divDigInc.style.display = "";
+    
+    this._divDig.style.display       = "";
+    this._divSelLst.style.display    = "none";
+    this._divSelAltLst.style.display = "none";
+  }
+  this._nViewSel = pr_view;
+}
+
+inputPortfolio.createListLayout = function( pr_div, pr_ListCaption, pr_type, pr_arg )
+{
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField, bPortugues, strIdSvcInputPortfolio;
+  
+  var cbListIDSvc = pr_type == 1 ? 0  : 3;        // ID de serviço para a coleta das listas 
+  var strAddName  = pr_type == 1 ? "" : "AltLst"; // Nome adicionado para diferenciar os campos do layout de seleção
+  var cbDataType  = pr_type == 1 ? 1  : 6;        // ID do tipo de dado a ser enviado para a combo de portfolio
+  var bNamedCheck = pr_type == 2;                 // Se precisa dar nome diferente do padrão para os checkboxes
+  
+  cpName        = pr_arg["cpName"];       // Nome do componente no JavaScript
+  elName        = "el_" + pr_arg["name"]; // Nome do componente no HTML
+  strName       = pr_arg["name"];         // Nome do componente, nome dado ao componente no java
+  strPortLabel  = pr_arg["portLabel"];    // Label que será usado no componente (para Carteira)
+  strTdClass    = pr_arg["tdClass"];      // CSS para as TD do HTML
+  strCssField   = pr_arg["cssField"];     // CSS para campos não ReadOnly
+  strCssROField = pr_arg["cssROField"];   // CSS para campos ReadOnly
+  bPortugues    = pr_arg["bPortugues"];   // Indica se o sistema está rodando em português
+  strIdSvcInputPortfolio = pr_arg["strIdSvcInputPortfolio"]; // Id de serviço de preenchimento das combos de Lista e Carteira
+  
+  if( this._isLinearLayout )
+    pr_div.innerHTML =   
+      "<table width='350' border=0 cellspacing=0 cellpadding=0>" +
+        "<tr>" +
+          "<td class='" + strTdClass + "' align='left' height=16 valign='top'>" + pr_ListCaption + "</td>" +
+          "<td id='" + elName + "_ckOptions" + strAddName + "' class='" + strTdClass + "' align='right' valign='top'></td>" +
+          "<td width='5'>&nbsp;</td>" +
+          "<td class='" + strTdClass + "' align='left' height=16 valign='top'>" + strPortLabel + "</td>" +
+          "<td id='" + elName + "_lbCart" + strAddName + "'class='" + strTdClass + "' align='right' height=16 valign='top'></td>" +
+        "</tr>" +
+        "<tr>" +
+          "<td id='" + elName + "_cbList" + strAddName + "' colspan=2 class='" + strTdClass + "' align='left'></td>" +
+          "<td width='5'>&nbsp;</td>" +
+          "<td id='" + elName + "_cbPort" + strAddName + "' colspan=2 class='" + strTdClass + "' align='left'></td>" +
+        "</tr>" +
+      "</table>";
+  else
+    pr_div.innerHTML =   
+      "<table border=0 cellspacing=0 cellpadding=0>" +
+        "<tr>"          +
+          "<td class='" + strTdClass + "'>" +
+            "<table border=0 cellspacing=0 cellpadding=0>" +
+              "<tr>"    +
+                "<td class='" + strTdClass + "' colspan=2 align='left' height=16 valign='top'>" + pr_ListCaption + "</td>" +
+              "</tr>"   +
+              "<tr>"    +
+                "<td id='" + elName + "_cbList" + strAddName + "' class='" + strTdClass + "' align='left' height=30 valign='top'></td>" +
+              "</tr>"   +
+            "</table>"  +
+          "</td>"       +
+          "<td id='" + elName + "_ckOptions" + strAddName + "' class='" + strTdClass + "' align='left' valign='middle'></td>" +
+        "</tr>"         +
+        "<tr>"          +
+          "<td class='" + strTdClass + "' colspan=2>" +
+            "<table border=0 cellspacing=0 cellpadding=0>" +
+              "<tr>"    +
+                "<td class='" + strTdClass + "' align='left' height=16 valign='top'>" + strPortLabel + "</td>" +
+                "<td id='" + elName + "_lbCart" + strAddName + "'class='" + strTdClass + "' align='right' height=16 valign='top'></td>" +
+              "</tr>"   +
+              "<tr>"    +
+                "<td id='" + elName + "_cbPort" + strAddName + "' colspan=2 class='" + strTdClass + "' align='left' valign='bottom'></td>" +
+              "</tr>"   +
+            "</table>"  +
+          "</td>"       +
+        "</tr>"         +
+      "</table>";
+
+  // Digitar Carteira - Label
+  tdTemp = document.getElementById( elName + "_lbCart" + strAddName );
+
+  pr_div._lbCart = document.createElement( "A" );
+  tdTemp.appendChild( pr_div._lbCart );
+  pr_div._lbCart.className = strTdClass;
+  pr_div._lbCart.innerHTML = bPortugues ? "Digitar carteira" : "Type portfolio";
+  pr_div._lbCart.href = "#";
+  pr_div._lbCart.onclick = inputPortfolio.typePortfolio;
+  pr_div._lbCart._parent = this;
+
+  // Combo de Lista
+  createCombobox( cpName + "_cbList" + strAddName, elName + "_cbList" + strAddName, true, false );
+  pr_div._cbList = eval( cpName + "_cbList" + strAddName );
+  pr_div._cbList._parent = this;
+
+  finalizeCombobox.apply( pr_div._cbList, [ strIdSvcInputPortfolio, cbListIDSvc, this._isLinearLayout ? 150 : 200, "", strName + "_cbList" + strAddName, [], false, false, strCssField, strCssROField, "", "", [{type:6,target:cpName + "_cbPort" + strAddName}] ] );
+  pr_div._cbList.strParentCompName = strName; // Nome do componente InputPortfolio, para que no java possa se saber qual InputPortfolio está sendo preenchido
+
+  // Combo de Carteira
+  createCombobox( cpName + "_cbPort" + strAddName, elName + "_cbPort" + strAddName, true, false );
+  pr_div._cbPort = eval( cpName + "_cbPort" + strAddName );
+  pr_div._cbPort._parent = this;
+  finalizeCombobox.apply( pr_div._cbPort, [ strIdSvcInputPortfolio, 1, this._isLinearLayout ? 195 : 350, "", strName + "_cbPort" + strAddName, [pr_div._cbList], false, false, strCssField, strCssROField, "", "", [], strName + "_cbList" + strAddName ] );
+  pr_div._cbPort.strParentCompName = strName;  // Nome do componente InputPortfolio, para que no java possa se saber qual InputPortfolio está sendo preenchido
+  pr_div._cbPort.externalValue = pr_type == 2; // true quando é uma lista alternativa
+
+  // Checkbox de Todas as Carteiras
+  createCheckbox( cpName + "_ckAll" + strAddName, elName + "_ckOptions" + strAddName, bPortugues ? "Todas as Carteiras" : "All Portfolios", false, bNamedCheck ? (strName + "_ckAll" + strAddName) : "" );
+  finalizeCheckbox.apply(eval( cpName + "_ckAll" + strAddName ), [ 115, 0, "'" + strName + "'", strCssField, "left", false, this.bIgnoreEvents, { }, [ ] ] );
+  pr_div._ckAll = eval( cpName + "_ckAll" + strAddName );
+  pr_div._ckAll._parent = this;
+  pr_div._ckAll.setEvent( function( )
+                          {
+                            if( !( this.bIgnoreEvents && g_isLoading ) )
+                            {
+                              if( !this.isReadOnly( ) )
+                              {
+                                if( this._parent._allPortfoliosChange == false )
+                                {
+                                  this._parent._allPortfoliosChange = true;
+                                  inputPortfolio.configureControls.apply( this );
+                                  fireEvent.apply( this, [] );
+                                  this._parent._allPortfoliosChange = false;
+                                }
+                              }
+                            }
+                          });
+
+  if( !pr_div._showAllPort )
+    pr_div._ckAll.style.display = "none";
+
+  // Checkbox de Default de Carteiras
+  createCheckbox        ( cpName + "_ckPortDef" + strAddName, elName + "_ckOptions" + strAddName, bPortugues ? "Default das Carteiras" : "Portfolios` Default", false, bNamedCheck ? (strName + "_ckPortDef" + strAddName) : "" );
+  finalizeCheckbox.apply( eval(cpName + "_ckPortDef" + strAddName), [ 130, 0, "'" + strName + "'", strCssField, "left", false, this.bIgnoreEvents, {}, [] ]);
+  pr_div._ckPortDef = eval(cpName + "_ckPortDef" + strAddName);
+  pr_div._ckPortDef._parent = this;
+  pr_div._ckPortDef.setEvent( function( )
+                              {
+                                if( !( this.bIgnoreEvents && g_isLoading ) )
+                                {
+                                  if( !this.isReadOnly( ) )
+                                  {
+                                    if( this._parent._portfolioDefaultChange == false )
+                                    {
+                                      this._parent._portfolioDefaultChange = true;
+                                      fireEvent.apply( this, [] );
+                                      this._parent._portfolioDefaultChange = false;
+                                    }
+                                  }
+                                }
+                              });
+  if( !pr_div._showPortDef )
+    pr_div._ckPortDef.style.display = "none";
+
+  // Checkbox de Consolidado
+  createCheckbox        ( cpName + "_ckConsol" + strAddName, elName + "_ckOptions" + strAddName, bPortugues ? "Consolidado" : "Consolidated", false, bNamedCheck ? (strName + "_ckConsol" + strAddName) : "" );
+  finalizeCheckbox.apply( eval(cpName + "_ckConsol" + strAddName), [ 130, 0, "'" + strName + "'", strCssField, "left", false, this.bIgnoreEvents, {}, [] ]);
+  pr_div._ckConsol = eval(cpName + "_ckConsol" + strAddName);
+  pr_div._ckConsol._parent = this;
+  pr_div._ckConsol.setEvent( function( )
+                             {
+                               if( !( this.bIgnoreEvents && g_isLoading ) )
+                               {
+                                 if( !this.isReadOnly( ) )
+                                 {
+                                   if( this._parent._consolidatedChange == false )
+                                   {
+                                     this._parent._consolidatedChange = true;
+                                     inputPortfolio.configureControls.apply( this );
+                                     fireEvent.apply( this, [] );
+                                     this._parent._consolidatedChange = false;
+                                   }
+                                 }
+                               }
+                             });
+  if( !pr_div._showConsol )
+    pr_div._ckConsol.style.display = "none";
+
+  // Checkbox de Inclui Contábil
+  createCheckbox        ( cpName + "_ckAccountSel" + strAddName, elName + "_ckOptions" + strAddName, bPortugues ? "Inclui Contábil" : "Account Include", false, bNamedCheck ? (strName + "_ckAccountSel" + strAddName) : "" );
+  finalizeCheckbox.apply( eval(cpName + "_ckAccountSel" + strAddName), [ 130, 0, "'" + strName + "'", strCssField, "left", false, this.bIgnoreEvents, {}, [] ]);
+  pr_div._ckAccountSel = eval(cpName + "_ckAccountSel" + strAddName);
+  pr_div._ckAccountSel._parent = this;
+  pr_div._ckAccountSel.setEvent( function( )
+                                 {                                          
+                                   if( !( this.bIgnoreEvents && g_isLoading ) )
+                                   { 
+                                     if( !this.isReadOnly( ) )
+                                     {
+                                       if( this._parent._accountIncludeChange == false )
+                                       {
+                                         this._parent._accountIncludeChange = true;
+                                         if( this._parent._showAccount )
+                                           this._parent._divDigInc._ckAccountDig.setValue( this.getValue( ) );
+                                         fireEvent.apply( this, [] );
+                                         this._parent._accountIncludeChange = false;
+                                       }
+                                     }
+                                   }
+                                 });
+  if( !pr_div._showAccount )
+    pr_div._ckAccountSel.style.display = "none";
+
+  pr_div.style.display = "none";
+}
+
+inputPortfolio.load = function( )
+{
+  if( !g_inputPortfolio._divSelLst._cbList.isLoading( ) )
+    g_inputPortfolio._divSelLst._cbList.setJsonValue( { plainValue:0 } )
+  else
+    setTimeout( "g_inputPortfolio.load( )", 150 );
+}
+
+inputPortfolio.selectByList = function( )
+{
+  var div     = this.nView == 1 ? this._parent._divSelLst : this._parent._divSelAltLst;
+  var divHide = this.nView == 2 ? this._parent._divSelLst : this._parent._divSelAltLst;
+  
+  div._cbList.clear( );
+  div._cbPort.clear( );
+  div._ckAll.setValue( false );
+  div._ckConsol.setValue( false );
+  
+  // Como mudou pra digitação limpa a carteira e dispara o evento de mudança de carteira
+  this._parent._divDig._iiCod.setJsonValue( {value:0} );
+  fireEvent.apply( div._cbPort, [] );
+
+  //Não pode configurar antes, por causa do evento que tem que enviar os dados como portfolio.
+  this._parent._nViewSel = this.nView;
+  inputPortfolio.configureControls.apply( this );
+
+  this._parent._divDig.style.display = "none";
+
+  if( this._parent._showAccount )
+  {
+    this._parent._divDigInc.style.display = "none";
+    div._ckAccountSel.setValue( this._parent._divDigInc._ckAccountDig.checked );
+  }
+  
+  div.style.display = "";
+  divHide.style.display = "none";
+
+  resizeDialog( );
+}
+
+inputPortfolio.typePortfolio = function( )
+{
+  var div = this._parent._nViewSel == 1 ? this._parent._divSelLst : this._parent._divSelAltLst;
+  
+  if( div._cbPort.getValue( ) != "" )
+  {
+    this._parent._divDig._iiCod.setJsonValue( {value:div._cbPort.getValue( )} );
+    
+    inputPortfolio.getPortfolioName.apply( this, [] );
+  }
+  else
+  {
+    this._parent._divDig._iiCod.setJsonValue( {value:0} );
+
+    inputPortfolio.getPortfolioName.apply( this, [] );
+  }
+
+  this._parent._divDig.style.display = "";
+
+  if( this._parent._showAccount )
+    this._parent._divDigInc.style.display = "";
+
+  div.style.display = "none";
+  this._parent._nViewSel = 0;
+
+  resizeDialog( );
+}
+
+inputPortfolio.configureControls = function( )
+{
+  var div = this._parent._nViewSel == 1 ? this._parent._divSelLst : this._parent._divSelAltLst;
+
+  if( this._parent._bReadOnly )
+    return;
+
+  if( div._ckConsol.checked || div._ckAll.checked )
+  {
+    div._cbPort.setReadOnly( true );
+    div._lbCart.style.display = "none";
+    
+    if( div._ckConsol.checked )
+    {
+      div._ckAll.setReadOnly( true );
+      div._ckPortDef.setReadOnly( true );
+    }
+    else
+    {
+      div._ckConsol.setReadOnly( true );
+      div._ckPortDef.setReadOnly( false );
+    }
+  }
+  else
+  {
+    div._ckAll.setReadOnly( false );
+    div._ckConsol.setReadOnly( false );
+
+    div._ckPortDef.setReadOnly( true );
+    div._cbPort.setReadOnly( false );
+    div._lbCart.style.display = "";
+  }
+
+  if( div._ckPortDef.isReadOnly( ) )
+      div._ckPortDef.setValue( false );
+  
+  if( div._cbList.getSelectedIndex( ) == 0 && div._cbList.getValue( ) == "" ) // MANTIS#38954: Este trecho de código que verifica se o selectedIndex da combobox de lista é igual a zero,
+  {                                                                           // que é o index da lista "Todas" quando o processo é executado pelo menu.
+      div._ckConsol.setValue( false );                                        // O problema é que quando o processo é chamado pelo menu de favoritos, independentemente de qual lista foi salva,
+      div._ckConsol.setReadOnly( true );                                      // o index também é zero, o que faz com que o processo tenha o mesmo comportamento de quando é selecionado a lista "Todas".
+  }                                                                           // Ou seja, seta a checkbox de consolidado como false e readonly. Para corrigir o problema, foi adicionada uma verificação adicional,
+}                                                                             // onde checamos além do index, também o valor da combobox, pois ela só vem vazia quando selecionamos a lista "Todas". 
+
+inputPortfolio.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+
+  this._divDig._iiCod.setReadOnly( b );
+
+  if( this._showAccount )
+    this._divDigInc._ckAccountDig.setReadOnly( b );
+
+  this._divSelLst._cbList.setReadOnly( b );
+  this._divSelLst._ckAll.setReadOnly( b );
+  this._divSelLst._ckConsol.setReadOnly( b );
+  this._divSelLst._cbPort.setReadOnly( b );
+  this._divSelLst._ckPortDef.setReadOnly( b );
+  this._divSelLst._ckAccountSel.setReadOnly( b );
+  
+  this._divSelAltLst._cbList.setReadOnly( b );
+  this._divSelAltLst._ckAll.setReadOnly( b );
+  this._divSelAltLst._ckConsol.setReadOnly( b );
+  this._divSelAltLst._cbPort.setReadOnly( b );
+  this._divSelAltLst._ckPortDef.setReadOnly( b );
+  this._divSelAltLst._ckAccountSel.setReadOnly( b );  
+
+  if( b )
+  {
+    this._divSelLst._lbCart.style.display = "none";
+    this._divSelAltLst._lbCart.style.display = "none";
+    
+    if( this._showPortfolioList )
+      this._divDig._lbList.style.display = "none";
+    if( this._showAlternateList )
+      this._divDig._lbAlternateList.style.display = "none";    
+  }
+  else
+  {
+    this._divSelLst._lbCart.style.display = "";
+    this._divSelAltLst._lbCart.style.display = "";
+    
+    if( this._showPortfolioList )
+      this._divDig._lbList.style.display = "";
+    if( this._showAlternateList )
+      this._divDig._lbAlternateList.style.display = "";    
+  }
+}
+
+inputPortfolio.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputPortfolio.getJsonValue = function( bComplete )
+{
+  var str = "{type:" + this._type;
+
+  if( this._nViewSel == 1 )
+  {
+    str += this.buildListJson( this._divSelLst, "list", bComplete );
+  } else if( this._nViewSel == 2 )
+  {
+    str += this.buildListJson( this._divSelAltLst, "alternateList", bComplete );
+  }  
+  else
+  {
+    str = "{type:" + this._type + ", portfolio:" +
+          ( this._divDig._iiCod.internalValue == "" ? 0 : this._divDig._iiCod.internalValue );
+
+    if( this._divDig._iiCod.internalValue != "" )
+      str += ", name: '" + this._divDig._txName.value + "'";
+
+    if( this._showAccount )
+      str += ( this._divDigInc._ckAccountDig.checked ? ", account:true" : ", account:false" );
+  }
+  
+  //TODO isso está errado...Não funciona em favoritos...Ao configurar via setup, eu não guardo a informação.
+  str += ", showAccountInc:"   + this._divSelLst._showAccount;
+  str += ", showAllPort:"      + this._divSelLst._showAllPort;
+  str += ", showConsolidated:" + this._divSelLst._showConsol ;
+  
+  str += "}";
+
+  return str;
+}
+
+inputPortfolio.buildListJson = function( pr_div, pr_listField, bComplete )
+{
+  var str = "";
+  
+  if( pr_div._cbList.getValue( ) != "" &&                   // Tem lista e não tem carteira, manda a Lista
+    ( pr_div._ckAll.checked || pr_div._ckConsol.checked ) ) // Sem lista e sem carteira, mas tem flag, manda a Lista
+  {
+    str += ( bComplete ? ", " + pr_listField + ":"  + pr_div._cbList.getJsonValue( )
+                       : ", " + pr_listField + ":'" + pr_div._cbList.getValue( ) + "'" )
+  
+    str += ( pr_div._ckAll.checked ? ", all:true" : ", all:false" );
+  
+    str += ( pr_div._ckConsol.checked ? ", consol:true" : ", consol:false" );
+  
+    str += ( pr_div._ckPortDef.checked ? ", portdef:true" : ", portdef:false" );
+  
+    str += ", portfolio:'0'";
+  }
+  else
+  {
+     if( pr_div._cbPort.getValue( ) != "" ) // Tem carteira, manda a Carteira e o nome dela
+     {
+       inputPortfolio.getPortfolioName.apply( this._divDig._iiCod, [pr_div._cbPort.getValue( )] );
+       str += ", portfolio:'" + pr_div._cbPort.getValue( ) + "', name: '" + this._divDig._txName.value + "'";
+     }
+     else
+       str += ", portfolio:'0'";
+  }
+  
+  if( pr_div._showAccount )
+    str += ( pr_div._ckAccountSel.checked ? ", account:true" : ", account:false" );
+
+  return str;
+}
+
+inputPortfolio.setFirstList = function( )
+{
+  if( this._nViewSel == 1 && this._divSelLst._cbList.getValue( ) == "")
+  {
+    this._divSelLst._cbList.focus();
+    this._divSelLst._cbList.selectIndex(0);
+  }
+  else if( this._nViewSel == 2 && this._divSelAltLst._cbList.getValue( ) == "")
+  {
+    this._divSelAltLst._cbList.focus();
+    this._divSelAltLst._cbList.selectIndex(0);
+  }
+}
+
+inputPortfolio.setJsonValue = function( json )
+{
+  if( json.setup ) // Veio pelo Setup
+  {
+    if( this.getReadOnly( ) != json.setup.readOnly )
+      this.setReadOnly( json.setup.readOnly );
+  }
+  var jsonAux = ( json.setup ? json.setup : json );
+  
+  var listValue = jsonAux.list != undefined ? jsonAux.list : jsonAux.alternateList;
+  var div       = jsonAux.list != undefined ? this._divSelLst : this._divSelAltLst;
+  var nView     = jsonAux.list != undefined ? 1 : (jsonAux.alternateList != undefined ? 2 : 0);
+
+  // Tem que vir antes do "this._divDig._lbName.onclick( );" pois esse chama a
+  // sugestão de valor, se ficar depois ele sobrescreve a sugestão pelo que veio no Json
+  // ***********************************************************************************
+  if( listValue != undefined ) // Se enviou uma lista, muda a visão.
+  {
+    if( nView == 1 )
+      this._divDig._lbList.onclick( );
+    else
+      this._divDig._lbAlternateList.onclick( );
+
+    var oldValue = div._cbList.getValue( );
+
+    if( oldValue != listValue )
+      div._cbList.setJsonValue( listValue );
+
+    if( jsonAux.all != undefined )
+    {
+      if( jsonAux.all == true )
+        div._ckAll.setValue( true );
+      else
+        div._ckAll.setValue( false );
+    }
+
+    if( jsonAux.consol != undefined )
+    {
+      if( jsonAux.consol )
+        div._ckConsol.setValue( true );
+      else
+        div._ckConsol.setValue( false );
+    }
+
+    if( jsonAux.portdef != undefined )
+    {
+      if( jsonAux.portdef == true )
+        div._ckPortDef.setValue( true );
+      else
+        div._ckPortDef.setValue( false );
+    }
+  }
+  else if( jsonAux.portfolio != undefined )  // Se enviou uma carteira, muda a visão.
+  {
+    // InputPortfolio já está zerado? Se estiver, não faz nada.
+    if( !( jsonAux.portfolio == 0 && this._divDig._iiCod.internalValue == 0 && 
+           this._divSelLst._cbPort.getValue( )    == 0 && this._divSelLst._cbList.getValue( )    == 0 &&
+           this._divSelAltLst._cbPort.getValue( ) == 0 && this._divSelAltLst._cbList.getValue( ) == 0) )
+    {
+      this._isRefreshing = true;
+
+      this._divSelLst._lbCart.onclick( );
+      var oldValue = this._divDig._iiCod.internalValue;
+      this._divDig._iiCod.setJsonValue( {value:jsonAux.portfolio} );
+      this._divDig._iiCod.onblur.apply( this._divDig._iiCod, [] );
+
+      this._isRefreshing = false;
+    }
+  }
+
+  // Opção comum as duas visões
+  if( jsonAux.account != undefined )
+  {
+    if( jsonAux.account == true )
+    {
+      if( nView != 0 )
+        div._ckAccountSel.setValue( true );
+
+      if( this._divDigInc._ckAccountDig )
+        this._divDigInc._ckAccountDig.setValue( true );
+    }
+    else
+    {
+      if( nView != 0 )
+        div._ckAccountSel.setValue( false );
+
+      if( this._divDigInc._ckAccountDig )
+        this._divDigInc._ckAccountDig.setValue( false );
+    }
+  }
+  
+  //Exibição de Flags - Afeta a visão de lista de carteiras e lista alternativa.
+  if( jsonAux.showAllPort != undefined )
+    if( jsonAux.showAllPort == true )
+    {
+      if( this._showPortfolioList )
+        this._divSelLst._ckAll.style.visibility = "visible";
+      
+      if( this._showAlternateList )
+        this._divSelAltLst._ckAll.style.visibility = "visible";      
+    }
+    else
+    {
+      if( this._showPortfolioList )
+      {
+        this._divSelLst._ckAll.style.visibility = "hidden";
+        this._divSelLst._ckAll.setValue( false );        
+      }
+
+      if( this._showAlternateList )
+      {
+        this._divSelAltLst._ckAll.style.visibility = "hidden";
+        this._divSelAltLst._ckAll.setValue( false );  
+      }
+    }
+  
+  if( jsonAux.showConsolidated != undefined )
+    if( jsonAux.showConsolidated == true )
+    {
+      if( this._showPortfolioList )
+        this._divSelLst._ckConsol.style.visibility = "visible";
+      
+      if( this._showAlternateList )
+        this._divSelAltLst._ckConsol.style.visibility = "visible";
+    }
+      
+    else
+    {
+      if( this._showPortfolioList )
+      {
+        this._divSelLst._ckConsol.style.visibility = "hidden";
+        this._divSelLst._ckConsol.setValue( false );        
+      }
+      
+      if( this._showAlternateList )
+      {
+        this._divSelAltLst._ckConsol.style.visibility = "hidden";
+        this._divSelAltLst._ckConsol.setValue( false );        
+      }      
+    }
+  
+  if( jsonAux.showAccountInc != undefined )
+    if( jsonAux.showAccountInc == true )
+    {
+      if( this._showPortfolioList )
+        this._divSelLst._ckAccountSel.style.visibility = "visible";
+      
+      if( this._showAlternateList )
+        this._divSelAltLst._ckAccountSel.style.visibility = "visible";
+      
+      this._divDigInc._ckAccountDig.style.visibility = "visible";
+    }
+    else
+    {
+      if( this._showPortfolioList )
+      {
+        this._divSelLst._ckAccountSel.style.visibility = "hidden";
+        this._divSelLst._ckAccountSel.setValue( false );
+      }
+      
+      if( this._showAlternateList )
+      {
+        this._divSelAltLst._ckAccountSel.style.visibility = "hidden";
+        this._divSelAltLst._ckAccountSel.setValue( false );
+      }      
+      
+      this._divDigInc._ckAccountDig.style.visibility = "hidden";
+      this._divDigInc._ckAccountDig.setValue( false );
+    }
+
+  inputPortfolio.configureControls.apply( this._divSelLst._ckConsol    );
+  inputPortfolio.configureControls.apply( this._divSelAltLst._ckConsol );
+}
+
+inputPortfolio.getPortfolioName = function( nCrt )
+{
+  if( nCrt )
+    this._parent._divDig._txName.value = postContent( g_strURL, 'ID1=' + this._parent._divDig._iiCod.ID1 + '&ID2=' + 2 + '&portfolio=' + nCrt );
+  else
+    this._parent._divDig._txName.value = postContent( g_strURL, 'ID1=' + this._parent._divDig._iiCod.ID1 + '&ID2=' + 2 + '&portfolio=' + (this._parent._divDig._iiCod.internalValue == "" ? 0 : this._parent._divDig._iiCod.internalValue) );
+
+  if( document.activeElement != this._parent._divDig._iiCod )
+  {
+    if( this._parent._showInvalidPortMsg && this._parent._divDig._txName.value == "" && this._parent._divDig._iiCod.value != 0 )
+      alert(this._parent._bPortugues ? "Código de Carteira Inválido." : "Invalid Portfolio Code.");
+  }
+}
+
+// Valida se o inputinteger deve disparar o evento de mudança de carteira
+inputPortfolio.validateEvent = function( )
+{
+  if( this._isRefreshing )
+    return false;
+
+  return ( document.activeElement != this._divDig._lbList ||
+           document.activeElement != this._divDig._lbAlternateList );
+}
+
+inputPortfolio.focus = function( )
+{
+  this._divDig._iiCod.focus( );
+}
+
+/*
+ * Método usado para não chamar o fireEvent quando a combo de lista for clicada e não houver check box selecionada
+ */
+function fireEventInputPortfolio( )
+{
+  var div = this._parent._nViewSel == 1 ? this._parent._divSelLst : this._parent._divSelAltLst;
+
+  // Só a combo de lista precisa disso, a outra combo sempre vai disparar só o evento dela
+  if( this == div._cbList )
+  {
+    if( this.getSelectedIndex( ) == 0 )
+      div._ckConsol.setValue( false );
+    
+    if( !div._ckAll.checked )
+      div._ckConsol.setReadOnly( this.getSelectedIndex( ) == 0 );
+    
+    if( div._ckAll.checked || div._ckConsol.checked )
+      fireEvent.apply( div._cbList, [] );
+    else
+    {
+      if( div._cbPort.getValue( ) != "" )
+      {
+        div._cbPort.handleDelayedFill( );
+        fireEvent.apply( div._cbPort, [] ); // Chama todos os eventos que estiverem pendurados na combo de carteira
+      }
+      else if( div._cbPort._bFilled )
+        div._cbPort.handleDelayedFill( );
+    }
+  }
+}
+
+function inputPortfolioEvents( cp )
+{
+  if( this._isRefreshing == true )
+    return;
+
+  this._isRefreshing = true;  
+
+  // É cesta? Então não precisa tratar nada aqui.
+  if( this.bIsBasket )
+    return;
+
+  if( !( this.bIgnoreEvents && g_isLoading ) )
+  {
+    doListEvents( cp, this._divSelLst    );
+    doListEvents( cp, this._divSelAltLst );
+    
+    // Essa é para chamar os eventos que estiverem pendurados no evento de mudança do estado do controle - OnChangeAction
+    fireEvent.apply( this, [] );
+  }  
+
+  this._isRefreshing = false;
+}
+
+function doListEvents( pr_cp, pr_div )
+{
+  if( pr_cp == pr_div._cbList )
+  {
+    if( pr_div._cbPort.getValue( ) != "" )
+      fireEvent.apply( pr_div._cbPort, [] ); // Chama todos os eventos que estiverem pendurados na combo de carteira
+  }
+  else if( pr_cp == pr_div._ckAll )
+  {
+    if( pr_div._cbPort.getValue( ) != "" )
+      fireEvent.apply( pr_div._cbPort, [] ); // Chama todos os eventos que estiverem pendurados na combo de carteira
+
+    if( pr_div._cbList.getValue( ) != "" )
+      fireEvent.apply( pr_div._cbList, [] ); // Chama todos os eventos que estiverem pendurados na combo de lista
+  }
+  else if( pr_cp == pr_div._ckConsol )
+  {
+    if( pr_div._cbPort.getValue( ) != "" )
+      fireEvent.apply( pr_div._cbPort, [] ); // Chama todos os eventos que estiverem pendurados na combo de carteira
+
+    if( pr_div._cbList.getValue( ) != "" )
+      fireEvent.apply( pr_div._cbList, [] ); // Chama todos os eventos que estiverem pendurados na combo de lista
+  }
+  else if( pr_cp == pr_div._ckPortDef )
+  {
+    if( pr_div._cbPort.getValue( ) != "" )
+      fireEvent.apply( pr_div._cbPort, [] ); // Chama todos os eventos que estiverem pendurados na combo de carteira
+
+    if( pr_div._cbList.getValue( ) != "" )
+      fireEvent.apply( pr_div._cbList, [] ); // Chama todos os eventos que estiverem pendurados na combo de lista
+  }
+  else if( pr_cp == pr_div._ckAccountSel )
+  {
+    if( pr_div._cbPort.getValue( ) != "" )
+      fireEvent.apply( pr_div._cbPort, [] ); // Chama todos os eventos que estiverem pendurados na combo de carteira
+
+    if( pr_div._cbList.getValue( ) != "" )
+      fireEvent.apply( pr_div._cbList, [] ); // Chama todos os eventos que estiverem pendurados na combo de lista
+  }  
+}

@@ -2,21 +2,10 @@ package com.usjtECommerce.USJT.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-@Entity
 public class Fornecedor implements Serializable{
 	private static final long serialVersionUID = 1L;
-	@Id
-	@GeneratedValue(strategy=GenerationType.IDENTITY)
+	private Integer id_fornecedor;
+
 	private Integer codUser;
 	private String nome;
 	private String cnpj;
@@ -26,8 +15,16 @@ public class Fornecedor implements Serializable{
 	private String observacoes;
 	
 	
-	public static long getSerialversionuid() {
-		return serialVersionUID;
+	
+	
+	public Fornecedor() {
+		super();
+	}
+	public Integer getId_fornecedor() {
+		return id_fornecedor;
+	}
+	public void setId_fornecedor(Integer id_fornecedor) {
+		this.id_fornecedor = id_fornecedor;
 	}
 	public Integer getCodUser() {
 		return codUser;
@@ -71,6 +68,12 @@ public class Fornecedor implements Serializable{
 	public void setObservacoes(String observacoes) {
 		this.observacoes = observacoes;
 	}
+	public static long getSerialversionuid() {
+		return serialVersionUID;
+	}
+	
+	
+	
 	
 	
 	

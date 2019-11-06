@@ -1,28 +1,32 @@
 package com.usjtECommerce.USJT.DAO;
 
-import java.util.List;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
+import com.usjtECommerce.USJT.connection.ConnectionFactory;
 import com.usjtECommerce.USJT.model.Categoria;
-import com.usjtECommerce.USJT.repository.CategoriaRepo;
-
 
 public class CategoriaDAO {
-	@Autowired
-	private CategoriaRepo repo;
 	
-
-	public void deletarCategoria(Long id) {
-		repo.deleteById(id);
-	}
+	public ArrayList<Categoria> listarCategoria() throws SQLException {
+		Categoria cat;
+		ArrayList<Categoria> lista = new ArrayList<>();
+		String sqlSelect = " SELECT codigo,categoria FROM categoria";
+		// usando o try with resources do Java 7, que fecha o que abriu
+		Connection conn = ConnectionFactory.obterConexao();
+				PreparedStatement stm = conn.prepareStatement(sqlSelect);
+			ResultSet rs = stm.executeQuery();
+				while (rs.next()) {
+					cat = new Categoria();
+					cat.setId(rs.getLong(1));
+					cat.setNome(rs.getString(2));
+					
+					lista.add(cat);
+				}
 	
-	public void cadastrarCategoria(Categoria categoria) {
-		repo.save(categoria);
-	}
-	
-	public List listarCategorias() {
-		List<Categoria> categorias = repo.findAll();
-		return categorias;
+		return lista;
 	}
 }

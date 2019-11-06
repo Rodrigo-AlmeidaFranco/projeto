@@ -1,0 +1,175 @@
+inputMaskedValue = function( pr_args )
+{
+  return inputMaskedValue.__constructor( pr_args );
+}
+
+inputMaskedValue.__constructor = function( pr_args )
+{
+  var e = document.createElement( "SPAN" );
+
+  e._constructor = inputMaskedValue._constructor;
+  e._constructor( pr_args );
+
+  return e;
+}
+
+inputMaskedValue._constructor = function( pr_args )
+{
+  //Métodos
+  this.setValue                     = inputMaskedValue.setValue;
+  this.getValue                     = inputMaskedValue.getValue;
+  this.getJsonValue                 = inputMaskedValue.getJsonValue;
+  this.setJsonValue                 = inputMaskedValue.setJsonValue;
+  this.setReadOnly                  = inputMaskedValue.setReadOnly;
+  this.doConfig                     = inputMaskedValue.doConfig;
+  this.destroy                      = inputMaskedValue.destroy;
+  //Eventos
+  this.onFocus                      = inputMaskedValue.onFocus;
+  this.onBlur                       = inputMaskedValue.onBlur;
+  
+  //Criação da UI
+  this.txtValue = document.createElement( "INPUT" );  
+  this.id                   = pr_args["name"];
+  this.className            = "inputMaskedValue";
+  this.strTxtValueClassName = "txtValue"; //??
+
+  this.txtValue._parent   = this;
+  this.txtValue.type      = "text";
+  
+  pr_args["parent"].appendChild( this );
+  this.appendChild( this.txtValue     );  
+  
+  //Definição das variáveis
+  this._imask    = null;
+  this._oldValue = null;
+}
+
+inputMaskedValue.setValue = function( value )
+{
+  console.log( value )
+  this._imask.unmaskedValue = value;
+}
+
+inputMaskedValue.getValue = function( )
+{
+  return this._imask.unmaskedValue;
+}
+
+inputMaskedValue.getJsonValue = function( )
+{
+  return "{type:" + this._type + ",masked:'" + this._imask.value + "',value:'" + this._imask.unmaskedValue + "'}";
+}
+
+inputMaskedValue.setJsonValue = function( pr_json )
+{
+  if( pr_json )
+  {
+    var jsonValue = pr_json.setup ? pr_json.setup : pr_json;
+
+    if( jsonValue.readOnly != undefined )
+      this.setReadOnly( jsonValue.readOnly );
+
+	//Configurar Mascara...
+	if( jsonValue.config )
+	{
+	    var value = this.getValue( );
+		this.doConfig( jsonValue.config );
+		this.setValue( value );
+    }
+
+	//Configurar Valor...
+	if( jsonValue.value )
+		this.setValue( jsonValue.value );
+  }
+}
+
+inputMaskedValue.setReadOnly = function( bReadOnly )
+{
+  this.bReadOnly = bReadOnly;
+  this.txtValue.readOnly = bReadOnly;
+  
+  if( bReadOnly )
+    this.txtValue.className = this._cssClassRO;
+  else
+    this.txtValue.className = this._cssClass;
+}
+
+inputMaskedValue.doConfig = function( cfg )
+{
+  var mask = null;
+  
+  if( this._imask != null )
+    this.destroy( );
+
+  if( cfg.mode == "NUMBER" )
+  {
+    console.log(cfg)
+    var value = cfg.scale > 0 ? parseFloat( "9".repeat(cfg.size) ) : parseInt( "9".repeat(cfg.size) );
+    this._imask = new IMask( this.txtValue, { mask: Number, scale: cfg.scale, signed: cfg.signed, padFractionalZeros: cfg.padDecimalZeros,thousandsSeparator: (cfg.portuguese ? '.' : ','), radix: (cfg.portuguese ? ',' : '.'), mapToRadix: [], min: (cfg.signed ? -value : 0), max: value } );
+	this._imask._parent = this;
+  }
+  else if( cfg.mode == "PATTERN" )
+  {
+    console.log(cfg)
+    this._imask = new IMask( this.txtValue, { mask: cfg.mask, lazy: cfg.alwaysShowPlaceholder, placeholderChar: cfg.placeholder} );
+	this._imask._parent = this;
+  }
+  else if( cfg.mode == "TIME" )
+  {
+    console.log(cfg)	
+	var options = {};
+	
+	if( cfg.seconds )
+	{
+	  options = { mask: 'HH:MM:SS',
+	              groups: {
+	                HH: new IMask.MaskedPattern.Group.Range([0, 23], 2),
+	                MM: new IMask.MaskedPattern.Group.Range([0, 59], 2),
+	                SS: new IMask.MaskedPattern.Group.Range([0, 59], 2)
+				  }
+				}
+	}
+	else
+	{
+	  options = { mask: 'HH:MM',
+	              groups: {
+	                HH: new IMask.MaskedPattern.Group.Range([0, 23], 2),
+	                MM: new IMask.MaskedPattern.Group.Range([0, 59], 2)
+				  }
+				}
+	}
+	
+	options.placeholderChar = '0';
+	options.lazy = false;
+	
+	console.log(options)
+	
+    this._imask = new IMask( this.txtValue, options );
+	this._imask._parent = this;
+  }
+  
+  if( this._imask != null )
+  {
+    //AVISO: O componente imask.js foi alterado para publicar esses eventos.
+    this._imask.on( "blur",  this.onBlur  );
+	this._imask.on( "focus", this.onFocus );
+  }
+}
+
+inputMaskedValue.destroy = function( )
+{
+  this._imask.off( "blur",  this.onBlur  );
+  this._imask.off( "focus", this.onFocus );
+  this._imask.destroy( );
+}
+
+inputMaskedValue.onFocus = function( cp )
+{
+  cp._parent._oldValue = cp._parent.getValue( );
+}
+
+inputMaskedValue.onBlur = function( cp )
+{  
+  if( cp._parent._oldValue != cp._parent.getValue( ) )
+    fireEvent.apply( cp._parent,[] );
+}

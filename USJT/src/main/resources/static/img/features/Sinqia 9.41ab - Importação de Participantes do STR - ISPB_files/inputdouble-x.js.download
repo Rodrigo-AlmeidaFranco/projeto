@@ -1,0 +1,714 @@
+inputdouble = function(arg){return inputdouble.__constructor(arg)};
+//------------------------------------------------------------------------------
+
+inputdouble.__constructor = function(arg)
+{
+  var e = document.createElement( "INPUT" );
+
+  e._constructor = inputdouble._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+inputdouble._constructor = function(arg)
+{
+  this._type = 3;
+
+  if( arg["parent"] )
+  {
+    this._parent = document.getElementById( arg["parent"] );
+    this._parent.appendChild( this );
+  }
+
+  this.parentName   = arg["parent"];
+  this.bEditMode    = false;
+  this.bSigned      = false;
+  this.bOldNegative = false;
+  this.nMaxLen      = 15;
+  this.nNumDecimals = 2;
+  this.nOldValue;
+
+  this.internalValue     = '';
+  this.style.textAlign   = 'right';
+  this.strSeparator      = g_bEnglish ? "," : ".";
+  this.strDecimalDigit   = g_bEnglish ? "." : ",";
+  this.bNegative         = false;
+  this.bChangeToPositive = true;
+  this.bEditInsert       = true;
+  //Variável necessária para se obter o valor que será removido pelo backSpace. O this.nOldValue não é efeciente (SOLETRANO!) para esta função, pois
+  //ele é atualizado para o novo valor que irá ficar após o backSpace muito rápido. O this.nOldValue está assim para permitir a alteração de um valor
+  //para 0. Portanto o this.nBackSpaceClear se faz necessário.
+  this.nBackSpaceClear = '';
+
+  this.setParent             = inputdouble.setParent;
+  this.setWidth              = inputdouble.setWidth;
+  this.isReadOnly            = inputdouble.isReadOnly;
+  this.setReadOnly           = inputdouble.setReadOnly;
+  this.getJsonValue          = inputdouble.getJsonValue;
+  this.getValue              = inputdouble.getValue;
+  this._setValue             = inputdouble._setValue;
+  this.setJsonValue          = inputdouble.setJsonValue;
+  this.applyFormat           = inputdouble.applyFormat;
+  this.adjustNumberSize      = inputdouble.adjustNumberSize;
+  this.handleDecimalNumbers  = inputdouble.handleDecimalNumbers;
+  this.clear                 = inputdouble.clear;
+  this.getSelectionBounds    = inputdouble.getSelectionBounds;
+  this.getCaretPosition      = inputdouble.getCaretPosition;
+  this.setCaretPosition      = inputdouble.setCaretPosition;
+  this.runEvent              = inputdouble.runEvent;
+
+  this.onfocus     = inputdouble.onfocus;
+  this.onblur      = inputdouble.onblur;
+  this.oncut       = inputdouble.oncut;
+  this.ondragstart = function( ) { return false; };
+  this.onkeydown   = inputdouble.onkeydown;
+  this.onpaste     = inputdouble.paste;
+  
+  if( !isIE( ) )
+    this.oninput = inputdouble.change;
+  else
+    this.change  = inputdouble.change;
+
+  return this;
+}
+
+inputdouble.onkeydown = function( pr_event )
+{
+  this.oldValue         = this.value;
+  this.oldCaretStartPos = this.getSelectionBounds( ).start;
+  this.oldCaretEndPos   = this.getSelectionBounds( ).end;
+
+  if( !pr_event )
+    pr_event = window.event;
+
+  var keyCode = pr_event.which ? pr_event.which : pr_event.keyCode;
+
+  this.isBackspace           = keyCode == $.ui.keyCode.BACKSPACE;
+  this.isDelete              = keyCode == $.ui.keyCode.DELETE;
+  this.isAnyDecimalSeparator = keyCode == $.ui.keyCode.COMMA || keyCode == $.ui.keyCode.PERIOD || keyCode == $.ui.keyCode.NUMPAD_DECIMAL;
+
+  if( isIE( ) )
+    setTimeout( "cp_" + this.internalName + ".change( );", 1 );
+}
+
+//MANTIS#30859
+inputdouble.paste = function( pr_event )
+{
+  var value = getClipboardData( pr_event ).getData( "Text" );
+
+  //Remove separadores e ajusta o ponto decimal, de acordo com o idioma do sistema.
+  value = value.replace( new RegExp( "[" + this.strSeparator + "]", "g" ), "" ).replace( new RegExp( "[" + this.strDecimalDigit + "]", "g" ), "." );
+  
+  //Verifica se o número está com sinal negativo.
+  if( this.bSigned )
+  {
+    var nQtdMinusSign = value.replace( new RegExp( "[^-]", "g" ), "" ).length;
+
+    this.bOldNegative = this.bNegative; 
+    this.bNegative    = ( nQtdMinusSign > 0 && nQtdMinusSign % 2 != 0 );
+  }
+  
+  //Deixa a string somente com numeros e o separador de milhar.
+  //O sinal de negativo é colocado na formatação e no envio da resposta para o servidor.
+  value = value.replace( new RegExp( "[^0-9\.]", "g" ), "" );
+  
+  if( value.replace( new RegExp( "[^\.]", "g" ), "" ).length > 1 )
+  {
+    value = "0.0";
+    this.bNegative = false;
+  }
+  
+  //Ajusta o tamanho da string e acerta os valores do componente.
+  this.internalValue = this.adjustNumberSize( value );
+  this.oldValue      = this.value;
+  this.value         = this.internalValue;
+  
+  this.applyFormat( true );
+  this.setCaretPosition( this.value.length );
+  
+  return false;
+}
+
+inputdouble.change = function( pr_event )
+{
+  var decimalDigitPos;
+  var bChangedSignal;
+  var oldDecimalDigitPos;
+  var oldValue = this.oldValue;
+  var value;
+  var newCaretPos;
+  var caretStartPos = this.getSelectionBounds( ).start;
+
+  if( this.bSigned && !( this.isBackspace || this.isDelete ) )
+  {
+    // Quantidade de sinais de positivo ou negativo, para tratamento de campos com sinal.
+    // Quantidade de '-' no valor, para o caso de ter colado um conteúdo com diversos sinais negativos.
+    var nQtdMinusSign = this.value.replace( new RegExp( "[^-]", "g" ), "" ).length;
+    var nQtdPlusSign  = this.value.replace( new RegExp( "[^+]", "g" ), "" ).length;
+
+    var bOldNegative = this.bNegative;
+    this.bNegative   = ( nQtdMinusSign > 0 && nQtdMinusSign % 2 != 0 ) || ( this.nQtdPlusSign == 0 && this.bNegative );
+    
+    bChangedSignal = this.bNegative != bOldNegative;
+  }
+  
+  if( this.value != this.oldValue )
+  {
+    decimalDigitPos    = this.value.indexOf( this.strDecimalDigit );
+    oldDecimalDigitPos = oldValue  .indexOf( this.strDecimalDigit );
+    
+    if( this.clear( this.value ) == this.clear( this.oldValue ) )
+    {
+      if( this.isDelete ||
+        ( bChangedSignal && this.bNegative ) ||
+        ( this.oldCaretEndPos == oldDecimalDigitPos && this.isAnyDecimalSeparator ) )
+        this.oldCaretEndPos++;
+      else if( this.isBackspace || bChangedSignal )
+        this.oldCaretEndPos--;
+
+      this.applyFormat( true );
+      newCaretPos = this.oldCaretEndPos;
+    }
+    // Cursor final na casa dos decimais ou apagou o separador decimal
+    else if( this.nNumDecimals > 0 && this.oldCaretEndPos > oldDecimalDigitPos )
+    {
+      var newChar;
+      var pos;
+
+      value = oldValue;
+      
+      if( this.oldCaretStartPos == this.oldCaretEndPos )
+        pos = this.oldCaretEndPos;
+      else
+        pos = this.oldCaretEndPos - 1;
+
+      if( !this.isDelete && !this.isBackspace )
+      {
+        if( this.oldCaretStartPos == this.oldCaretEndPos )
+        {
+          if( this.oldCaretEndPos != oldValue.length )
+          {
+            value = oldValue.substr( 0, pos ) + this.value.charAt( this.oldCaretStartPos ) + oldValue.substr( pos + 1 );
+            this.oldCaretEndPos++;
+          }
+        }
+        else if( !( this.oldCaretStartPos == oldDecimalDigitPos && this.oldCaretStartPos + 1 == this.oldCaretEndPos ) )
+          value = oldValue.substr( 0, pos ) + this.value.charAt( this.oldCaretStartPos ) + oldValue.substr( pos + 1 );
+      }
+      else if( this.isDelete )
+      {
+        if( this.oldCaretStartPos == this.oldCaretEndPos )
+          this.oldCaretEndPos++;
+        
+        value = 
+          oldValue.substring( 0, this.oldCaretStartPos ) + 
+          oldValue.substring( this.oldCaretStartPos, this.oldCaretEndPos ).replace( new RegExp( "[0-9]", "g" ), "0" ) + 
+          oldValue.substring( this.oldCaretEndPos );
+      }
+      else //É o Backspace
+      {
+        if( this.oldCaretStartPos != this.oldCaretEndPos )
+        {
+          value = 
+            oldValue.substring( 0, this.oldCaretStartPos ) + 
+            oldValue.substring( this.oldCaretStartPos, this.oldCaretEndPos ).replace( new RegExp( "[0-9]", "g" ), "0" ) + 
+            oldValue.substring( this.oldCaretEndPos );
+        }
+        else if( oldDecimalDigitPos != this.oldCaretEndPos - 1 )
+        {
+          value = 
+            oldValue.substring( 0, this.oldCaretStartPos - 1 ) + 
+            "0" + 
+            oldValue.substring( this.oldCaretStartPos );
+        }
+
+        if( this.oldCaretStartPos == this.oldCaretEndPos )
+          this.oldCaretEndPos--;
+        else
+          this.oldCaretEndPos = this.oldCaretStartPos;
+      }
+      
+      //MANTIS#30859: Remove o sinal de negativo. O componente controla via estado se o valor é negativo ou não.
+      value = value.replace( new RegExp( "[-]", "g" ), "" );
+
+      this.internalValue = value.replace( new RegExp( "[" + this.strSeparator + "]", "g" ), "" ).replace( new RegExp( "[" + this.strDecimalDigit + "]", "g" ), "." );
+
+      this.applyFormat( true );
+      
+      newCaretPos = this.value.length - oldValue.length + this.oldCaretEndPos;
+    }
+    //MANTIS#36125: Não considerava que podia existir um ponto na comparacao com a qtde de digitos 
+    else if( this.internalValue.replace( new RegExp( "[.]", "g" ), "" ).length > this.nMaxLen && !( this.isBackspace || this.isDelete ) )
+    {
+      if( this.nNumDecimals == 0 )
+        this.internalValue = this.clear( oldValue );
+      else
+        this.internalValue = this.clear( oldValue.substring( 0, oldValue.indexOf( this.strDecimalDigit ) ) ) + "." + this.value.substr( decimalDigitPos + 1 )
+      
+      this.applyFormat( true );
+      newCaretPos = this.oldCaretEndPos;
+    }
+    // Valor inteiro, vou retirar os decimais e tratar da mesma forma como são tratados os números no inputInteger
+    else
+    {
+      var oldIntValue;
+      var decimalValue;
+      var clearValue;
+
+      if( this.nNumDecimals == 0 )
+      {
+        value        = this.value;
+        oldIntValue  = oldValue;
+        decimalValue = "";
+      }
+      else
+      {
+        value        = this.value.substr( 0, decimalDigitPos  );
+        oldIntValue  = oldValue  .substr( 0, oldValue.indexOf( this.strDecimalDigit ) );
+        decimalValue = "." + oldValue.substr( oldValue.indexOf( this.strDecimalDigit ) + 1 );
+      }
+
+      clearValue = this.clear( value );
+
+      // Tratamentos para caso os backspace ou delete apague um caracter que não faz parte do valor do componente, ex: separador decimal.
+      if( this.clear( oldIntValue ) == clearValue && this.oldCaretStartPos == this.oldCaretEndPos )
+        if( this.isBackspace )
+          value = this.clear( value.substring( 0, this.oldCaretStartPos - 2 ) + ( this.oldCaretStartPos < value.length ? value.substring( this.oldCaretStartPos - 1 ) : "" ) );
+        else if( this.isDelete )
+        {
+          value = this.clear( value.substring( 0, this.oldCaretStartPos     ) + ( this.oldCaretStartPos < value.length ? value.substring( this.oldCaretStartPos + 1 ) : "" ) );
+          this.oldCaretEndPos = ++this.oldCaretStartPos;
+        }
+        else
+        {
+          value = oldIntValue;
+          this.oldCaretEndPos = ++this.oldCaretStartPos;
+        }
+      
+      if( this.isDelete && this.oldCaretStartPos == this.oldCaretEndPos )
+      {
+        if( this.bNegative && this.oldCaretStartPos == 1 && value.length % 3 == 0 )
+          this.oldCaretEndPos++;
+        
+        this.oldCaretEndPos++;
+      }
+
+      if( this.oldCaretStartPos == this.oldCaretEndPos && this.clear( oldIntValue ) == '0' )
+      {
+        value = value.replace( "0", "" );
+        
+        if( this.bNegative )
+          this.oldCaretEndPos = 2;
+        else
+          this.oldCaretEndPos = 1;
+      }
+
+      this.internalValue = this.clear( value ) + decimalValue;
+      
+      this.applyFormat( true );
+      newCaretPos = this.value.length - oldValue.length + this.oldCaretEndPos;
+    }
+    
+    //MANTIS#30859: Se for zero, remove um possível sinal de negativo.
+    if( Math.abs( this.internalValue ) == 0 )
+    {
+      this.bNegative = false;
+      this.applyFormat( true );
+    }
+    
+    //Assim não fica com o cursor no inicio se a posição for negativa 
+    if( newCaretPos < 0 )
+      newCaretPos = 1;
+
+    setTimeout( "cp_" + this.internalName + ".setCaretPosition( " + newCaretPos + " );", 1 );
+  }
+
+  this.isDelete              = null;
+  this.isBackspace           = null;
+  this.oldCaretStartPos      = null;
+  this.oldCaretEndPos        = null;
+  this.isAnyDecimalSeparator = null;
+}
+
+inputdouble.setParent = function( parent )
+{
+  if( parent )
+  {
+    this._parent = parent;
+    this._parent.appendChild( this );
+  }
+}
+
+inputdouble.onblur = function( )
+{
+  this.runEvent( );
+
+  this.nOldValue = this.internalValue;
+}
+
+inputdouble.onfocus = function( pr_event )
+{
+  var self = this;
+
+  // Deve ser configurado após o retorno desta função, só após o retorno que o componente efetivamente tem o foco.
+  if( self.value == "0" || self.value == "-0" )
+    setTimeout( function( ){ self.setCaretPosition( !self.bNegative ? 1 : 2 ); }, 1 );
+
+  return true;
+}
+
+inputdouble.runEvent = function( )
+{
+  if( this.internalValue.length == 0 && this.bChangeToPositive )
+    this.bNegative = false;
+
+  this.bChangeToPositive = true;
+  
+  if( this.aEventListener.length > 0 && !this.bReadOnly && !this.bEditMode )
+  {
+    var bValidateEvent = true;
+    
+    if( this._parent && this._parent.validateEvent )
+      bValidateEvent = this._parent.validateEvent( );
+    
+    if( bValidateEvent )
+    {
+      // Sempre dispara quando muda
+      if( this.nOldValue != this.internalValue || this.bOldNegative != this.bNegative )
+      {
+        this.bOldNegative = this.bNegative;
+        fireEvent.apply( this,[] );
+      }
+      else //Não mudou. Só dispara os apropriados
+      {
+        var tempListeners = this.aEventListener;
+        var aAux          = [];
+        
+        for( var i = 0; i < this.aEventListener.length; i++ )
+          if( this.aEventListener[i].onlyWhenStateChanges == false )
+            aAux[ aAux.length ] = this.aEventListener[i];
+
+        this.aEventListener = aAux;
+        fireEvent.apply( this,[] );
+        this.aEventListener = tempListeners;
+      }
+    }
+  }
+  // Dispara o evento do pai se ele existe. Utilizado para componentes complexos
+  if( !this.bReadOnly && !this.bEditMode && ( this.nOldValue != this.internalValue || this.nBackSpaceClear != this.getValue( ) ) && this._parent && this._parent.fireParentEvent )
+        this._parent.fireParentEvent( this );
+
+  this.bEditMode = false;
+  this.nBackSpaceClear = '';
+
+  return true;
+}
+
+inputdouble.setWidth = function( nWidth )
+{
+  this.style.width = nWidth + "px";
+}
+
+inputdouble.setJsonValue = function( json )
+{
+  if( json.setup != undefined )
+  {
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+    if( json.setup.maxDigits != undefined )
+      this.nMaxLen = json.setup.maxDigits;
+    if( json.setup.signed != undefined )
+      this.bSigned = json.setup.signed;
+    if( json.setup.numDecimals != undefined )
+    {
+      if( this.nNumDecimals < json.setup.numDecimals )
+        this.internalValue = this.internalValue + '00000000000000'.substring( 0, json.setup.numDecimals - this.nNumDecimals );
+      if( this.nNumDecimals > json.setup.numDecimals )
+        this.internalValue = this.internalValue.substring( 0, this.internalValue.length - this.nNumDecimals + json.setup.numDecimals );
+      this.nNumDecimals = json.setup.numDecimals;
+    }
+    if( json.setup.value != undefined )
+      this._setValue( json.setup.value );
+  }
+  else
+    this._setValue( json.value );
+
+  this.nNumInt = this.nMaxLen - this.nNumDecimals;
+
+  this.applyFormat( true );
+
+  this.nOldValue = this.internalValue;
+}
+
+inputdouble._setValue = function( value )
+{
+  value = new Number( value ).toFixed( this.nNumDecimals );
+
+  this.bNegative = value < 0;
+
+  this.internalValue = this.bNegative ? value.substr( 1 ) : value;
+  this.value         = value;
+}
+
+inputdouble.getJsonValue = function( pr_bComplete )
+{
+  if( pr_bComplete )
+    return "{ type:" + this._type + " , setup: { readOnly: " + this.isReadOnly() +
+           ", value:'" +
+           ( this.internalValue.length == 0 ? "0" : ( this.bNegative ? '-' : '' ) + this.internalValue ) +
+           "', numDecimals:" + this.nNumDecimals + " } }";
+  else
+    return "{ type:" + this._type + " ,value:'" +
+      ( this.internalValue.length == 0 ? "0" : ( this.bNegative ? '-' : '' ) + this.internalValue ) + "' }";
+}
+
+inputdouble.getValue = function( )
+{
+  return this.internalValue.length == 0 ? "0" :
+    (this.bNegative ? '-' : '') + this.internalValue;
+}
+
+inputdouble.setReadOnly = function( bReadOnly )
+{
+  if( this.parentNode.readonly == 'true' && !bReadOnly )
+    this.bReadOnly = true;
+
+  this.bReadOnly = bReadOnly;
+  this.readOnly  = bReadOnly;
+  
+  if( bReadOnly )
+    this.className = this.strCssClassRO;
+  else
+    this.className = this.strCssClassRW;
+}
+
+inputdouble.isReadOnly = function( )
+{
+  return this.bReadOnly;
+}
+
+inputdouble.adjustNumberSize = function( pr_value )
+{
+  //Checa se o número ultrapassa o limite de 15 digitos.
+  //Se ultrapassar, remove a quantidade excendente dos dígitos menos significativos mantendo o ponto.
+  var value       = pr_value;
+  var rawValue    = value.replace( new RegExp( "[.]", "g" ), "" );
+  var nNumberSize = rawValue.length;
+  
+  if( nNumberSize > 15 )
+  {
+    var decimalPos     = value.indexOf( "." );
+    var nNumberDecimal = 0;
+    var nDigitsToRemove = nNumberSize - 15;
+    
+    if( decimalPos != -1 )
+      nNumberDecimal = value.substr( decimalPos + 1 ).length;
+    
+    value = rawValue.slice( 0, 15 );
+    
+    //Se temos mais decimais do que dígitos a remover,
+    //precisamos acertar os valores e recolocar o ponto.
+    if( nNumberDecimal > nDigitsToRemove )
+    {
+      this.nNumDecimals = nNumberDecimal - nDigitsToRemove;
+      this.nNumInt      = this.nNumInt + nDigitsToRemove;
+
+      var position = 15 - this.nNumDecimals;
+      
+      value = [value.slice(0, position), '.', value.slice(position)].join('');
+    }
+    else
+    {
+      //Não existe mais decimais no valor.
+      this.nNumDecimals = 0;
+      this.nNumInt = 15;
+    }
+    
+    this.internalValue = value;
+  }
+
+  return value;
+}
+
+inputdouble.applyFormat = function( bEditMode )
+{
+  var str   = '';
+  var value = Math.abs( this.internalValue ).toFixed( this.nNumDecimals ) + "";
+  var decimalValue = "";
+
+  //MANTIS#31122
+  value = this.adjustNumberSize( value );
+
+  //Aplica o formato
+  if( this.nNumDecimals > 0 )
+  {
+    var decimalPos = value.indexOf( "." );
+    
+    if( decimalPos != -1 )
+    {
+      decimalValue = value.substr( decimalPos + 1 );
+      value        = value.substr( 0, decimalPos  );
+    }
+
+    if( decimalValue.length < this.nNumDecimals )
+      decimalValue += "00000000000000".substring( 0, this.nNumDecimals - decimalValue.length );
+    else if( decimalValue.length > this.nNumDecimals )
+      decimalValue = decimalValue.substring( 0, this.nNumDecimals );
+    
+    decimalValue = this.strDecimalDigit + decimalValue;
+  }
+
+  if( value.length > this.nNumInt )
+    value = value.substr( 0, this.nNumInt );
+
+  var j = 0;
+  
+  for( var i = value.length - 1; i >= 0; i--, j++ )
+  {
+    if( j == 3 )
+    {
+      str = this.strSeparator + str;
+      j = 0;
+    }
+
+    str = value.charAt( i ) + str;
+  }
+
+  if( str.length == 0 )
+    str = "0";
+
+  if( this.bNegative && value.length > 0 )
+    str = "-" + str;
+
+  this.bChangeToPositive = false;
+
+  this.bEditMode = bEditMode;
+
+  if( document.activeElement && document.activeElement.internalName == this.internalName && this.bEditMode )
+  {
+    this.bEventRun = true;
+    this.runEvent( );
+  }
+
+  this.value = str + decimalValue;
+}
+
+inputdouble.handleDecimalNumbers = function( str, strDecimalDigit )
+{
+  var nPos = str.indexOf( strDecimalDigit );
+  var nInvalidChar = 0;
+
+  if( this.nNumDecimals > 0 && nPos > 0) //monta a parte decimal
+  {
+    var nDecimals = 0;
+
+    for( var i = nPos + 1; i < str.length; i++ )
+    {
+      if( (str.charCodeAt( i ) >= 48) && (str.charCodeAt( i ) <= 57) )
+      {
+        ++nDecimals;
+        if( nDecimals == this.nNumDecimals )
+          break;
+      }
+      else
+        ++nInvalidChar;
+    }
+
+    if( nDecimals < this.nNumDecimals )
+      for( var i = nDecimals; i < this.nNumDecimals; i++ )
+        str += '0';
+    else
+      str = str.substring( 0, nPos + this.nNumDecimals + 1 + nInvalidChar );
+  }
+  else
+    str = nPos > -1 ? str.substring( 0, nPos ) : str;
+
+  if( str.charAt( 0 ) == '0' || str.charAt( 0 ) == '.' )
+  {
+    var i = 0;
+    while( str.charAt( i ) == '0' || str.charAt( i ) == '.' )
+      i++;
+    str = str.substring( i, str.length );
+  }
+
+  return str;
+}
+
+inputdouble.oncut = function( pr_event )
+{
+  if( !pr_event )
+    pr_event = window.event;
+  
+  pr_event.returnValue = false;
+  return true;
+}
+
+inputdouble.clear = function( str )
+{
+  return str.replace( new RegExp( "[^0-9]", "g" ), "" );
+}
+
+inputdouble.getSelectionBounds = function( )
+{
+  // Initialize
+  var nStart = 0;
+  var nEnd   = 0;
+
+  // IE Support
+  if( document.selection )
+   {
+     var oSel = document.selection.createRange( );
+     var nLen = oSel.text.length;
+
+     // Move selection start to 0 position
+     oSel.moveStart( 'character', -this.value.length );
+
+     nStart = oSel.text.length - nLen;
+     nEnd   = nStart + nLen;
+  }
+  // Firefox support
+  else if( this.selectionStart || this.selectionStart == '0' )
+  {
+    nStart = this.selectionStart;
+    nEnd   = this.selectionEnd; //Verificar isto
+  }
+
+  // Return results
+  return { start: nStart, end: nEnd };
+}
+
+inputdouble.getCaretPosition = function( )
+{
+  // Initialize
+  var nCaretPos = 0;
+
+  // IE Support
+  if( document.selection )
+   {
+     // Set focus on the element
+     this.focus( );
+
+     // To get cursor position, get empty selection range
+     var oSel = document.selection.createRange( );
+
+     // Move selection start to 0 position
+     oSel.moveStart( 'character', -this.value.length );
+
+     // The caret position is selection length
+     nCaretPos = oSel.text.length;
+  }
+  // Firefox support
+  else if( this.selectionStart || this.selectionStart == '0' )
+    nCaretPos = this.selectionStart;
+
+  // Return results
+  return nCaretPos;
+}
+
+inputdouble.setCaretPosition = function( pr_iCaretPos )
+{
+  this.focus( );
+
+  this.setSelectionRange( pr_iCaretPos, pr_iCaretPos );
+}

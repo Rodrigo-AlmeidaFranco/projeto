@@ -38,7 +38,8 @@
 	href="../static/CSS/estilo.css">
 <link rel="stylesheet" th:href="@{/CSS/modal.css}"
 	href="../static/CSS/modal.css">
-		<script src="https://kit.fontawesome.com/79e58ef0aa.js" crossorigin="anonymous"></script>
+<script src="https://kit.fontawesome.com/79e58ef0aa.js"
+	crossorigin="anonymous"></script>
 </head>
 
 <body>
@@ -69,7 +70,8 @@
 							<li class="nav-item"><a class="nav-link" href="/contato">Suporte</a></li>
 						</ul>
 						<ul class="nav navbar-nav navbar-right">
-							<li class="nav-item"><a href="/perfil" class="cart"><span><i class="fas fa-user"></i></span></a></li>
+							<li class="nav-item"><a href="/perfil" class="cart"><span><i
+										class="fas fa-user"></i></span></a></li>
 							<li class="nav-item"><a href="/carrinho" class="cart"><span
 									class="ti-bag"></span></a></li>
 							<li class="nav-item">
@@ -117,13 +119,14 @@
 							</div>
 						</div>
 						<!-- single features -->
-						<div class="col-lg-3 col-md-6 col-sm-6">
+						<div class="col-lg-6 col-md-6 col-sm-6">
 							<div class="single-features">
 								<div class="f-icon">
 									<img src="../static/img/features/f-icon2.png" alt=""
-										th:src="@{/img/features/f-icon2.png}" onclick="show('devolucao')">
+										th:src="@{/img/features/f-icon2.png}"
+										onclick="show('devolucao')">
 								</div>
-								<h6>Devoluções</h6>
+								<h6>Historico</h6>
 								<p>Detalhes</p>
 							</div>
 						</div>
@@ -131,19 +134,9 @@
 						<div class="col-lg-3 col-md-6 col-sm-6">
 							<div class="single-features">
 								<div class="f-icon">
-									<img src="../static/img/features/f-icon3.png" alt=""
-										th:src="@{/img/features/f-icon3.png}" onclick="show('suporte')">
-								</div>
-								<h6>Suporte</h6>
-								<p>Atendentes 24/7</p>
-							</div>
-						</div>
-						<!-- single features -->
-						<div class="col-lg-3 col-md-6 col-sm-6">
-							<div class="single-features">
-								<div class="f-icon">
 									<img src="../static/img/features/f-icon4.png" alt=""
-										th:src="@{/img/features/f-icon4.png}" onclick="show('metodosPagto')">
+										th:src="@{/img/features/f-icon4.png}"
+										onclick="show('metodosPagto')">
 								</div>
 								<h6>Métodos de Pagamento</h6>
 								<p>Detalhes</p>
@@ -158,6 +151,9 @@
 									<img src="../static/img/features/f-icon5.png" alt=""
 										th:src="@{/img/features/f-icon5.png}" onclick="show('perfil')">
 								</div>
+								<form th:object="${usuario}">
+									<h4 th:text="${usuario.nome}"></h4>
+								</form>
 								<h6>Perfil</h6>
 								<p>Detalhes</p>
 							</div>
@@ -166,20 +162,46 @@
 				</div>
 			</section>
 			<br>
-			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content trakcer" id="trakcer">
-				<h3 class="title_confirmation">trakcer.</h3>
+			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content trakcer"
+				id="trakcer">
+				<h3 class="title_confirmation">Status de pedido</h3><br>
+				<div th:each="ped : ${pedidos}">
+				<img th:src="${ped.img}"/>
+				<h4>Nome: <span th:text="${ped.nome}"></span></h4>
+				<h4>Preço: <span th:text="${ped.precoVenda}"></span></h4>
+				</div>
+				
 			</section>
-			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content perfil" id="perfil">
-				<h3 class="title_confirmation">perfil.</h3>
+			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content perfil"
+				id="perfil">
+				<h3 class="title_confirmation">perfil</h3><br>
+				 <h4>Nome: <span th:text="${perfil.nome}"></span></h4>
+				 <h4>Email: <span th:text="${perfil.email}"></span></h4>
+				 <h4>Telefone: <span th:text="${perfil.telefone}"></span></h4>
+				 <h4>Endereço: <span th:text="${perfil.endereco}"></span></h4>
+				 <h4>Cidade: <span th:text="${perfil.cidade}"></span></h4>
+				 <h4>UF: <span th:text="${perfil.uf}"></span></h4>
 			</section>
-			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content suporte" id="suporte">
+			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content suporte"
+				id="suporte">
 				<h3 class="title_confirmation">suporte.</h3>
 			</section>
-			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content metodosPagto" id="metodosPagto">
-				<h3 class="title_confirmation">metodosPagto.</h3>
+			<section
+				class="col-lg-12 col-md-12 col-sm-12 perfil-content metodosPagto"
+				id="metodosPagto">
+				<h3 class="title_confirmation">Metodos de Pagamento</h3><br>
+				<div th:each="pag : ${metodosPagto}">
+				 <h4>Metodo: <span th:text="${pag.nomeMetodo}"></span></h4>
+				</div>
+				
 			</section>
-			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content devolucao" id="devolucao">
-				<h3 class="title_confirmation">devolucao.</h3>
+			<section
+				class="col-lg-12 col-md-12 col-sm-12 perfil-content devolucao"
+				id="devolucao">
+				<h3 class="title_confirmation">Histórico Compras.</h3>
+				<div th:each="compras : ${historicoCompras}">
+				<span  th:text="${compras.nome}"&emsp;>&emsp;&emsp;</span>&emsp;<span th:text=" ${compras.precoVenda}"></span>
+				</div>
 			</section>
 		</div>
 	</section>

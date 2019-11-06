@@ -1,0 +1,161 @@
+timer = function(arg){return timer.__constructor(arg)};
+//------------------------------------------------------------------------------
+
+timer.__constructor = function(arg)
+{
+  var e = document.createElement("SPAN");
+
+  e._constructor = timer._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+timer._constructor = function(arg)
+{
+  this._parent = document.getElementById( arg["parent"] );
+
+  this._parent.appendChild( this );
+  this._divDig = document.createElement("DIV");
+
+  this._type = 1; //Retorna um Boolean indicando se está Enable ou não
+
+  this.cpName         = arg["cpName"];       // Nome do componente no JavaScript
+  this.elName         = "el_" + arg["name"]; // Nome do componente no HTML
+  this.strName        = arg["name"];         // Nome do componente, nome dado ao componente no java
+  this.nInterval      = arg["nInterval"];    // Intervalo de tempo em que será disparado o evento
+  this.strButtonFilterName = "";             // Nome do botão de filtro que será chamado
+  this.internalName   = this.strName;
+  this._bEnabled      = false;               // Indica se o componente está gerando eventos
+  this._clockHandle   = null;
+  this._bReadOnly     = false;
+  this._action        = null;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  // Início da construção do DIV principal
+  // ----------------------------------------
+  this.appendChild( this._divDig );
+
+  this._divDig.innerHTML = "<input id='" + this.elName + "' style='position:absolute;left:-10000px;width:10px' tabindex='" + arg["nTabIndex"] + "' >";
+
+  this._input = document.getElementById( this.elName );
+  this._input._parent  = this;
+  this._input.tabIndex = 10000;
+
+  this.isEnabled    = timer.isEnabled;
+  this.setEnabled   = timer.setEnabled;
+  this.doEvent      = timer.doEvent;
+  this.start        = timer.start;
+  this.stop         = timer.stop;
+  this.setReadOnly  = timer.setReadOnly;
+  this.isReadOnly   = timer.isReadOnly;
+  this.getJsonValue = timer.getJsonValue;
+  this.setJsonValue = timer.setJsonValue;
+  this.setAction    = timer.setAction;
+
+  attachPageVisibilityEvent( this,  
+      function( pr_visible )
+      { 
+        handlePageVisibilityChange.apply( this, [pr_visible] );
+      } );
+}
+
+timer.isEnabled = function( )
+{
+  return this._bEnabled;
+}
+
+timer.setEnabled = function( b )
+{
+  this._bEnabled = b;
+
+  if( b )
+    this.start( );
+  else
+    this.stop( );
+}
+
+timer.isReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+timer.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+}
+
+timer.start = function( )
+{
+  if( this._bEnabled )
+    this._clockHandle = setInterval( 'executeTimerEvent( "' + this.cpName + '"  );', this.nInterval );
+}
+
+timer.stop = function( )
+{
+  clearInterval( this._clockHandle );
+  this._clockHandle = null;
+}
+
+timer.doEvent = function( )
+{
+  switch( this._action.type )
+  {
+    case 1: doFilterTimedAction.apply( this ); break;
+    case 2: setPropertiesData.apply( this, [this._action] ); break;
+  }
+}
+
+timer.setJsonValue = function( json )
+{
+  if( json.setup ) // Veio pelo Setup
+  {
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+
+    if( json.setup.enabled != undefined )
+      this.setEnabled( json.setup.enabled );
+
+    if( json.setup.interval != undefined )
+    {
+      this.nInterval= json.setup.interval;
+      this.stop( );
+      this.start( );
+    }
+  }
+}
+
+timer.getJsonValue = function( )
+{
+  return "{type:" + this._type + ", value:" + this.isEnabled( ) + "}";
+}
+
+timer.setAction = function( action )
+{
+  this._action = action;
+}
+
+function executeTimerEvent( objName )
+{
+  cp = eval( objName );
+  if( cp != undefined && cp.isEnabled( ) && !cp.isReadOnly( ) )
+    cp.doEvent( );
+}
+
+function doFilterTimedAction( )
+{
+  var cp = eval( this._action.cpButtonName );
+  cp.click( );
+}
+
+function handlePageVisibilityChange( pr_visible )
+{
+  if( this.isEnabled( ) )
+  {
+    if( pr_visible ) 
+      this.start( );
+    else
+      this.stop( );
+  }
+}

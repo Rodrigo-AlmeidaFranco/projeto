@@ -1,0 +1,198 @@
+inputPortfolioBasket = function(arg){return inputPortfolioBasket.__constructor(arg)};
+//------------------------------------------------------------------------------
+
+inputPortfolioBasket.__constructor = function(arg)
+{
+  var e = document.createElement("SPAN");
+
+  e._constructor = inputPortfolioBasket._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+inputPortfolioBasket._constructor = function(arg)
+{
+  this._parent = document.getElementById( arg["parent"] );
+
+  this._parent.appendChild( this );
+
+  this._divBsk    = document.createElement("DIV");
+  this._divChecks = document.createElement("DIV");
+
+  this._bReadOnly = false;
+  this._bESel = false;
+  this._type = 10;
+  this._isRefreshing = false;
+  this.bIsBasket = true;
+
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField, bPortugues, strIdSvcInputPortfolio;
+  cpName        = arg["cpName"];       // Nome do componente no JavaScript
+  elName        = "el_" + arg["name"]; // Nome do componente no HTML
+  strName       = arg["name"];         // Nome do componente, nome dado ao componente no java
+  strTdClass    = arg["tdClass"];      // CSS para as TD do HTML
+  strCssField   = arg["cssField"];     // CSS para campos não ReadOnly
+  strCssROField = arg["cssROField"];   // CSS para campos ReadOnly
+  bPortugues    = arg["bPortugues"];   // Indica se o sistema está rodando em português
+  strIdSvcInputPortfolio = arg["strIdSvcInputPortfolio"];   // Id de serviço de preenchimento das combos de Lista e Carteira
+  this._nBasket = arg["nBasket"];      // Identificador da cesta selecionada
+  this._strBasket = arg["strBasket"];  // Nome da cesta selecionada
+
+  this.internalName = strName;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  this.showAccount = arg["bAccount"];
+  this.showDefault = arg["bPortDef"];
+  this.showChecks  = this.showAccount || this.showDefault;
+
+  // Início da construção do DIV de seleção por cestas
+  // -------------------------------------------------
+  this.appendChild( this._divBsk );
+
+  var strHTMLDivTD = "";
+
+  if( this.showChecks )
+  {
+    strHTMLDivTD ="<tr>" +
+                    "<td id='" + elName + "_tdChecks" + "' class='" + strTdClass + "' align='left' height=16 valign='bottom'></td>" +
+                  "</tr>";
+  }
+
+  this._divBsk.innerHTML = "<table border=0 cellspacing=0 cellpadding=0>" +
+                             "<tr>" +
+                               "<td id='" + elName + "_lbBsk" + "' class='" + strTdClass + "' align='left' height=16 valign='top'>" + ( bPortugues ? "Cesta de Carteiras" : "Portfolios` Basket" ) + "</td>" +
+                             "</tr>" +
+                             "<tr>" +
+                               "<td id='" + elName + "_tdtxBsk" + "' class='" + strTdClass + "' align='left' height=16 valign='bottom'>" +
+                                 "<input type=text name='" + elName + "_txBsk" + "' id='" + elName + "_txBsk" + "' readonly=true size='64' class='" + strCssROField + "' value='" + this._strBasket + "'>" +
+                               "</td>" +
+                             "</tr>" +
+                             strHTMLDivTD +
+                           "</table>";
+
+  // Código da Carteira - InputText
+  this._divBsk._txBsk = document.getElementById( elName + "_txBsk" );
+
+  createInputText( cpName + "_txBsk", elName + "_txBsk" );
+  this._divBsk._txBsk = eval(cpName + "_txBsk");
+
+  finalizeInputText.apply( this._divBsk._txBsk, [ "'" + strName + "_txBsk'", 4, this.name, strCssField, strCssROField, [], [] ] );
+
+  this._divBsk._txBsk._parent = this;
+  this._divBsk._txBsk.isComponenteChild = true;
+
+  // Monta o Div para Checks de Cesta
+  if( this.showChecks )
+  {
+    this._tdChecks = document.getElementById( elName + "_tdChecks" );
+    this._tdChecks.appendChild( this._divChecks );
+    this._divChecks.innerHTML = "<table width='100%' border=0 cellspacing=0 cellpadding=0>" +
+                                  "<tr>" +
+                                  "<td class='" + strTdClass + "'>" +
+                                    "<table border=0 cellspacing=0 cellpadding=0 width='358' >" +
+                                      "<tr>" +
+                                        "<td id='" + elName + "_ckInc" + "' class='" + strTdClass + "' align='left' height=16 valign='middle'></td>" +
+                                        "<td id='" + elName + "_ckDef" + "' class='" + strTdClass + "' align='left' height=16 valign='middle'></td>" +
+                                      "</tr>" +
+                                    "</table>" +
+                                  "</td>" +
+                                  "<td>&nbsp</td>"+
+                                  "</tr>" +
+                                "</table>";
+
+    // Check Box de Inclui Contabil
+    if( this.showAccount )
+    {
+      createCheckbox(cpName + "_ckAccount", elName + "_ckInc", bPortugues ? "Inclui Contábil" : "Account Include", false );
+      finalizeCheckbox.apply(eval(cpName + "_ckAccount"), [ 92, 0, "'" + strName + "'", strCssField, "left", false, false, {}, [] ]);
+      this._divChecks._ckAccount = eval(cpName + "_ckAccount");
+      this._divChecks._ckAccount._parent = this;
+      this._divChecks._ckAccount.setEvent( function( )
+		                                   {
+		                                     if( !this.isReadOnly( ) )
+		                                       fireEvent.apply( this, [] );
+		                                   } );
+    }
+
+    // Check Box de Default de Carteiras
+    if( this.showDefault )
+    {
+      createCheckbox(cpName + "_ckDefault", elName + "_ckDef", bPortugues ? "Default das Carteiras" : "Portfolios` Default", false );
+      finalizeCheckbox.apply(eval(cpName + "_ckDefault"), [ 130, 0, "'" + strName + "'", strCssField, "left", false, false, {}, [] ]);
+      this._divChecks._ckDefault = eval(cpName + "_ckDefault");
+      this._divChecks._ckDefault._parent = this;
+      this._divChecks._ckDefault.setEvent( function( )
+		                                   {
+		                                     if( !this.isReadOnly( ) )
+		                                       fireEvent.apply( this, [] );
+		                                   } );
+    }
+  }
+
+  // ------------------------------------------------
+  // Final da construção do DIV de seleção por cestas
+
+  this.getJsonValue = inputPortfolioBasket.getJsonValue;
+  this.setJsonValue = inputPortfolioBasket.setJsonValue;
+  this.setReadOnly  = inputPortfolioBasket.setReadOnly;
+  this.getReadOnly  = inputPortfolioBasket.getReadOnly;
+}
+
+inputPortfolioBasket.getJsonValue = function( bComplete )
+{
+  var str = "{type:" + this._type + ", nBasket:" + this._nBasket + ", strBasket:'" + this._strBasket + "'";
+
+  if( this.showAccount )
+    str += ( this._divChecks._ckAccount.checked ? ", account:true" : ", account:false" );
+
+  if( this.showDefault )
+    str += ( this._divChecks._ckDefault.checked ? ", portdef:true" : ", portdef:false" );
+
+  str += "}";
+
+  return str;
+}
+
+inputPortfolioBasket.setJsonValue = function( json )
+{
+  if( json.setup ) // Veio pelo Setup
+  {
+    if( this.getReadOnly( ) != json.setup.readOnly )
+      this.setReadOnly( json.setup.readOnly );
+  }
+  var jsonAux = ( json.setup ? json.setup : json );
+
+  if( jsonAux.portdef != undefined )
+  {
+    if( this.showDefault )
+      if( jsonAux.portdef == true )
+        this._divChecks._ckDefault.setValue( true );
+      else
+        this._divChecks._ckDefault.setValue( false );
+  }
+
+  if( jsonAux.account != undefined )
+  {
+    if( this.showAccount )
+      if( jsonAux.account == true )
+        this._divChecks._ckAccount.setValue( true );
+      else
+        this._divChecks._ckAccount.setValue( false );
+  }
+}
+
+inputPortfolioBasket.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputPortfolioBasket.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+
+  if( this.showAccount )
+    this._divChecks._ckAccount.setReadOnly( b );
+  if( this.showDefault )
+    this._divChecks._ckDefault.setReadOnly( b );
+}

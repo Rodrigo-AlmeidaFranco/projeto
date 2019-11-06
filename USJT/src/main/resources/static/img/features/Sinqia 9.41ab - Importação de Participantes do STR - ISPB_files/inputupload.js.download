@@ -1,0 +1,4 @@
+if( isIE( ) )
+  registry.loadUnit( "inputupload-ie" );
+else
+  registry.loadUnit( "inputupload-x" );

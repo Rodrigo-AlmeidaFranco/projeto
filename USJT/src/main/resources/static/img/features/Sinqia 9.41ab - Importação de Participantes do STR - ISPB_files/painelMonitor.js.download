@@ -1,0 +1,76 @@
+/*
+ * JavaScript usado com as páginas do Registry para controlar o início/fim da exibição do progresso no menu.
+ */
+g_imgPainel     = g_strBaseUrl + 'task-painel-01.png';
+g_bTarefasExec  = false;
+g_pnlCarregado  = false;
+
+setTimeout( 'checarTerminoProcessamento( );', 1 );
+
+function indicarInicioProcessamento( )
+{
+  g_bTarefasExec = true;
+  $('#img-pnl-task').attr( 'src', g_imgPainelExec );
+  
+  setTimeout( 'checarTerminoProcessamento( );', 3000 );
+}
+
+function isExecutandoTarefas( )
+{
+  return g_bTarefasExec;
+}
+
+function checarTerminoProcessamento( )
+{
+  //Faz um Post sincrono para verificar o termino do processamento.
+  executePostContentAsync( g_strServletURL, 'ID1=' + g_strIDSvcPnlTarefas + '&ID2=9', 
+			function( req, data ){ tratarResultado( data ); },
+			{responseAsJson:true} );
+}
+
+function abrirJanelasLogs( pr_logs )
+{
+  if( pr_logs )
+  {
+    var lista = pr_logs.split( ';' );
+    
+    for( var i=0; i < lista.length; i++ )
+      if( lista[i] )
+        abrirJanelaNavegador( g_strServletURL + '?ID1=' + g_strIDSvcPnlTarefas + '&ID2=10&ID3=' + lista[i] );
+  }
+}
+
+function tratarResultado( pr_data )
+{
+  var bProc = false;
+
+  for( var i = 0; i < pr_data.length; i++ )    
+    if( pr_data[i].type == 9 )
+    {
+      if( pr_data[i].bProcessando )
+        bProc = true;
+      else  
+      {
+        if( pr_data[i].bAlerta )
+        {
+          //if( !g_bPainelTarefasCarregado )
+          notificarUsuario( pr_data[i].strTitulo, pr_data[i].strMsg );
+  
+          if( pr_data[i].strLogs != "" )
+            setTimeout( 'abrirJanelasLogs("' + pr_data[i].strLogs + '")', 100 );
+        }
+      }
+    }
+ 
+  if( bProc )
+  {
+    g_bTarefasExec = true;
+    $('#img-pnl-task').attr( 'src', g_imgPainelExec );
+    setTimeout( 'checarTerminoProcessamento( );', 3000 );    
+  }
+  else
+  {
+    g_bTarefasExec = false;
+    $('#img-pnl-task').attr( 'src', g_imgPainel );
+  }
+}

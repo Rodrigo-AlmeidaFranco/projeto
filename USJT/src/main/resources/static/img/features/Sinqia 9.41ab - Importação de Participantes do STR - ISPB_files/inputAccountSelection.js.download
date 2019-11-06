@@ -1,0 +1,357 @@
+inputAccountSelection = function( pr_arg )
+{
+  return inputAccountSelection.__constructor( pr_arg )
+}
+
+inputAccountSelection.__constructor = function( pr_arg )
+{
+  var e = document.createElement("DIV");
+
+  e._constructor = inputAccountSelection._constructor;
+  
+  e._constructor( pr_arg );
+
+  return e;
+}
+
+inputAccountSelection._constructor = function( arg )
+{
+  this._parent = document.getElementById( arg["parent"] );
+
+  this._parent.appendChild( this );
+
+  this._bReadOnly              = false;
+  this._type                   = registry.ui.types.inputAccountSelection;
+  this._nGetAccountName        = arg["nGetAccountName"];
+  this._nGetAccountMask        = arg["nGetAccountMask"];
+  this._nOpenSelectScreen      = arg["nOpenSelectScreen"];
+  this._strIdSvcInputAccount   = arg["strIdSvcInputAccount"];   // Id de serviços do inputAccount
+  this._strIdSvcSuggestAccount = arg["strIdSvcSuggestAccount"]; // Id de serviços de sugestao de conta
+  this._nInitialAccount        = -1;
+  this._nFinalAccount          = -1;
+  this._nPlan                  = -1;
+  this._nServiceId             = arg["nServiceId"];
+
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField, bPortugues;
+  var strValue;
+
+  cpName        = arg["cpName"];       // Nome do componente no JavaScript
+  elName        = "el_" + arg["name"]; // Nome do componente no HTML
+  strName       = arg["name"];         // Nome do componente, nome dado ao componente no java
+  strTdClass    = arg["tdClass"];      // CSS para as TD do HTML
+  strCssField   = arg["cssField"];     // CSS para campos não ReadOnly
+  strCssROField = arg["cssROField"];   // CSS para campos ReadOnly
+  bPortugues    = arg["bPortugues"];   // Indica se o sistema está rodando em português
+
+  this.internalName   = strName;
+  this._strCssField   = strCssField;
+  this._strCssROField = strCssROField;
+  this.bOnFocus       = false;
+  this.bShowSuggest   = arg["bShowSuggest"];
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  // Início da construção do DIV principal
+  // ----------------------------------------
+
+  var htmlSuggestInitial = "";
+  var htmlSuggestFinal   = "";
+  var title              = _("Sugerir");
+  
+  if( this.bShowSuggest )
+  {
+    htmlSuggestInitial = "<td id='" + elName + "_tdBtInitial" + "' class='" + strTdClass + "' align='right' height=16 valign='bottom' title='" + title + "'></td>";
+    htmlSuggestFinal   = "<td id='" + elName + "_tdBtFinal"   + "' class='" + strTdClass + "' align='right' height=16 valign='bottom' title='" + title + "'></td>";
+  }
+
+  this.innerHTML = "<table border=0 cellspacing=0 cellpadding=0>" +
+                             "<tr>" +
+                               "<td id='" + elName + "_iaInitial" + "' class='" + strTdClass + "' align='right' height=16 valign='middle'></td>" +
+                               htmlSuggestInitial +
+                             "</tr>" +
+                             "<tr>" +
+                               "<td id='" + elName + "_iaFinal" + "' class='" + strTdClass + "' align='right' height=16 valign='middle'></td>" +
+                               htmlSuggestFinal +
+                             "</tr>" +
+                           "</table>";
+
+  // Cria os Inputs de Conta
+  createInputAccount( cpName + "_iaInitial", elName + "_iaInitial", cpName + "_iaInitial",
+                      this._strIdSvcInputAccount, strTdClass, strCssField, strCssROField, bPortugues,
+                      0, 0, true, bPortugues ? "Conta Inicial" : "Initial Account",
+                      this._nOpenSelectScreen, this._nGetAccountName, this._nGetAccountMask );
+  
+  this._iaInitial = eval(cpName + "_iaInitial");
+  
+  finalizeInputAccount.apply( this._iaInitial, [] );
+  
+  this._iaInitial.internalName                 = this.internalName;
+  this._iaInitial._parent                      = this;
+  this._iaInitial._divDig._imnAccount.onChange = function( )
+                                                 {
+                                                   fireEvent.apply( this,[] );
+                                                   fireEvent.apply( this._parent._parent,[] );
+                                                 }
+  this._iaInitial.onChange                     = function( )
+                                                 {
+                                                   fireEvent.apply( this,[] );
+                                                   fireEvent.apply( this._parent,[] );
+                                                 }
+  
+  $(this._iaInitial).attr( "internalName", this.internalName );
+  
+  createInputAccount( cpName + "_iaFinal", elName + "_iaFinal", cpName + "_iaFinal", this._strIdSvcInputAccount,
+                      strTdClass, strCssField, strCssROField, bPortugues, 0, 0, true,
+                      bPortugues ? "Conta Final" : "Final Account", this._nOpenSelectScreen,
+                      this._nGetAccountName, this._nGetAccountMask );
+  
+  this._iaFinal = eval(cpName + "_iaFinal");
+  
+  finalizeInputAccount.apply( this._iaFinal, [] );
+  
+  this._iaFinal.internalName                 = this.internalName;
+  this._iaFinal._parent                      = this;
+  this._iaFinal._divDig._imnAccount.onChange = function( )
+                                               {
+                                                 fireEvent.apply( this,[] );
+                                                 fireEvent.apply( this._parent._parent,[] );
+                                               }
+  this._iaFinal.onchange                     = function( )
+                                               {
+                                                 fireEvent.apply( this,[] );
+                                                 fireEvent.apply( this._parent,[] );
+                                               }
+
+  $(this._iaFinal).attr( "internalName", this.internalName );
+
+  // Cria os Botoes de sugestao se necessário
+  if( this.bShowSuggest )
+  {
+    createButtonSuggest( elName + "_btInitial" ,
+                         elName + "_tdBtInitial" ,
+                         "", "", "suggest.gif" );
+
+    this._btInitial        = eval( elName + "_btInitial" );
+    this._btInitial.parent = this;
+
+    createButtonSuggest( elName + "_btFinal"   ,
+                         elName + "_tdBtFinal"   ,
+                         "", "", "suggest.gif" );
+
+    this._btFinal        = eval( elName + "_btFinal" );
+    this._btFinal.parent = this;
+    
+    this._btInitial.style.cursor = "pointer";
+    this._btFinal.style.cursor   = "pointer";
+
+    if( !isIE( ) )
+    {
+      this._btInitial.style.marginBottom = "1px";
+      this._btFinal.style.marginBottom   = "1px";
+    }
+  }
+
+  // ---------------------------------------
+  // Final da construção do DIV principal
+
+  this.onchange               = fireEvent;
+  this.getJsonValue           = inputAccountSelection.getJsonValue;
+  this.setJsonValue           = inputAccountSelection.setJsonValue;
+  this.setReadOnly            = inputAccountSelection.setReadOnly;
+  this.getReadOnly            = inputAccountSelection.getReadOnly;
+  this.setInitialAccount      = inputAccountSelection.setInitialAccount;
+  this.setFinalAccount        = inputAccountSelection.setFinalAccount;
+  this.setAccountPlan         = inputAccountSelection.setAccountPlan;
+  this._suggestAccountInitial = inputAccountSelection._suggestAccountInitial;
+  this._suggestAccountFinal   = inputAccountSelection._suggestAccountFinal;
+
+  this.setAccountPlan   ( arg["nPlan"]           );
+  this.setInitialAccount( arg["nInitialAccount"] );
+  this.setFinalAccount  ( arg["nFinalAccount"]   );
+}
+
+inputAccountSelection._suggestAccountInitial = function( )
+{
+  var ias = this.parent;
+
+  if( ias._nServiceId == 1000 )
+  {
+    var nAccOld = ias._iaInitial.getAccount( );
+    var nAccNew = ias._iaFinal.getAccount( );
+    
+    ias.setInitialAccount( nAccNew );
+    
+    if( nAccNew == -1 ) 
+      nAccNew = "";
+    if( nAccOld != nAccNew )
+      ias._iaInitial.onchange( );
+  }
+  else
+  {
+    var nAccOld = ias._iaInitial.getAccount( );
+    var nAccNew = postContent( g_strURL, 'ID1=' + ias._strIdSvcSuggestAccount + 
+                               '&ID2=' + ias._nServiceId + '&ID3=' + 
+                               buildQueryString( ias.aSource ) + '&ID4=1' ).trim( );
+    
+    ias.setInitialAccount( nAccNew );
+    
+    if( nAccNew == -1 ) 
+      nAccNew = "";
+    if( nAccOld != nAccNew )
+      ias._iaInitial.onchange( );
+  }
+  ias._iaInitial._divDig._lbName.onclick( );
+}
+
+inputAccountSelection._suggestAccountFinal = function( )
+{
+  var ias = this.parent;
+
+  if( ias._nServiceId == 1000 )
+  {
+    var nAccOld = ias._iaFinal.getAccount( );
+    var nAccNew = ias._iaInitial.getAccount( );
+    
+    ias.setFinalAccount( ias._iaInitial.getAccount( ) );
+    
+    if( nAccNew == -1 ) 
+      nAccNew = "";
+    if( nAccOld != nAccNew )
+      ias._iaFinal.onchange( );
+  }
+  else
+  {
+    var nAccOld = ias._iaFinal.getAccount( );
+    var nAccNew = postContent( g_strURL, 'ID1=' + ias._strIdSvcSuggestAccount + 
+                  '&ID2=' + ias._nServiceId + '&ID3=' + 
+                  buildQueryString( ias.aSource ) + '&ID4=2' ).trim( );
+    
+    ias.setFinalAccount( nAccNew );
+    
+    if( nAccNew == -1 ) 
+      nAccNew = "";
+    if( nAccOld != nAccNew )
+      ias._iaFinal.onchange( );
+  }
+  ias._iaFinal._divDig._lbName.onclick( );
+}
+
+inputAccountSelection.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+  this._iaInitial.setReadOnly( b );
+  this._iaFinal.setReadOnly( b );
+
+  if( this.bShowSuggest )
+  {
+    this._btInitial.setReadOnly( b );
+    this._btFinal.setReadOnly( b );
+    if( !b )
+    {
+      this._btInitial.setEvent( inputAccountSelection._suggestAccountInitial );
+      this._btFinal.setEvent  ( inputAccountSelection._suggestAccountFinal   );
+    }
+    else
+    {
+      this._btInitial.setEvent( function( ){} );
+      this._btFinal.setEvent  ( function( ){} );
+    }
+  }
+}
+
+inputAccountSelection.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputAccountSelection.getJsonValue = function( bComplete )
+{
+  var str = "";
+  str = "{type:" + this._type;
+
+  if( this._iaInitial.getAccount( ) != -1 )
+    str += ", initialAcc:'" + this._iaInitial.getAccount( ) + "'";
+  else
+    str += ", initialAcc:''";
+
+  if( this._iaFinal.getAccount( ) != -1 )
+    str += ", finalAcc:'" + this._iaFinal.getAccount( ) + "'";
+  else
+    str += ", finalAcc:''";
+
+  str += ", plan:" + this._nPlan + "}";
+
+  return str;
+}
+
+inputAccountSelection.setJsonValue = function( json )
+{
+  if( json.setup ) // Veio pelo Setup
+  {
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+  }
+  var jsonAux = ( json.setup ? json.setup : json );
+
+  if( jsonAux.plan != undefined )
+    this.setAccountPlan( jsonAux.plan );
+  if( jsonAux.initialAcc != undefined )
+    this.setInitialAccount( jsonAux.initialAcc );
+  if( jsonAux.finalAcc != undefined )
+    this.setFinalAccount( jsonAux.finalAcc );
+}
+
+inputAccountSelection.setAccountPlan = function( nAP )
+{
+  this._nPlan = nAP;
+  this._iaInitial.setAccountPlan( nAP );
+  this._iaFinal.setAccountPlan( nAP );
+}
+
+inputAccountSelection.setInitialAccount = function( nAcc )
+{
+  this._iaInitial.setAccount( nAcc );
+}
+
+inputAccountSelection.setFinalAccount = function( nAcc )
+{
+  this._iaFinal.setAccount( nAcc );
+}
+
+function createInputAccountSelection( strCpName, strParent, strName,
+                                      strTdClass, strCssField, strCssROField, bPortugues,
+                                      nInitialAccount, nFinalAccount, nPlan, bShowSuggest,
+                                      nServiceId, strIdSvcSuggestAccount, strIdSvcInputAccount,
+                                      nOpenSelectScreen, nGetAccountName, nGetAccountMask )
+{
+  eval( strCpName + "=inputAccountSelection( { cpName:'" + strCpName + "', parent:'" + strParent + "', name:'" + strName + "', " +
+  "strIdSvcInputAccount:'" + strIdSvcInputAccount + "', strIdSvcSuggestAccount:'" + strIdSvcSuggestAccount + "', " +
+  "tdClass:'" + strTdClass + "', cssField:'" + strCssField + "', cssROField:'" + strCssROField +
+  "', bPortugues:" + bPortugues + ", nInitialAccount:" + nInitialAccount + ", nFinalAccount:" + nFinalAccount + 
+  ", nPlan:" + nPlan + ", bShowSuggest:" + bShowSuggest + ", nServiceId:" + nServiceId +
+  ", nOpenSelectScreen:" + nOpenSelectScreen + ", nGetAccountName:" + nGetAccountName +
+  ", nGetAccountMask:" + nGetAccountMask +
+  " } );" );
+}
+
+function finalizeInputAccountSelection( bReadOnly, aSource , aEventListenerInitial,
+                                        aEventListenerFinal, aEventListener       )
+{
+  this.setReadOnly( bReadOnly );
+  this.aSource = aSource;
+  
+  this._iaInitial.setEventListener( aEventListenerInitial );
+  this._iaFinal.setEventListener  ( aEventListenerFinal   );
+  this.aEventListener = aEventListener;
+  
+  if( this.bShowSuggest )
+  {
+    finalizeButtonSuggestEx.apply( this._btInitial, ["", "", this._bReadOnly, true, 16, 20, [], ""] );
+  
+    this._btInitial.setEvent( inputAccountSelection._suggestAccountInitial );
+    
+    finalizeButtonSuggestEx.apply( this._btFinal, ["", "", this._bReadOnly, true, 16, 20, [], ""] );
+    
+    this._btFinal.setEvent( inputAccountSelection._suggestAccountFinal );    
+  }
+}

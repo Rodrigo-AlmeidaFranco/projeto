@@ -2,29 +2,27 @@ package com.usjtECommerce.USJT.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-@Entity
-public class Compra implements Serializable{
+public class Compra extends Produtos{
 	private static final long serialVersionUID = 1L;
-	@Id
-	@GeneratedValue(strategy=GenerationType.IDENTITY)
-	private long id;
+	private long id_compra;
 	private Integer codUser;
+	private Integer id_pedido;
 	private String dataCompra;
 	private Double precoCompra;
 	private Double precoVenda;
-
 	
 	
+	
+	
+	public Compra() {
+		super();
+	}
+	public long getId_compra() {
+		return id_compra;
+	}
+	public void setId_compra(long id_compra) {
+		this.id_compra = id_compra;
+	}
 	public Integer getCodUser() {
 		return codUser;
 	}
@@ -52,6 +50,14 @@ public class Compra implements Serializable{
 	public static long getSerialversionuid() {
 		return serialVersionUID;
 	}
+	public Integer getId_pedido() {
+		return id_pedido;
+	}
+	public void setId_pedido(Integer id_pedido) {
+		this.id_pedido = id_pedido;
+	}
+
+	
 	
 	
 }

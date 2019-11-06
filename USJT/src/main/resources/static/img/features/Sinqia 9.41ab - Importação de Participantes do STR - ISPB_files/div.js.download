@@ -1,0 +1,71 @@
+div = function( arg )
+{
+  return div.__constructor( arg );
+}
+
+div.__constructor = function( arg )
+{
+  var e = document.getElementById( arg["name"] );
+
+  e._constructor = div._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+div._constructor = function( arg )
+{
+  if( arg["internalName"] )
+  {
+    this.internalName = arg["internalName"];
+    this.setAttribute( "internalName", this.internalName );    
+  }
+
+  if( arg["name"] )
+    this._strName = arg["name"];
+
+  this._bReadOnly  = false;
+  this.bVisualJson = true;
+
+  this.internalValue = '';
+
+  this.nOldValue = 0;
+
+  this.setJsonValue = function( json )
+  {
+    if( json.setup != undefined )
+    {
+      if( json.setup.visibility != undefined )
+      {
+        this.style.visibility = json.setup.visibility;
+        this.visibility       = json.setup.visibility;
+      }
+
+      if( json.setup.display != undefined )
+      {
+        this.style.display = json.setup.display;
+        this.display       = json.setup.display;
+        
+        g_bNeedResize = true;
+      }
+    }
+  }
+
+  this.getJsonValue = function( bComplete )
+  {
+    var strJson = "";
+    
+    if( bComplete )
+      strJson = "{ type: " + this._type + ", setup: { visibility:'" + this.visibility + "', display:'" + this.display + "' } }";
+    
+    return strJson;
+  }
+
+  this.setDisplay = function( strDisplay )
+  {
+    this.style.display = strDisplay;
+    g_bNeedResize = true;
+  }
+
+  return this;
+}

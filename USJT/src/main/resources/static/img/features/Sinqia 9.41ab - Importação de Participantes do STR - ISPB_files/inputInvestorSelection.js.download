@@ -1,0 +1,415 @@
+inputInvestorSelection = function( pr_arg )
+{
+  return inputInvestorSelection.__constructor( pr_arg )
+};
+//------------------------------------------------------------------------------
+
+inputInvestorSelection.__constructor = function( pr_arg )
+{
+  var e = document.createElement("DIV");
+
+  e._constructor = inputInvestorSelection._constructor;
+  
+  e._constructor( pr_arg );
+
+  return e;
+}
+
+inputInvestorSelection._constructor = function(arg)
+{
+  this._parent = document.getElementById( arg["parent"] );
+
+  this._parent.appendChild( this );
+
+  this._bReadOnly               = false;
+  this._type                    = registry.ui.types.inputInvestorSelection;
+  this._nFinalInvestor          = 0;
+  this._nInitialInvestor        = 0;
+  this._strIdSvcSuggestInvestor = arg["strIdSvcSuggestInvestor"]; // Id de serviços de sugestao de conta
+  this._nServiceId              = arg["nServiceId"];
+
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField, bPortugues;
+  var strValue;
+
+  cpName        = arg["cpName"];       // Nome do componente no JavaScript
+  elName        = "el_" + arg["name"]; // Nome do componente no HTML
+  strName       = arg["name"];         // Nome do componente, nome dado ao componente no java
+  strTdClass    = arg["tdClass"];      // CSS para as TD do HTML
+  strCssField   = arg["cssField"];     // CSS para campos não ReadOnly
+  strCssROField = arg["cssROField"];   // CSS para campos ReadOnly
+  bPortugues    = arg["bPortugues"];   // Indica se o sistema está rodando em português
+
+  this.internalName       = strName;
+  this._strCssField       = strCssField;
+  this._strCssROField     = strCssROField;
+  this.bOnFocus           = false;
+  this.bShowSuggest       = arg["bShowSuggest"];
+  this.bShowUniqueSuggest = arg["bShowUniqueSuggest"];
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  // Início da construção do DIV principal
+  // ----------------------------------------
+
+  var htmlSuggestInitial = "";
+  var htmlSuggestFinal   = "";
+  var title              = _("Sugerir");
+  var colspan            = "colspan=2";
+  
+  if( this.bShowUniqueSuggest || !this.bShowSuggest )
+    colspan = "colspan=1";
+  if( this.bShowSuggest )
+  {
+    if( !this.bShowUniqueSuggest )
+      htmlSuggestInitial = "<td id='" + elName + "_tdBtInitial" + "' class='" + strTdClass + "' align='left' height=16 valign='bottom' title='" + title + "'></td>";
+    
+    htmlSuggestFinal   = "<td id='" + elName + "_tdBtFinal"   + "' class='" + strTdClass + "' align='left' height=16 valign='bottom' title='" + title + "'></td>";
+  }
+
+  // Troca o layout para posicionamento Vertical ou Horizontal
+  if( arg["bVertical"] )
+    this.innerHTML = "<table border=0 cellspacing=1 cellpadding=0>" +
+                       "<tr>" +
+                         "<td class='" + strTdClass + "' align='left'>" + (bPortugues ? "Cliente Inicial" : "Initial Investor") + "</td>" +
+                       "</tr>" +
+                       "<tr>" +
+                         "<td id='" + elName + "_iaInitial" + "' class='" + strTdClass + "' align='left' height=16 valign='middle'></td>" +
+                           htmlSuggestInitial +
+                       "</tr>" +
+                       "<tr>" +
+                         "<td class='" + strTdClass + "' align='left'>" + (bPortugues ? "Cliente Final" : "Final Investor") + "</td>" +
+                       "</tr>" +
+                       "<tr>" +
+                         "<td id='" + elName + "_iaFinal" + "' class='" + strTdClass + "' align='left' height=16 valign='middle'></td>" +
+                           htmlSuggestFinal +
+                       "</tr>" +
+                     "</table>";
+    else
+      this.innerHTML = "<table border=0 cellspacing=1 cellpadding=0>" +
+                          "<tr>" +
+                            "<td " + colspan + " class='" + strTdClass + "' style=\" padding-bottom: 5px\" align='left'>" + (bPortugues ? "Cliente Inicial" : "Initial Investor") + "</td>" +
+                            "<td " + colspan + " class='" + strTdClass + "' style=\" padding-bottom: 5px\" align='left'>" + (bPortugues ? "Cliente Final" : "Final Investor") + "</td>" +
+                          "</tr>" +
+                          "<tr>" +
+                            "<td id='" + elName + "_iaInitial" + "' class='" + strTdClass + "' align='left' height=16 margin-right=20px valign='middle'></td>" +
+                            htmlSuggestInitial +
+                            "<td id='" + elName + "_iaFinal" + "' class='" + strTdClass + "' align='left' height=16 valign='middle'></td>" +
+                            htmlSuggestFinal +
+                          "</tr>" +
+                       "</table>";
+  
+  // Cria os Inputs de Assessor
+  var obj = {jsName:cpName + "_iaInitial",parentName:elName + "_iaInitial"};
+  
+  createInputInteger( obj );
+
+  this._iaInitial = eval(cpName + "_iaInitial");
+  
+  obj = {
+          jsValue:{value:0},
+          strInternalName:strName + "_iaInitial",
+          nMaxLen:15,
+          nWidth:120,
+          bSigned:false,
+          strCssClassRO:strCssROField,
+          strCssClassRW:strCssField,
+          bReadOnly:false,
+          aEventListener:[]
+        }
+  
+  finalizeInputInteger.apply( this._iaInitial, [obj] );
+
+  this._iaInitial._parent           = this;
+  this._iaInitial.isComponenteChild = true;
+  this._iaInitial.onchange          = function ()
+                                     {
+                                       if( !this.isReadOnly( ) )
+                                       {
+                                         fireEvent.apply( this, [] );
+                                         fireEvent.apply( this._parent, [] );
+                                       }
+                                     };
+
+  var obj = {jsName:cpName + "_iaFinal",parentName:elName + "_iaFinal"};
+  
+  createInputInteger( obj );
+
+  this._iaFinal = eval(cpName + "_iaFinal");
+  
+  obj = {
+          jsValue:{value:0},
+          strInternalName:strName + "_iaFinal",
+          nMaxLen:15,
+          nWidth:120,
+          bSigned:false,
+          strCssClassRO:strCssROField,
+          strCssClassRW:strCssField,
+          bReadOnly:false,
+          aEventListener:[]
+        }
+  finalizeInputInteger.apply( this._iaFinal, [obj] );
+
+  this._iaFinal._parent           = this;
+  this._iaFinal.isComponenteChild = true;
+  this._iaFinal.onchange          = function ()
+                                     {
+                                       if( !this.isReadOnly( ) )
+                                       {
+                                         fireEvent.apply( this, [] );
+                                         fireEvent.apply( this._parent, [] );
+                                       }
+                                     };
+
+  // Cria os Botoes de sugestao se necessário
+  if( this.bShowSuggest )
+  {
+    if( !this.bShowUniqueSuggest )
+    {
+      createButtonSuggest( elName + "_btInitial"  ,
+                           elName + "_tdBtInitial",
+                           "", "", "suggest.gif"  );
+
+      eval( "this._btInitial = " + elName + "_btInitial" );
+
+      this._btInitial.parent  = this;
+    }
+
+    createButtonSuggest( elName + "_btFinal"   ,
+                         elName + "_tdBtFinal" ,
+                         "", "", "suggest.gif" );
+
+    eval( "this._btFinal = " + elName + "_btFinal" );
+
+    this._btFinal.parent  = this;
+  }
+
+  if( this.bShowSuggest )
+  {
+    if( !this.bShowUniqueSuggest )
+      this._btInitial.aEventListener = [];
+      this._btFinal.aEventListener   = [];
+  }
+  
+  if( !arg["bVertical"] && !this.bShowUniqueSuggest && this._btInitial != undefined )
+    this._btInitial.style.marginRight="10px";
+    
+  if( !arg["bVertical"] && this.bShowUniqueSuggest || !this.bShowSuggest )
+    this._iaInitial.style.marginRight="10px"
+    
+  this.aEventListener = [];
+
+  // ---------------------------------------
+  // Final da construção do DIV principal
+
+  this.onchange                = fireEvent;
+  this.getJsonValue            = inputInvestorSelection.getJsonValue;
+  this.setJsonValue            = inputInvestorSelection.setJsonValue;
+  this.setReadOnly             = inputInvestorSelection.setReadOnly;
+  this.getReadOnly             = inputInvestorSelection.getReadOnly;
+  this.setInitialInvestor      = inputInvestorSelection.setInitialInvestor;
+  this.setFinalInvestor        = inputInvestorSelection.setFinalInvestor;
+  this._suggestInvestorInitial = inputInvestorSelection._suggestInvestorInitial;
+  this._suggestInvestorFinal   = inputInvestorSelection._suggestInvestorFinal;
+  this.fireParentEvent         = inputInvestorSelection.fireParentEvent;
+
+  this.setInitialInvestor( arg["nInitialInvestor"] );
+  this.setFinalInvestor  ( arg["nFinalInvestor"]   );
+}
+
+inputInvestorSelection._suggestInvestorInitial = function( )
+{
+  var iis = this.parent;
+
+  if( iis._nServiceId == 1000 )
+    iis.setInitialInvestor( iis._iaFinal.getValue( ) );
+  else
+  {
+    var resp = stringToJson( postContent( g_strURL, 'ID1=' + iis._strIdSvcSuggestInvestor + '&ID2=' + iis._nServiceId + '&ID3=' + buildQueryString( iis.aSource ) + '&ID4=1' ).trim( ) );
+    if( resp.initialInv )
+      iis.setInitialInvestor( resp.initialInv );
+  }
+}
+
+inputInvestorSelection._suggestInvestorFinal = function( )
+{
+  var iis = this.parent;
+
+  if( !iis.bShowUniqueSuggest )
+  {
+    if( iis._nServiceId == 1000 )
+      iis.setFinalInvestor( iis._iaInitial.getValue( ) );
+    else
+    {
+      var resp = stringToJson( postContent( g_strURL, 'ID1=' + iis._strIdSvcSuggestInvestor + '&ID2=' + iis._nServiceId + '&ID3=' + buildQueryString( iis.aSource ) + '&ID4=2' ).trim( ) );
+      if( resp.finalInv )
+        iis.setFinalInvestor( resp.finalInv );
+    }
+  }
+  else
+  {
+    var resp = postContent( g_strURL, 'ID1=' + iis._strIdSvcSuggestInvestor + '&ID2=' + iis._nServiceId + '&ID3=' + buildQueryString( iis.aSource ) + '&ID4=3' ).trim( );
+    iis.setJsonValue( stringToJson( resp ) );
+  }
+}
+
+inputInvestorSelection.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+  this._iaInitial.setReadOnly( b );
+  this._iaFinal.setReadOnly( b );
+
+  if( this.bShowSuggest )
+  {
+    if( !b )
+    {
+      if( !this.bShowUniqueSuggest )
+      {
+        this._btInitial.setEvent( inputInvestorSelection._suggestInvestorInitial );
+        this._btInitial.setReadOnly( b );
+      }
+		
+      this._btFinal.setEvent( inputInvestorSelection._suggestInvestorFinal );
+    }
+    else
+    {
+      if( !this.bShowUniqueSuggest )
+      {
+        this._btInitial.setEvent   ( function( ){} );
+        this._btInitial.setReadOnly( b );
+      }
+		
+      this._btFinal.setEvent( function( ){} );
+    }
+
+    this._btFinal.setReadOnly( b );
+  }
+}
+
+inputInvestorSelection.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputInvestorSelection.getJsonValue = function( bComplete )
+{
+  return "{type:"        + this._type             +
+         ", initialInv:" + this._nInitialInvestor +
+         ", finalInv:"   + this._nFinalInvestor   +
+         "}";
+}
+
+inputInvestorSelection.setJsonValue = function( json )
+{
+  if( json.setup ) // Veio pelo Setup
+  {
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+  }
+  var jsonAux = ( json.setup ? json.setup : json );
+
+  if( jsonAux.initialInv != undefined )
+    this.setInitialInvestor( jsonAux.initialInv );
+  if( jsonAux.finalInv != undefined )
+    this.setFinalInvestor( jsonAux.finalInv );
+}
+
+inputInvestorSelection.setInitialInvestor = function( nAcc )
+{
+  var nAccOld = this._iaInitial.getValue( );
+  var nAccNew = nAcc;
+
+  this._nInitialInvestor = nAcc;
+  this._iaInitial.setJsonValue( {value:nAcc} );
+
+  if( nAccOld != nAccNew )
+    this._iaInitial.onchange( );
+}
+
+inputInvestorSelection.setFinalInvestor = function( nAcc )
+{
+  var nAccOld = this._iaFinal.getValue( );
+  var nAccNew = nAcc;
+
+  this._nFinalInvestor = nAcc;
+  this._iaFinal.setJsonValue( {value:nAcc} );
+
+  if( nAccOld != nAccNew )
+    this._iaFinal.onchange( );
+}
+
+// InputInteger chama isso para disparar o evento do Geral
+inputInvestorSelection.fireParentEvent = function( obj )
+{
+  if( obj == this._iaInitial )
+  {
+    if( this._iaInitial.internalValue != "" )
+      this._nInitialInvestor = this._iaInitial.internalValue;
+    else
+      this._nInitialInvestor = 0;
+  }
+  if( obj == this._iaFinal )
+    {
+    if( this._iaFinal.internalValue != "" )
+      this._nFinalInvestor = this._iaFinal.internalValue;
+    else
+      this._nFinalInvestor = 0;
+  }
+  fireEvent.apply( this, [] );
+}
+
+// Valida se o inputinteger deve disparar o evento de mudança de carteira
+inputInvestorSelection.validateEvent = function( )
+{
+  return !this._bReadOnly;
+}
+
+function createInputInvestorSelection( strCpName, strParent, strName,
+                                       strTdClass, strCssField, strCssROField, bPortugues, bVertical,
+                                       nInitialInvestor, nFinalInvestor, bShowSuggest, bShowUniqueSuggest,
+                                       nServiceId, strIdSvcSuggestInvestor )
+{
+  eval( strCpName + "=inputInvestorSelection( { cpName:'" + strCpName + "', parent:'" + strParent + "', name:'" + strName + "', " +
+        "strIdSvcSuggestInvestor:'" + strIdSvcSuggestInvestor + "', " +
+        "tdClass:'" + strTdClass + "', cssField:'" + strCssField + "', cssROField:'" + strCssROField +
+        "', bPortugues:" + bPortugues + ", bVertical:" + bVertical + 
+        ", nInitialInvestor:" + nInitialInvestor + ", nFinalInvestor:" + nFinalInvestor +
+        ", bShowUniqueSuggest:" + bShowUniqueSuggest + ", bShowSuggest:" + bShowSuggest + ", nServiceId:" + nServiceId +
+        " } );" );
+}
+
+function finalizeInputInvestorSelection( bReadOnly, aSource, aEventListenerInitial,
+                                         aEventListenerFinal, aEventListener )
+{
+  this.setReadOnly( bReadOnly );
+  this.aSource = aSource;
+  
+  if( this.bShowSuggest )
+  { 
+    if( !this.bShowUniqueSuggest )
+    {
+      finalizeButtonSuggestEx.apply( this._btInitial,
+                    [
+                       ""  , "", bReadOnly,
+                       true, 16, 21       ,
+                       []  , ""
+                    ]
+                  );
+                  
+      this._btInitial.setEvent( inputInvestorSelection._suggestInvestorInitial );
+    }
+    
+    finalizeButtonSuggestEx.apply( this._btFinal,
+              [
+                 ""  , "", bReadOnly,
+                 true, 16, 21       ,
+                 []  , ""
+              ]
+            );
+            
+    this._btFinal.setEvent( inputInvestorSelection._suggestInvestorFinal );
+  }
+  
+  this._iaInitial.aEventListener = aEventListenerInitial;
+  this._iaFinal.aEventListener   = aEventListenerFinal;
+  this.aEventListener            = aEventListener;
+}

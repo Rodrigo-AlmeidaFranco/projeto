@@ -1,0 +1,211 @@
+inputReportHeader = function(arg){return inputReportHeader.__constructor(arg)};
+//------------------------------------------------------------------------------
+
+inputReportHeader.__constructor = function(arg)
+{
+  var e = document.createElement("SPAN");
+
+  e._constructor = inputReportHeader._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+inputReportHeader._constructor = function( arg )
+{
+  this._parent = document.getElementById( arg["parent"] );
+
+  this._parent.appendChild( this );
+
+  this._div = document.createElement("DIV");
+
+  this._bReadOnly       = false;
+  this._type            = 18;
+  this._isRefreshing    = false;
+
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField, bPortugues;
+  cpName        = arg["cpName"];       // Nome do componente no JavaScript
+  elName        = "el_" + arg["name"]; // Nome do componente no HTML
+  strName       = arg["name"];         // Nome do componente, nome dado ao componente no java
+  strTdClass    = arg["tdClass"];      // CSS para as TD do HTML
+  strCssField   = arg["cssField"];     // CSS para campos não ReadOnly
+  strCssROField = arg["cssROField"];   // CSS para campos ReadOnly
+
+  // Guarda parametros que serão usados em outros métodos
+  this._bPortugues      = arg["bPortugues"];  // Indica se o sistema está rodando em português
+  this.internalName     = strName;
+  this._strCssROField   = arg["cssROField"];
+  this._strCssField     = arg["cssField"];
+  this._cpName          = cpName;
+  this._elName          = elName;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  // Início da construção do DIV Principal
+  // ----------------------------------------
+  this.appendChild( this._div );
+
+  this._div.innerHTML = "<table width='100%' border=0 cellspacing=0 cellpadding=0>" +
+                          "<tr>" +
+                            "<td class='" + strTdClass + "'>" +
+                              "<table width='100%' border=0 cellspacing=0 cellpadding=0>" +
+                                "<tr>"  +
+                                  "<td id='" + elName + "_ck" + "' class='" + strTdClass + "' height=16 style='vertical-align:middle;'>" +
+                                "</tr>" +
+                              "</table>" +
+                            "</td>" +
+                          "</tr>" +
+                        "</table>";
+
+  // Cria Checkbox de Nome a Esquerda
+  createCheckbox(cpName + "_ckLeftName", elName + "_ck", this._bPortugues ? "Nome Relatório à Esquerda" : "Report Name on Left" , arg["bLeftNameCheck"] );
+  finalizeCheckbox.apply(eval(cpName + "_ckLeftName"), [ 170 , 18, "'" + strName + "'", strCssField, "left", false, false, {}, [] ]);
+  this._div._ckLeftName = eval(cpName + "_ckLeftName");
+  this._div._ckLeftName._parent = this;
+  this._div._ckLeftName.style.display = "";
+  this._div._ckLeftName.setEvent( function( )
+                                 {
+                                   fireEvent.apply( this, [] );
+                                   fireEvent.apply( this._parent, [] );
+                                 } );
+
+  // Cria Checkbox de Nome Curto
+  createCheckbox(cpName + "_ckShortName", elName + "_ck", this._bPortugues ? "Usa Nome Curto da Carteira" : "Use Portfolio Short Name" , arg["bShortNameCheck"] );
+  finalizeCheckbox.apply(eval(cpName + "_ckShortName"), [ 170 , 18, "'" + strName + "'", strCssField, "left", false, false, {}, [] ]);
+  this._div._ckShortName = eval(cpName + "_ckShortName");
+  this._div._ckShortName._parent = this;
+  this._div._ckShortName.style.display = "";
+  this._div._ckShortName.setEvent( function( )
+                                 {
+                                   fireEvent.apply( this, [] );
+                                   fireEvent.apply( this._parent, [] );
+                                 } );
+
+  // Cria Checkbox de Logotipo
+  createCheckbox(cpName + "_ckLogotype", elName + "_ck", this._bPortugues ? "Omite Logotipo" : "Don\\'t Show Logotype" , arg["bLogotypeCheck"] );
+  finalizeCheckbox.apply(eval(cpName + "_ckLogotype"), [ 170 , 18, "'" + strName + "'", strCssField, "left", false, false, {}, [] ]);
+  this._div._ckLogotype = eval(cpName + "_ckLogotype");
+  this._div._ckLogotype._parent = this;
+  this._div._ckLogotype.style.display = "";
+  this._div._ckLogotype.setEvent( function( )
+                                 {
+                                   fireEvent.apply( this, [] );
+                                   fireEvent.apply( this._parent, [] );
+                                 } );
+  
+  this.bLeftNameDisplay  = arg["bLeftNameBoxDisplay"];
+  this.bShortNameDisplay = arg["bShortNameBoxDisplay"]; 
+  this.bLogotypeDisplay  = arg["bLogotypeBoxDisplay"];  
+  
+  // ---------------------------------------
+  // Final da construção do DIV Principal
+
+  this.setReadOnly         = inputReportHeader.setReadOnly;
+  this.getReadOnly         = inputReportHeader.getReadOnly;
+  this.getJsonValue        = inputReportHeader.getJsonValue;
+  this.setJsonValue        = inputReportHeader.setJsonValue;
+  this.setLeftNameDisplay  = inputReportHeader.setLeftNameDisplay;
+  this.setShortNameDisplay = inputReportHeader.setShortNameDisplay;
+  this.setLogotypeDisplay  = inputReportHeader.setLogotypeDisplay;  
+}
+
+inputReportHeader.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+
+  this._div._ckLeftName.setReadOnly ( b );
+  this._div._ckShortName.setReadOnly( b );
+  this._div._ckLogotype.setReadOnly ( b );
+}
+
+inputReportHeader.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputReportHeader.getJsonValue = function( bComplete )
+{  
+  return "{type:"      + this._type                     + 
+         ",leftname:"  + this._div._ckLeftName.checked  +
+         ",shortname:" + this._div._ckShortName.checked +
+         ",logotype:"  + this._div._ckLogotype.checked  + "}";
+}
+
+inputReportHeader.setLeftNameDisplay = function( b )
+{
+  if( b )
+    this._div._ckLeftName.setDisplay( true );
+  else
+  {
+    this._div._ckLeftName.setDisplay( false );
+    this._div._ckLeftName.setValue  ( false );
+  }
+}
+
+inputReportHeader.setShortNameDisplay = function( b )
+{
+  if( b )
+    this._div._ckShortName.setDisplay( true );
+  else
+  {
+    this._div._ckShortName.setValue  ( false );
+    this._div._ckShortName.setDisplay( false );
+  }
+}
+
+inputReportHeader.setLogotypeDisplay = function( b )
+{
+  if( b )
+    this._div._ckLogotype.setDisplay( true );
+  else
+  {
+    this._div._ckLogotype.setValue  ( false );
+    this._div._ckLogotype.setDisplay( false );
+  }
+}
+
+inputReportHeader.setJsonValue = function( json )
+{  
+  if( json.setup ) // Veio pelo Setup
+  {
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+
+    if( json.setup.roLogotype != undefined )
+      this._div._ckLogotype.setReadOnly( json.setup.roLogotype );
+
+    if( json.setup.roShortName != undefined )
+      this._div._ckShortName.setReadOnly( json.setup.roShortName );
+      
+    if( json.setup.roLeftName != undefined )
+      this._div._ckLeftName.setReadOnly( json.setup.roLeftName );
+    
+    if( json.setup.bLeftNameDisplay != undefined )
+      this.setLeftNameDisplay( json.setup.bLeftNameDisplay );      
+    
+    if( json.setup.bShortNameDisplay != undefined )
+      this.setShortNameDisplay( json.setup.bShortNameDisplay ); 
+          
+    if( json.setup.bLogotypeDisplay != undefined )
+      this.setLogotypeDisplay( json.setup.bLogotypeDisplay ); 
+  }
+  var jsonAux = ( json.setup ? json.setup : json );
+
+  if( json.leftname != undefined )
+    if( json.leftname == true )
+      this._div._ckLeftName.setValue( true );
+    else
+      this._div._ckLeftName.setValue( false );
+
+  if( json.shortname != undefined )
+    if( json.shortname == true )
+      this._div._ckShortName.setValue( true );
+    else
+      this._div._ckShortName.setValue( false );
+      
+  if( json.logotype != undefined )
+    if( json.logotype == true )
+      this._div._ckLogotype.setValue( true );
+    else
+      this._div._ckLogotype.setValue( false );  
+}

@@ -1,0 +1,491 @@
+@import url("registry.util.css");
+@import url("registry.listview.css");
+@import url("registry.checkboxlist.css");
+@import url("registry.menu.css");
+@import url("registry.pageman.css");
+@import url("registry.button.css");
+@import url("registry.inputupload.css");
+@import url("registry.inputgenericsearch.css");
+@import url("registry.spinbutton.css");
+@import url("registry.inputrangedate.css");
+@import url("registry.window.css");
+
+fieldset
+{
+  padding-left:0;
+  padding-right:0;
+  padding:0;
+
+  margin:0;
+
+  border-radius:4px;
+  -moz-border-radius:4px;
+  -webkit-border-radius:4px;
+  -khtml-border-radius:4px;
+}
+
+fieldset legend
+{
+  text-align: left;
+  margin-left: 10px;
+}
+
+hr
+{
+  border-color: #e4e4e4 #fff #fff;
+}
+
+.reportPaging fieldset
+{
+  padding: 3px 0 8px 0;
+}
+
+input
+{
+  color:black;
+  font-family:arial;
+  font-size:8pt;
+  font-style:normal;
+  font-weight:normal;
+  line-height:normal;
+
+  margin:0;
+  padding:2px;
+}
+
+/*body.ie-quirks
+{
+  border:0;
+}*/
+
+body.ie-standarts td
+{
+  box-sizing:border-box;
+}
+
+body.ie-standarts input
+{
+  height:14px;
+}
+
+input:not([type=checkbox]):not([type=radio]),
+textarea
+{
+  border-color:#9a9a9a #ddd #ddd #9a9a9a;
+  border-style:solid;
+  border-width:1px;
+  border-radius:4px;
+  -moz-border-radius:4px;
+  -webkit-border-radius:4px;
+  -khtml-border-radius:4px;
+}
+
+textarea
+{
+  resize:none;
+}
+
+#rowsPerPage
+{
+  background:url(rowsPerPage.png);
+
+  display:inline-block;
+  margin-top:1px;
+  padding:3px 5px 2px 4px;
+  height:16px;
+  _height:21px;
+  width:24px;
+  _width:33px;
+  zoom:1;
+
+  color:#fff;
+  cursor:pointer;
+  font-family:"Helvetica Neue", Verdana !important;
+  font-size:.8em;
+  text-align:center;
+}
+
+#rowsPerPage.max
+{
+  color:#ff0;
+}
+
+.cbSelRow
+{
+  background-color:navy;
+  color:white;
+  font-Size:11px;
+  font-family:arial;
+  height:20px;
+  overflow:hidden;
+  white-space:nowrap;
+  cursor:default;
+}
+
+.cbUnselRow
+{
+  background-color:#FFFFFF;
+  color:black;
+  cursor:default;
+  font-Size:11px;
+  font-family:arial;
+  height:20px;
+  margin:0;
+  overflow:hidden;
+  white-space:nowrap;
+}
+
+.lvUnselRowDivFormRO,
+.swapbox_lvUnselRowDivFormRO
+{
+  background-color:#C0C0C0;
+  color:black;
+  font-Size:11px;
+  font-family:arial;
+  height:16px;
+  overflow:hidden;
+  white-space:nowrap;
+  cursor:default;
+  padding-left:2px;
+  padding-right:2px;
+}
+
+.lvUnselRowDivForm,
+.swapbox_lvUnselRowDivForm
+{
+  background-color:#FFFFFF;
+  color:black;
+  font-Size:11px;
+  font-family:arial;
+  height:16px;
+  overflow:hidden;
+  white-space:nowrap;
+  cursor:default;
+}
+
+.lvUnselRowFormRO,
+.swapbox_lvUnselRowFormRO
+{
+  background-color:#C0C0C0;
+  color:black;
+  font-Size:11px;
+  font-family:arial;
+  height:20px;
+  overflow:hidden;
+  white-space:nowrap;
+  cursor:default;
+}
+
+.lvUnselRowForm,
+.swapbox_lvUnselRowForm
+{
+  background-color:#FFFFFF;
+  color:black;
+  font-Size:11px;
+  font-family:arial;
+  height:20px;
+  overflow:hidden;
+  white-space:nowrap;
+  cursor:default;
+}
+
+.DataBarListing
+{
+  font-family:arial;
+  font-size:9px;
+  font-weight:normal;
+  text-decoration:none;
+}
+
+.EmitionBarListing
+{
+  font-family:arial;
+  font-size:11px;
+  font-weight:normal;
+  text-decoration:none;
+}
+
+.Field,
+.ReadOnlyField
+{
+  border-width:1px;
+  padding:2px;
+  font-family:arial;
+  font-size:8pt;
+  font-style:normal;
+  font-weight:normal;
+  line-height:normal;
+
+  margin:0;
+}
+
+.ReadOnlyField
+{
+  background-color:#eaeaea;
+  color:#444;
+}
+
+.FieldListing
+{
+  font-family:arial;
+  font-size:8pt;
+  font-style:normal;
+  line-height:normal;
+  font-weight:normal;
+  color:black;
+}
+
+.FilterBarListing,
+.FilterBarListing *
+{
+  font-family:arial;
+  font-size:9px;
+  font-weight:normal;
+  text-decoration:none;
+}
+
+.FilterBar
+{
+  background-color:#f0f0f0;
+  font-family:arial;
+  color:black;
+  font-size:11px;
+  font-weight:normal;
+  text-decoration:none;
+}
+
+.FilterBar a:link,
+.FilterBar a:hover,
+.FilterBar a:visited
+{
+  text-decoration:underline;
+}
+
+/*.FilterBar a:visited
+{
+  color:#ffcc99;
+}*/
+
+/*
+ * Incluída a classe pois o combobox estava sublinhado quando usado no filtro de Cadastro.
+ */
+.FilterBar a.ui-selectmenu,
+.FilterBar a:link.ui-selectmenu,
+.FilterBar a:hover.ui-selectmenu,
+.FilterBar a:visited.ui-selectmenu
+{
+  text-decoration:none;
+}
+
+.Form
+{
+  background-color:#f3f3f3;
+  font-family:arial;
+  font-size:8pt;
+}
+
+.Form.ie-standarts
+{
+  /*MANTIS#32745: Removido para poder ter scroll dentro da janela. A questão é que não pode ter o scroll...mas...*/
+  /*overflow: hidden;*/
+}
+
+/*
+ * Quando um processo é aberto no frame principal, inclui no elemento pai uma classe informando
+ * qual o tipo do processo (cadastro, relatório ou processo). Caso seja um processo ou relatório,
+ * o fundo fica levemente mais escuro. Entretanto, quando qualquer janela é aberta, fica levemente
+ * mais claro.
+ */
+.process .Form,
+.report .Form
+{
+  background-color:#efefef;
+}
+
+.LinkTitleBar
+{
+  color:white;
+  font-family:arial;
+  font-size:11px;
+  font-weight:bold;
+  text-decoration:none;
+}
+
+.Form .LinkTitleBar
+{
+  color:#333;
+}
+
+.ProcessTitleBar
+{
+  background-color:#336ca6;
+  color:white;
+  font-family:arial;
+  font-size:13px;
+  font-weight:bold;
+  text-decoration:none;
+}
+
+.ImageLink,
+.ImageLink:visited,
+.ImageLink:link,
+.ImageLink:hover
+{
+  border:none;
+}
+
+.ReadOnlyFieldListing
+{
+  font-family:arial;
+  font-size:8pt;
+  font-style:normal;
+  line-height:normal;
+  font-weight:normal;
+  color:black;
+  background-color:white
+}
+
+.ReadOnlyFieldMono
+{
+  font-family:"Courier New";
+  font-size:8pt;
+  font-style:normal;
+  line-height:normal;
+  font-weight:normal;
+  overflow:auto;
+  color:black;
+  background-color:#eaeaea;
+}
+
+.texto
+{
+  font-family:arial;
+  font-size:9pt;
+  font-style:normal;
+  line-height:normal;
+  font-weight:normal;
+  color:black;
+  text-decoration:none;
+}
+
+.TitleBar
+{
+  background-color:#336ca6;
+  color:white;
+  font-family:arial;
+  font-size:14px;
+  font-weight:bold;
+  text-decoration:none;
+}
+
+.TitleBarListing
+{
+  font-family:arial;
+  font-size:18px;
+  font-weight:bold;
+  text-decoration:none;
+}
+
+.tsHint
+{
+  background-color:#ffffcc;
+  color:black;
+  font-Size:11px;
+  font-family:arial;
+  height:16px;
+}
+
+.tsSelTab
+{
+  font-Size:11px;
+  font-family:arial;
+  white-space:nowrap;
+  cursor:default;
+  font-Weight:bold;
+  background-color:#dadada;
+}
+
+.tsUnselTab
+{
+  font-Size:11px;
+  font-family:arial;
+  white-space:nowrap;
+  cursor:default;
+  font-Weight:normal;
+  background-color:#cccccc;
+}
+
+table.checkboxContainer
+{
+  cursor:default;
+  margin:0;
+  padding:1px 0px 0px 0px;
+  width:100%;
+}
+
+table.checkboxContainer tr td
+{
+  border:0px;
+  border-collapse:collapse;
+  margin:0px;
+}
+
+table.checkboxContainer label,
+table.radioContainer label
+{
+  border:1px dotted transparent;
+  margin:-1px 0px 0px 0px !important;
+  padding:0px;
+  font-size:11px;
+  font-style:inherit;
+  font-weight:inherit;
+  text-decoration:inherit;
+}
+
+table.checkboxContainer input.checkbox,
+table.checkboxContainer label
+{
+  float:left;
+}
+
+input.checkbox
+{
+  height:13px;
+  width:13px;
+  margin:0px 5px 0px 1px !important;
+  padding:1px 0px 0px 0px;
+  
+  cursor:default;
+}
+
+.registry-ui-icon-calendar-1-s
+{
+  background-image: url(calendar.png) !important;
+}
+
+.swapbox_lvUnselRowForm,
+.swapbox_lvUnselRow,
+.swapbox_lvUnselRowFormRO,
+.swapbox_lvUnselRowDivFormRO
+{
+}
+
+.swapbox_lvUnselRowForm,
+.swapbox_lvUnselRow
+{
+  background-color:navy;
+}
+
+/* Estilo dos tooltips */
+.qtip
+{
+  font-family:Arial;
+  font-size:11px;
+  
+  max-width:320px !important;
+}
+
+::-ms-clear
+{
+  display:none;
+}

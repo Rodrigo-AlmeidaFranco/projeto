@@ -1,0 +1,113 @@
+textArea = function(arg){return textArea.__constructor(arg)};
+//------------------------------------------------------------------------------
+
+textArea.__constructor = function(arg)
+{
+  var e = document.createElement("SPAN");
+
+  e._constructor = textArea._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+textArea._constructor = function(arg)
+{
+  //Nada a fazer. HTML montado no componente Java.
+}
+
+textArea.isReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+textArea.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+  this.readOnly = this._bReadOnly;
+  
+  if( isIE( ) )
+    this.contentEditable = !b;
+
+  if( this._bReadOnly )
+    this.className = this.strClassRO;
+  else
+    this.className = this.strClassRW;
+}
+
+textArea.getJsonValue = function( pr_bComplete )
+{
+  var nCaretPos = -1;
+
+  // Dispara exceção caso o componente esteja escondido, pois move o foco para o componente para que possa ser feito o cálculo. 
+  // Caso isso aconteça, envia o valor -1.
+  try
+  {
+    nCaretPos = getCaretPosition( this );
+  }
+  catch( e )
+  { }
+  
+  return "{ type:" + this._type + ", value:'" + adjustComponentValue( this ) + "', caretPosition:'" + nCaretPos + "' }";
+}
+
+textArea.setJsonValue = function( json )
+{
+  if( json.setup )
+  {
+    if( json.setup.value != undefined )
+      this.value = json.setup.value;
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+    if( json.setup.additionalContent != undefined )
+      this.setadditionalContent( json.setup.additionalContent );
+  }
+  else
+    this.value = json.value;
+}
+
+textArea.setadditionalContent = function( pr_strAdditionalContent )
+{
+  var nPos             = getCaretPosition( this ) >= 0 ? getCaretPosition( this ) : this.value.length;
+  var newCaretPosition = nPos + pr_strAdditionalContent.replace( "[\n]", "" ).length;
+  var value            = this.value;
+
+  this.value = value.substring( 0, nPos ) + pr_strAdditionalContent + value.substring( nPos );
+  setCaretPosition( this, newCaretPosition - ( value.substring( 0, nPos ).split( "\n" ).length - 1 ) );
+}
+
+textArea.checkLimits = function( nMaxLength, nMaxLines, pr_event )
+{
+  var key = pr_event ? pr_event.which : window.event.keyCode;
+  if( !(key == 8 || key == 46 || (key >= 33 && key <= 40)) )
+  {
+    if( nMaxLength > 0 )
+      if( this.value.length >= nMaxLength )
+      {
+        this.value = this.value.substring(0, nMaxLength);
+        return false;
+      }
+
+    if( nMaxLines > 0 )
+    {
+      var strSplit = this.value.split( "\n" );
+      if( (strSplit.length >= nMaxLines) && (key == 10 || key == 13) )
+        return false;
+    }
+  }
+  return true;
+}
+
+textArea.setFont = function( font )
+{
+  if( font.fontcolor != undefined )
+    this.style.color = font.fontcolor;
+  if( font.font != undefined )
+    this.style.fontFamily = font.font;
+  if( font.fontsize != undefined )
+    this.style.fontSize = font.fontsize;
+  if( font.fontstyle != undefined )
+    this.style.fontStyle = font.fontstyle;
+  if( font.fontweight != undefined )
+    this.style.fontWeight = font.fontweight;
+}

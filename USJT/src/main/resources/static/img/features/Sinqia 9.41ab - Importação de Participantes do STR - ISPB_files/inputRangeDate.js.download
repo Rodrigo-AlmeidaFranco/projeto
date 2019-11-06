@@ -1,0 +1,466 @@
+inputRangeDate = function(arg){return inputRangeDate.__constructor(arg)};
+//------------------------------------------------------------------------------
+
+inputRangeDate.__constructor = function(arg)
+{
+  var e = document.createElement("SPAN");
+
+  e._constructor = inputRangeDate._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+inputRangeDate._constructor = function(arg)
+{
+  this._parent = document.getElementById( arg["parent"] );
+  this._parent.appendChild( this );
+  this._div    = document.createElement( "DIV" );
+
+  this.className  = "inputrangedate";
+  this._bReadOnly = false;
+  this._type      = 20;
+
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField, bPortugues;
+  cpName  = arg["cpName"];       // Nome do componente no JavaScript
+  elName  = "el_" + arg["name"]; // Nome do componente no HTML
+  strName = arg["name"];         // Nome do componente, nome dado ao componente no java
+
+  // Guarda parametros que serão usados em outros métodos
+  this.internalName   = strName;
+  this._strCssROField = arg["cssROField"];
+  this._strCssField   = arg["cssField"];
+  this._strTdClass    = arg["tdClass"];
+  this._cpName        = cpName;
+  this._elName        = elName;
+  this._changing      = false;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  this.bPortuguese     = arg["bPortuguese"];
+  this.bUseMenu        = arg["bUseMenu"];
+  this.bMonthly        = arg["bMonthly"];
+  this.bShowDailyBase  = arg["bShowDailyBase"];
+  this.bDailyBase      = arg["bDailyBase"];
+  this.nIdSvc          = arg["nIdSvc"];
+  this.strInitialLabel = arg["strInitialLabel"];
+  this.dtInitialDate   = arg["dtInitialDate"];
+  this.strFinalLabel   = arg["strFinalLabel"];
+  this.dtFinalDate     = arg["dtFinalDate"];
+  this.nInitialOption  = arg["nInitialOption"];
+  this.nFinalOption    = arg["nFinalOption"];
+  this.strIdSvcFillCal = arg["strIdSvcFillCal"];
+  this.strIdSvcSugDate = arg["strIdSvcSugDate"];
+  this.strCaption      = arg["strCaption"];
+
+  this.defaultInitialOption = this.nInitialOption.option;
+  this.defaultFinalOption   = this.nFinalOption.option;
+
+  // Início da construção do DIV Principal
+  // ----------------------------------------
+  this.appendChild( this._div );
+
+  var strMainLayout =   "<table border=0 cellspacing=0 cellpadding=0>" +
+                          "<tr>" +
+                            "<td class='" + this._strTdClass + "'>" +
+                              "<table cellspacing=0 cellpadding=0 border=0>" +
+                                "<tr>" +
+                                  "<td colspan='4' id=" + elName + "_lbInitial" + "' class='" + this._strTdClass + "' style='white-space:nowrap;padding-right:4px;'>" + this.strInitialLabel + "</td>" +
+                                "</tr>" +
+                                "<tr><td>" +
+                                    "<table cellspacing=0 cellpadding=0><tr>" +
+                                      "<td id='el_" + cpName + "i_tdDateField" + "' style='height:20px' class='" + this._strTdClass + "'>" +
+                                        "<input type='text' id='el_" + cpName + "i_dateField' size='11' class='" + this._strCssField + "'>" +
+                                      "</td>" +
+                                      "<td id='el_" + cpName + "i_tdShowCalendar" + "' style='height:20px' class='" + this._strTdClass + "'></td>" +
+                                      "<td id='el_" + cpName + "i_tdDivHint" + "'></td>" +
+                                      "<td id='el_" + cpName + "i_tdSuggestDate" + "' style='height:20px' class='" + this._strTdClass + "'></td>" +
+                                    "</tr></table>" +
+                                "</td></tr>" +
+                              "</table>" +
+                            "</td>" + ( arg["bVertical"] ? "</tr><tr>" : "<td width='10px'></td>" )+
+                            "<td class='" + this._strTdClass + "'>" +
+                              "<table cellspacing=0 cellpadding=0 border=0>" +
+                                "<tr>" +
+                                  "<td colspan='4' id=" + elName + "_lbFinal" + "' class='" + this._strTdClass + "'>" + this.strFinalLabel + "</td>" +
+                                "</tr>" +
+                                "<tr><td>" +
+                                    "<table cellspacing=0 cellpadding=0><tr>" +
+                                      "<td id='el_" + cpName + "f_tdDateField" + "' style='height:20px' class='" + this._strTdClass + "'>" +
+                                        "<input type='text' id='el_" + cpName + "f_dateField' size='11' class='" + this._strCssField + "'>" +
+                                      "</td>" +
+                                      "<td id='el_" + cpName + "f_tdShowCalendar" + "' style='height:20px' class='" + this._strTdClass + "'></td>" +
+                                      "<td id='el_" + cpName + "f_tdDivHint" + "'></td>" +
+                                      "<td id='el_" + cpName + "f_tdSuggestDate" + "' style='height:20px' class='" + this._strTdClass + "'></td>" +
+                                    "</tr></table>" +
+                                "</td></tr>" +
+                              "</table>" +
+                            "</td>" +
+                          "</tr>" +
+                        "</table>";
+
+  if( this.bShowDailyBase )
+    this._div.innerHTML = "<table cellspacing=0 cellpadding=0><tr><td><fieldset id='" + elName + "_fs' class='" + this._strTdClass + "' style='padding:4px 3px;'>" +
+                            "<legend><div id='" + elName + "_fsDiv'></div></legend>" +
+                            strMainLayout +
+                            "</fieldset></td></tr></table>"
+  else
+    this._div.innerHTML = strMainLayout;
+
+
+  // ---------------------------------------
+  // Final da construção do DIV Principal
+
+  this.setReadOnly      = inputRangeDate.setReadOnly;
+  this.getReadOnly      = inputRangeDate.getReadOnly;
+  this.getJsonValue     = inputRangeDate.getJsonValue;
+  this.setJsonValue     = inputRangeDate.setJsonValue;
+  this.initialize       = inputRangeDate.initialize;
+  this.rewriteMenu      = inputRangeDate.rewriteMenu;
+  this.suggestRangeDate = inputRangeDate.suggestRangeDate;
+  this._suggestRangeDate= inputRangeDate._suggestRangeDate;
+  this.showDailyBase    = inputRangeDate.showDailyBase;
+  this.hideDailyBase    = inputRangeDate.hideDailyBase;
+  this.onBlur           = inputRangeDate.onBlur;
+  this.checkChange      = inputRangeDate.checkChange;
+  this.setReadOnlyDates = inputRangeDate.setReadOnlyDates;
+  this.clearFirstDate   = inputRangeDate.clearFirstDate;
+  this.clearLastDate    = inputRangeDate.clearLastDate;
+  this.setFirstDate     = inputRangeDate.setFirstDate;
+  this.setLastDate      = inputRangeDate.setLastDate;
+  this.getJsonValueItem = inputRangeDate.getJsonValueItem;
+}
+
+inputRangeDate.clearFirstDate = function( )
+{
+  this._DateInitial.clearFirstDate( );
+  this._DateFinal.clearFirstDate( );
+}
+
+inputRangeDate.clearLastDate = function( )
+{
+  this._DateInitial.clearLastDate( );
+  this._DateFinal.clearLastDate( );
+}
+
+inputRangeDate.setFirstDate = function( dt )
+{
+  this._DateInitial.setFirstDate( dt );
+  this._DateFinal.setFirstDate( dt );
+}
+
+inputRangeDate.setLastDate = function( dt )
+{
+  this._DateInitial.setLastDate( dt );
+  this._DateFinal.setLastDate  ( dt );
+}
+
+inputRangeDate.rewriteMenu = function( menu, strCompName )
+{
+  var menuAux = menu;
+
+  if( menuAux )
+  {
+    menuAux.name = strCompName + "_mn";
+
+    if( menuAux.items != undefined )
+      for( var i = 0; i < menuAux.items.length; i++ )
+      {
+        if( menuAux.items[i].type == 102 )
+          continue;
+        
+        if( menuAux.items[i].type == 101 )
+          eval( "menuAux.items[" + i + "].onselected = 'executeActionMenuInteger.apply(this, [" + menuAux.items[i].id + ", \"" + strCompName + "\", event])';" );
+        else
+          eval( "menuAux.items[" + i + "].onselected = 'executeActionMenu.apply(this, [" + menuAux.items[i].id + ", \"" + strCompName + "\", event])';" );
+      }
+
+  }
+  return menuAux;
+}
+
+inputRangeDate._suggestRangeDate = function( e )
+{
+  inputRangeDate.suggestRangeDate.apply( this.parent, [e] );
+}
+
+inputRangeDate.suggestRangeDate = function( )
+{
+  var ird = this;
+
+  ird.setJsonValue( stringToJson( postContent( g_strURL, 'ID1=' + ird.strIdSvcSugDate + '&ID2=' + ird.nIdSvc + '&ID3=' + buildQueryString( ird.aSource ) + '&ID4=' + ird.bMonthly ) ) );
+  ird._DateFinal.focus( );
+}
+
+inputRangeDate.showDailyBase = function( )
+{
+  this._fieldSet.style.borderStyle = "";
+  this._fsDiv.style.display        = "";
+}
+
+inputRangeDate.hideDailyBase = function( )
+{
+  this._fieldSet.style.borderStyle = "none";
+  this._fsDiv.style.display        = "none";
+}
+
+inputRangeDate.checkChange = function( )
+{
+  if( ( this.dtInitialDate != this._DateInitial.txDate.value ) ||
+      ( this.dtFinalDate   != this._DateFinal.txDate.value   ) )
+    {
+      this.dtInitialDate = this._DateInitial.txDate.value;
+      this.dtFinalDate   = this._DateFinal.txDate.value;
+      fireEvent.apply( this, [] );
+      this._changing = false;
+    }
+  else
+    this._changing = true;
+}
+
+inputRangeDate.onBlur = function( )
+{
+  var ird = this._parent._parent;
+  this._changing = false;
+
+  ird._DateInitial.adjustDates( );
+  ird._DateFinal.adjustDates( );
+
+  if( (document.activeElement == null ||
+       (document.activeElement.JSName != ird._DateInitial.txDate.strBtShowCalName &&
+        document.activeElement.JSName != ird._DateFinal.txDate.strBtShowCalName  &&
+        document.activeElement.JSName != ird._DateInitial.txDate.JSName &&
+        document.activeElement.JSName != ird._DateFinal.txDate.JSName &&
+        document.activeElement.tagName != "IFRAME")) && //Está vindo da janela de calendário
+      (ird.aEventListener.length > 0 && !ird.bReadOnly) )
+      ird.checkChange( );
+}
+
+// Cria efetivamente os componentes visuais e o menu. Ela existe pois o json do menu da problema
+// ao ser utilizado no create.
+inputRangeDate.initialize = function( menu )
+{
+  // Cria Data Inicial
+  var menui = this.rewriteMenu( menu, this.internalName + "i" );
+
+  createInputDate( this._cpName + "i", this.internalName, "", 0, false, 0, 1 );
+  finalizeInputDate.apply( this._DateInitial,
+                           [this._cpName + "i", this.internalName + "i", this.internalName, this.strIdSvcFillCal,
+                            0, this.bMonthly, [], 0, this.dtInitialDate,
+                            this._strCssField, this._strCssROField, this._bReadOnly, false, false, false, this.nInitialOption,
+                            false, menui, this.bUseMenu, this.bPortuguese, [], [], [] ] );
+
+  this._DateInitial               = eval( this._cpName + "i" );
+  this._DateInitial._parent       = this;
+  this._DateInitial.txDate.onblur = this.onBlur;
+
+  var menuf = this.rewriteMenu( menu, this.internalName + "f" );
+
+  // Cria Data Final
+  createInputDate( this._cpName + "f", this.internalName, "", this.nIdSvc, false, 0, 1 );
+  finalizeInputDate.apply( this._DateFinal,
+                           [this._cpName + "f", this.internalName + "f", this.internalName, this.strIdSvcFillCal,
+                            this.strIdSvcSugDate, this.bMonthly, [], this.nIdSvc, this.dtFinalDate,
+                            this._strCssField, this._strCssROField, this._bReadOnly, false, false, false, this.nFinalOption,
+                            false, menuf, this.bUseMenu, this.bPortuguese, [], [], [] ] );
+
+  this._DateFinal               = eval( this._cpName + "f" );
+  this._DateFinal._parent       = this;
+  this._DateFinal.txDate.onblur = this.onBlur;
+
+  // Configura o evento de Sugestão
+  if( this.nIdSvc > 0 )
+  {
+    this._DateFinal.btSugDate.parent          = this;
+  	this._DateFinal.btSugDate.setEvent( inputRangeDate._suggestRangeDate );
+  }
+
+  if( this.bShowDailyBase )
+  {
+    //Coleta Elementos do FieldSet
+    this._fieldSet = document.getElementById( this._elName + "_fs"    );
+    this._fsDiv    = document.getElementById( this._elName + "_fsDiv" );
+
+    // Monta o Div da Legenda
+    this._fsDiv.innerHTML  = "<table border=0 width='90px' cellspacing=0 cellpadding=0>" +
+                               "<tr>" +
+                                 "<td width='10%' id='" + this._elName + "_lbDiv' class='" + this._strTdClass + "'>" + ( this.strCaption == "" ? ( this.bPortuguese ? "Datas" : "Dates" ) : this.strCaption )+ "&nbsp</td>" +
+                                 "<td id='" + this._elName + "_ckDailyBase' class='" + this._strTdClass + "' align='left' valign='middle'>" +
+                               "</tr>" +
+                             "</table>";
+    // Checkbox de Base Diaria
+    createCheckbox(this._cpName + "_ckDailyBase", this._elName + "_ckDailyBase", this.bPortuguese ? "Base Diária" : "Daily Base", this.bDailyBase );
+    finalizeCheckbox.apply(eval(this._cpName + "_ckDailyBase"), [ 83, 0, "'" + this.internalName + "'", this._strCssField, "left", false, false, {}, [] ]);
+    this._fsDiv._ckDailyBase = eval(this._cpName + "_ckDailyBase");
+    this._fsDiv._ckDailyBase._parent = this;
+  }
+}
+
+inputRangeDate.setReadOnlyDates  = function( b )
+{
+  this._DateInitial.setReadOnly( b );
+  this._DateFinal.setReadOnly( b );
+}
+
+inputRangeDate.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+
+  if( this.bShowDailyBase )
+    this._fsDiv._ckDailyBase.setReadOnly( b );
+  
+  if( b )
+    this.setReadOnlyDates( true );
+  else
+  {
+    if( this.bShowDailyBase && this.bReadOnlyWhenUncheckedDailyBase )
+      this.setReadOnlyDates( !this._fsDiv._ckDailyBase.getValue( ) );
+    else  
+      this.setReadOnlyDates( false );
+  }
+}
+
+inputRangeDate.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputRangeDate.getJsonValue = function( bComplete )
+{
+  var str = "{type:" + this._type;
+  var initialItemSelected = -1;
+  var finalItemSelected = -1;
+  
+  //So faz sentido testar uma opção. Ou ambos tem menu, ou nenhum.
+  if( this.bUseMenu )
+  {
+    initialItemSelected = this._DateInitial._mn.getSelectedItem()._IdMenu;
+    finalItemSelected   = this._DateFinal._mn.getSelectedItem()._IdMenu;
+  }
+
+  str += ", initialoption:" + initialItemSelected + ", initialdate:'" + this._DateInitial.getValue( ) + "', firstDate:'" + this._DateInitial.getFirstDate( ) + "'";
+  str += ", finaloption:"   + finalItemSelected   + ", finaldate:'"   + this._DateFinal.getValue( )   + "', lastDate:'"  + this._DateFinal  .getLastDate( )  + "'";
+
+  if( this.bShowDailyBase )
+    str += ( this._fsDiv._ckDailyBase.checked ? ", daily:true" : ", daily:false" );
+
+  //So faz sentido testar uma opção. Ou ambos tem menu, ou nenhum.
+  if( this.bUseMenu )
+    str += "," + this.getJsonValueItem( );
+  
+  str += "}";
+
+  return str;
+}
+
+inputRangeDate.getJsonValueItem = function( )
+{
+  var str;
+  
+  var itemInitial = this._DateInitial._mn.getSelectedItem( );
+  var itemFinal   = this._DateFinal._mn.getSelectedItem( );
+    
+  str = "typeItemMenuInitial:" + itemInitial._TypeItemMenu + ", typeItemMenuFinal:" + itemFinal._TypeItemMenu +
+        ", nValorInitial:" + (itemInitial._TypeItemMenu == 101 ? (itemInitial._InputInteger.getValue( ) != "" ? 
+                              itemInitial._InputInteger.getValue( ) : 0 ) : 0) +
+        ", nValorFinal:" + (itemFinal._TypeItemMenu == 101 ? (itemFinal._InputInteger.getValue( ) !=0 ? 
+                              itemFinal._InputInteger.getValue( ) : 0 ) : 0);
+  
+  return str;
+}
+
+inputRangeDate.setJsonValue = function( json )
+{
+  if( json.setup ) // Veio pelo Setup
+  {
+    var bChangeFirstLastDate = false;
+    
+    if( json.setup.readOnly != undefined )
+        this.setReadOnly( json.setup.readOnly );
+
+    if( json.setup.bMonthly != undefined && json.setup.jsonMenu != undefined )
+    {
+      this.bMonthly              = json.setup.bMonthly;
+      this._DateInitial.bMonthly = json.setup.bMonthly;
+      this._DateFinal.bMonthly   = json.setup.bMonthly;
+
+      var menui = this.rewriteMenu( json.setup.jsonMenu, this.internalName + "i" );
+      this._DateInitial.configureMenu( menui );
+      this._DateInitial.executeMenuAction( this.defaultInitialOption );
+
+      var menuf = this.rewriteMenu( json.setup.jsonMenu, this.internalName + "f" );
+      this._DateFinal.configureMenu( menuf );
+      this._DateFinal.executeMenuAction( this.defaultFinalOption );
+    }
+
+    if( this.bShowDailyBase && json.setup.readOnlyDaily != undefined )
+        this._fsDiv._ckDailyBase.setReadOnly( json.setup.readOnlyDaily );
+
+    if( json.setup.readOnlyDates != undefined )
+      this.setReadOnlyDates( json.setup.readOnlyDates );
+
+    if( json.setup.clearFirstDate != undefined )
+      this.clearFirstDate( );
+    else if( json.setup.firstDate != undefined )
+    {
+      this.setFirstDate( json.setup.firstDate );
+      bChangeFirstLastDate = true;
+    }
+
+    if( json.setup.clearLastDate != undefined )
+      this.clearLastDate( );
+    else if( json.setup.lastDate != undefined )
+    {
+      this.setLastDate( json.setup.lastDate );
+      bChangeFirstLastDate = true;
+    }
+
+    if( json.setup.clear != undefined && json.setup.clear == true )
+    {
+      this._DateInitial.executeMenuAction( this.defaultInitialOption );
+      this._DateFinal  .executeMenuAction( this.defaultFinalOption );
+      this._DateInitial._setValue( "" );
+      this._DateFinal  ._setValue( "" );
+    }
+    
+    this._DateInitial.adjustDates( );
+    this._DateFinal  .adjustDates( );
+
+    if( bChangeFirstLastDate )
+    {
+      if( this._DateInitial.txDate.value != this._DateInitial.dtValue )
+      {
+        this._DateInitial.aEventListener = this._DateInitial.aEventListenerChange;
+        fireEvent.apply( this._DateInitial,[] );
+        this._DateInitial.dtValue = this._DateInitial.txDate.value;
+      }
+
+      if( this._DateFinal.txDate.value != this._DateFinal.dtValue )
+      {
+        this._DateFinal.aEventListener = this._DateFinal.aEventListenerChange;
+        fireEvent.apply( this._DateFinal,[] );
+        this._DateFinal.dtValue = this._DateFinal.txDate.value;
+      }
+    }
+  }
+  
+  var jsonAux = ( json.setup ? json.setup : json );
+
+  if( jsonAux.initialoption != undefined && jsonAux.initialoption != -1 )
+    this._DateInitial.executeMenuAction( jsonAux.initialoption );
+
+  if( jsonAux.finaloption != undefined && jsonAux.finaloption != -1 )
+    this._DateFinal.executeMenuAction( jsonAux.finaloption );
+
+  if( jsonAux.initialdate != undefined )
+    this._DateInitial._setValue( jsonAux.initialdate );
+
+  if( jsonAux.finaldate != undefined )
+    this._DateFinal._setValue( jsonAux.finaldate );
+
+  if( this.bShowDailyBase && jsonAux.daily != undefined )
+    if( jsonAux.daily == true )
+      this._fsDiv._ckDailyBase.setValue( true );
+    else
+      this._fsDiv._ckDailyBase.setValue( false );
+}

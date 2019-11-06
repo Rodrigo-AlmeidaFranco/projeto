@@ -1,0 +1,123 @@
+.window
+{
+  border:1px solid #aaa;
+  border:1px solid #fff;
+  border-radius:4px;
+  box-shadow:0px 0px 9px 3px #333;
+  opacity:0;
+  
+  overflow:hidden;
+  padding:0;
+  position:fixed;
+  left:0;
+  top:0;
+}
+
+/*body.ie-quirks .window
+{
+  filter:none;
+  position:absolute;
+  border:1px solid black;
+}*/
+
+.window.center
+{
+  left:50%;
+  top:50%;  
+}
+
+.window .titleContainer
+{
+  border-bottom:1px solid #aaa;
+  border-radius:4px 4px 0 0;
+
+  background:#f3f3f3;
+  
+  margin:0;
+  line-height:26px;
+  height:26px;
+  padding-left:6px;
+  
+  text-align:right;
+}
+
+.window.draggable .titleContainer
+{
+  cursor:move;
+  text-align:right;
+}
+
+.window .titleContainer .title
+{
+  /*float:left;*/
+  /*height:100%;*/
+  
+  color:#333;
+  color:#086DCE;
+  font-family:arial;
+  font-size:12px;
+  font-weight:bolder;
+  
+  position:absolute;
+  top:0px;
+  left:6px;
+}
+
+.window .frame
+{
+  border:0;
+
+  margin:0;
+  padding:0 !important;
+  width:100%;
+  background-color:#f3f3f3;
+
+  border-radius:0 0 4px 4px;
+}
+
+.overlay
+{
+  background:#000;
+  opacity:0;
+  
+  margin:0;
+  padding:0;
+  height:100%;
+  width:100%;
+  
+  position:fixed;
+  _position:absolute;
+  top:0;
+  left:0;
+}
+
+.closeButton,
+.helpButton
+{
+  cursor:pointer;
+  
+  height:24px;
+  width:24px;
+}
+
+.closeButton
+{
+  background-image:url(window_close.png);
+  background-repeat:no-repeat;
+  background-size:24px 24px;
+  
+  position:relative;
+  background-color:#f3f3f3;
+  display:inline-block;  
+}
+
+.helpButton
+{
+  background-image:url(window_help.png);
+  background-repeat:no-repeat;
+  background-size:24px 24px;
+  
+  position:relative;
+  background-color:#f3f3f3;
+  display:inline-block; 
+}

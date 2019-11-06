@@ -1,0 +1,1300 @@
+var g_aDayTranslation = [ ['DOM','SUN'], ['SEG','MON'], ['TER','TUE'], ['QUA','WED'], ['QUI','THU'], ['SEX','FRI'], ['SÁB','SAT'] ];
+
+function InputDateTime( strName, strParentName, strPath, nIdSvc, nAdjustPosX, nAdjustPosY  )
+{
+  createButtonSuggest( strName + "_BtShowCal"             ,
+                       "el_" + strName + "_tdShowCalendar",
+                       "", "", "bt_showCal.gif"           );
+
+  eval( "this.btShowCal = " + strName + "_BtShowCal" );
+
+  if( nIdSvc > 0 )
+  {
+    createButtonSuggest( strName + "_BtSugDate", "el_" + strName + "_tdSuggestDate", "", "", "suggest.gif" );
+
+    eval( "this.btSugDate = " + strName + "_BtSugDate" );
+  }
+}
+
+function InputDateTime_KeyPress( pr_event ) // Trata os eventos do InputDate
+{
+  var key;
+
+  if( !pr_event )
+  {
+    if( window.event.ctrlKey )
+      return true;
+    
+    key = window.event.keyCode;
+  }
+  else
+  {
+    if( pr_event.ctrlKey )
+      return true;
+    
+    key = pr_event.which;
+  }
+
+  return InputDateTime_TreatKeyPress.apply( this, [key] );
+}
+
+function InputDateTime_TreatKeyPress( pr_key, pr_isPaste )
+{
+  if( pr_key >= 35 && pr_key <= 40 || pr_key == 9 ) //setas e tab
+    return true;
+
+  if( this._parent.bReadOnly )
+    return false;
+    
+  if( pr_key >= 96  && pr_key <= 105 )
+    pr_key -= 48;
+    
+  var caretPos    = getSelectionStart( this );
+  var caretEndPos = getSelectionEnd  ( this );
+  var maskValue   = this.mask.substring( caretPos, caretPos + 1 );
+  var txField;
+  
+  if( caretPos > caretEndPos )
+  {
+  	var aux = caretPos;
+	
+  	caretPos    = caretEndPos;
+  	caretEndPos = aux;
+  }
+  
+  if( ( ( ( maskValue == "_" || maskValue == "/" || maskValue == ":" ) && !( pr_key >= 48 && pr_key <= 57 ) ) ||
+        (   maskValue == " "                                           &&    pr_key != 32                   ) ||
+        (   maskValue == "#"                                           && !( pr_key >= 65 && pr_key <= 90 ) ) ) &&
+      ( !( pr_key == 46 || pr_key == 8                                                                    ) ) )
+    return false;
+
+  var keyValue  = String.fromCharCode( pr_key  );
+  var isBsp     = pr_key == 8;
+  var isDel     = pr_key == 46;
+      maskValue = this.mask.substring( caretPos, ( caretPos == caretEndPos ? caretPos + 1 : caretEndPos ) );
+      keyValue  = keyValue + ( maskValue.length > 1 ? maskValue.substring( 1 ) : "" );
+  
+  if( isBsp )
+  {
+    if( caretPos == caretEndPos )
+    {
+      if( caretPos == 0 )
+        return false;
+      
+      caretPos--;
+      caretEndPos--;
+      
+      if( this.mask.substring( caretPos, caretPos + 1 ) == "/" ||
+          this.mask.substring( caretPos, caretPos + 1 ) == ":" )
+      {
+        caretPos--;
+        caretEndPos--;
+      }
+    }
+    
+    maskValue = this.mask.substring( caretPos, ( caretPos == caretEndPos ? caretPos + 1 : caretEndPos ) );
+    keyValue  = maskValue;
+  }
+  else if( caretPos == this.mask.length )
+    return false;
+  else if( isDel )
+  {
+    if( this.mask.substring( caretPos, caretPos + 1 ) == "/" || 
+        this.mask.substring( caretPos, caretPos + 1 ) == ":" )
+    {
+      caretPos++;
+      caretEndPos++;
+    }
+	  
+    maskValue = this.mask.substring( caretPos, ( caretPos == caretEndPos ? caretPos + 1 : caretEndPos ) );
+    keyValue  = maskValue;
+  }
+  
+  keyValue = keyValue.replace( new RegExp( "#", "g" ), " " );
+  
+  if( ( this.value.substring( caretPos, caretPos + 1 ) == "/" ||
+        this.value.substring( caretPos, caretPos + 1 ) == ":" ) && !isBsp )
+  {
+    if( caretPos == caretEndPos )
+      caretEndPos++;
+      
+    caretPos++;
+  }
+  
+  this.value = this.value.substring( 0, caretPos ) + keyValue + this.value.substring( ( caretPos == caretEndPos ? caretPos + 1 : caretEndPos ) );
+  txField    = this;
+  
+  if( pr_isPaste )
+    setCaretPosition( this, ( isBsp || isDel ? caretPos : ++caretPos ) );
+  else
+    setTimeout( function( ) { setCaretPosition( txField, ( isBsp || isDel ? caretPos : ++caretPos ) ); }, 1 );
+  
+  return false;
+}
+
+function InputDateTime_Paste( )
+{
+  var self = this._parent;
+
+  if( self.bReadOnly )
+    return false;
+
+  var bounds = getSelectionBounds( this );
+
+  self.oldValue         = this.value;
+  self.oldCaretStartPos = bounds.start;
+  self.oldCaretEndPos   = bounds.end;
+
+  if( self.oldCaretStartPos == self.oldCaretEndPos )
+  {
+    this.value = "";
+  }
+
+  setTimeout( function( ){ self.afterPaste( ); } );
+
+  return true;
+}
+
+InputDateTime.afterPaste = function( )
+{
+  var txDate = this.txDate,
+    str = txDate.value,
+    cursorPos;
+  
+  if( this.oldCaretStartPos != this.oldCaretEndPos )
+  {
+    var oldValue = this.oldValue,
+      pasteStr = str.substr( this.oldCaretStartPos, ( this.oldCaretEndPos - this.oldCaretStartPos - Math.abs( str.length - oldValue.length ) ) ),
+      pasteData;
+  
+    pasteStr  = pasteStr.replace( new RegExp( "[^0-9_]", "g" ), "" );
+    pasteData = this.applyMask( pasteStr, this.oldCaretStartPos, this.oldCaretEndPos );
+  
+    str       = oldValue.substring( 0, this.oldCaretStartPos ) + pasteData.text + oldValue.substring( this.oldCaretEndPos );
+    cursorPos = this.oldCaretEndPos;
+  
+    pasteData = this.applyMask( str );
+    str = pasteData.text;
+  
+    this.oldValue         = undefined;
+    this.oldCaretStartPos = undefined;
+    this.oldCaretEndPos   = undefined;
+  }
+  else
+  {
+    var data  = this.applyMask( str );
+    str       = data.text;
+    cursorPos = data.cursorPos;
+  }
+  
+  txDate.value = str;
+  setCaretPosition( txDate, cursorPos || str.length );
+}
+
+InputDateTime.applyMask = function( pr_str, pr_begin, pr_end )
+{
+  var mask = this.txDate.mask,
+    str = "",
+    date,
+    day,
+    month,
+    year,
+    hour,
+    minute,
+    second,
+    i,
+    j,
+    cursorPos = 0,
+    bRanged = typeof pr_begin !== "undefined" || typeof pr_end !== "undefined";
+
+  pr_begin = pr_begin || 0;
+  pr_end   = pr_end   || mask.length;
+
+  // Preciso separar o joio do trigo.
+  pr_str = pr_str.replace( new RegExp( "[^0-9_]", "g" ), "" );
+
+  for( i = pr_begin || 0, j = 0; i < Math.min( pr_end, mask.length ); i++ )
+  {
+    switch( mask.charAt( i ) )
+    {
+      case "_":
+        if( j < pr_str.length )
+        {
+          str += pr_str.charAt( j );
+          j++;
+          break;
+        }
+        else if( j == pr_str.length )
+        {
+          cursorPos = str.length;
+          j++;
+        }
+      case "/":
+      case ":":
+      case " ":
+        str += mask.charAt( i );
+        break;
+      // Nestes 2 casos não inclui nada na String.
+      // Não botei "default" pra explicitar os outros 2 casos.
+      // A máscara efetivamente termina no espaço, entretanto, não parei o for pois futuramente, quando juntar
+      // com o componente de data/hora, já estará preparado. 
+      case "#":
+    }
+  }
+
+  // Se for aplicação de máscara localizada, não coloca o dia, pois será reaplicada a máscara depois de ter a
+  // string completa.
+  if( !bRanged )
+  {
+    date = new Date( );
+  
+    year = str.substring( 6,11 );
+    
+    if( this.bPortuguese )
+    {
+      day   = str.substring( 0,2 );
+      month = str.substring( 3,5 );
+    }
+    else
+    {
+      month = str.substring( 0,2 );
+      day   = str.substring( 3,5 );
+    }
+    // O mês é de 0 ~ 11, só que nós escrevemos de 1 ~ 12.
+    month--;
+    
+    hour   = this.txDate.value.substring( 11,13 );
+    minute = this.txDate.value.substring( 14,16 );
+    second = this.getSeconds( this.txDate.value );
+    
+    date.setFullYear( year, month, day );
+    
+    /*
+     * As datas em javascript são lenientes, ou seja, caso eu coloque 30/13/2001 a data criada será
+     * 30/01/2002. Portanto, para verificar se a data é valida, verifico seu formato criando uma data com
+     * os dados informados, se for equivalente à NaN contém dados inválidos, se for diferente de NaN,
+     * é parcialmente válida, faltando verificar apenas se a data criada é estrita ou leniente.
+     */
+    if ( !isNaN( date )                &&
+         day    == date.getDate    ( ) &&
+         month  == date.getMonth   ( ) &&
+         year   == date.getFullYear( ) &&
+         hour   == date.getHours   ( ) &&
+         minute == date.getMinutes ( ) &&
+         second == date.getSeconds ( ) )
+      str += " " + g_aDayTranslation[date.getDay( )][this.bPortuguese ? 0 : 1];
+  }
+
+  return { text:str, cursorPos: cursorPos };
+}
+
+InputDateTime._showCalendar = function( e )
+{
+  InputDateTime.showCalendar.apply( this._parent, [e] );
+}
+
+InputDateTime._suggestDate = function( e )
+{
+  InputDateTime.suggestDate.apply( this._parent, [e] );
+}
+
+InputDateTime.finalize = function( strName    , strInternalName, strParentName, strIdSvcFillCal     , strIdSvcSugDate,
+                                   aSource    , nIdSvc         , strValue     , strCssClass         , strCssClassRO  , 
+                                   bReadOnly  , bClear         , bPortuguese  , aEventListenerChange, aEventListener ,
+                                   dtFirstDate, dtLastDate     , bIgnoreEvents, bShowSeconds        , bMandatoryTime )
+{
+  var inpDate = this;
+
+  inpDate.JSName           = strName;
+  inpDate.internalName     = strInternalName;
+  inpDate._type            = 35;
+  inpDate.aSource          = aSource;
+  inpDate.IdFillCal        = strIdSvcFillCal;
+  inpDate.IdSugDate        = strIdSvcSugDate;
+  inpDate.IdSvc            = nIdSvc;
+  inpDate._cpName          = strName;
+  inpDate._elName          = "el_" + strName;
+  inpDate.bPortuguese      = bPortuguese;
+  inpDate.dtValue          = strValue;
+  inpDate.firstDate        = "";
+  inpDate.lastDate         = "";
+  inpDate.bShowSeconds     = bShowSeconds;
+  inpDate.bMandatoryTime   = bMandatoryTime;
+  
+  inpDate.bIgnoreEvents = bIgnoreEvents;
+
+  inpDate.txDate = document.getElementById( 'el_' + strName + '_dateField' );
+  finalizeInputText.apply( inpDate.txDate, ['cp_el_' + strName + '_dateField', 4, 'el_' + strName + '_tdDateField', strCssClass, strCssClassRO, [], []] );
+
+  inpDate.txDate.onkeydown  = InputDateTime_KeyPress;
+  inpDate.txDate.onpaste    = InputDateTime_Paste;
+  inpDate.txDate._parent    = inpDate;
+  inpDate.txDate.JSName     = strName + "_txDateField";
+
+  inpDate.aEventListenerChange    = aEventListenerChange;
+  inpDate.aEventListenerLostFocus = aEventListener;
+  
+  if( inpDate.bShowSeconds )
+  {
+    inpDate.txDate.maxLength = 23;
+    inpDate.txDate.mask      = "__/__/____ __:__:__ ###";    
+  }
+  else
+  {
+    inpDate.txDate.maxLength = 20;
+    inpDate.txDate.mask      = "__/__/____ __:__ ###";
+  }  
+
+  if( aEventListener.length > 0 && !inpDate.bReadOnly )
+    inpDate.aEventListenerLostFocus = aEventListener;
+  else
+    inpDate.aEventListenerLostFocus = [];
+
+  if( aEventListenerChange.length > 0 && !inpDate.bReadOnly )
+    inpDate.aEventListenerChange = aEventListenerChange;
+  else
+    inpDate.aEventListenerChange = [];
+ 
+  inpDate.clearFirstDate = function( )
+  {
+    inpDate.firstDate = "";
+  }
+
+  inpDate.clearLastDate = function( )
+  {
+    inpDate.lastDate = "";
+  }
+
+  inpDate.getFirstDate = function( )
+  {
+    return inpDate.firstDate;
+  }
+
+  inpDate.getLastDate = function( )
+  {
+    return inpDate.lastDate;
+  }
+
+  inpDate.setFirstDate = function( dt )
+  {
+    inpDate.firstDate = dt;
+  }
+
+  inpDate.setLastDate = function( dt )
+  {
+    inpDate.lastDate = dt;
+  }
+  
+  inpDate.getWeekDay = function( strDate )
+  {
+    if( this.bShowSeconds )
+      return strDate.substring( 20, 23 );
+    else
+      return strDate.substring( 17, 20 );
+  }
+  
+  inpDate.getSeconds = function( strDate )
+  {
+    if( this.bShowSeconds )
+      return strDate.substring( 17, 19 );
+    else
+      return "00";
+  }
+  
+  inpDate.dateFormatOk = function( )
+  {
+    var reDate = new Array( );
+    var bOk = false;
+    
+    if( this.bMandatoryTime )
+    {
+      if( this.bShowSeconds )
+      {
+        reDate[reDate.length] = new RegExp( "\\d{2}\\/\\d{2}\\/\\d{4}\\s\\d{2}:\\d{2}:\\d{2}\\s[a-zA-Z]{3}", "g" ); // 99/99/9999 HH:MM:SS XXX
+        reDate[reDate.length] = new RegExp( "\\d{2}\\/\\d{2}\\/\\d{4}\\s\\d{2}:\\d{2}:\\d{2}", "g" ); // 99/99/9999 HH:MM:SS
+      }
+      else
+      {
+        reDate[reDate.length] = new RegExp( "\\d{2}\\/\\d{2}\\/\\d{4}\\s\\d{2}:\\d{2}\\s[a-zA-Z]{3}", "g" ); // 99/99/9999 HH:MM XXX
+        reDate[reDate.length] = new RegExp( "\\d{2}\\/\\d{2}\\/\\d{4}\\s\\d{2}:\\d{2}", "g" ); // 99/99/9999 HH:MM
+      }
+    }
+    else
+    {  
+      if( this.bShowSeconds )
+      {
+        reDate[reDate.length] = new RegExp( "\\d{2}\\/\\d{2}\\/\\d{4}\\s\\d{2}:\\d{2}:\\d{2}\\s[a-zA-Z]{3}", "g" ); // 99/99/9999 HH:MM:SS XXX
+        reDate[reDate.length] = new RegExp( "\\d{2}\\/\\d{2}\\/\\d{4}\\s\\d{2}:\\d{2}:\\d{2}", "g" ); // 99/99/9999 HH:MM:SS
+        
+        reDate[reDate.length] = new RegExp( "\\d{2}\\/\\d{2}\\/\\d{4}\\s_{2}:_{2}:_{2}\\s[a-zA-Z]{3}", "g" ); // 99/99/9999 __:__:__ XXX
+        reDate[reDate.length] = new RegExp( "\\d{2}\\/\\d{2}\\/\\d{4}\\s_{2}:_{2}:_{2}", "g" ); // 99/99/9999 __:__:__
+      }
+      else
+      {
+        reDate[reDate.length] = new RegExp( "\\d{2}\\/\\d{2}\\/\\d{4}\\s\\d{2}:\\d{2}\\s[a-zA-Z]{3}", "g" ); // 99/99/9999 HH:MM XXX
+        reDate[reDate.length] = new RegExp( "\\d{2}\\/\\d{2}\\/\\d{4}\\s\\d{2}:\\d{2}", "g" ); // 99/99/9999 HH:MM
+        
+        reDate[reDate.length] = new RegExp( "\\d{2}\\/\\d{2}\\/\\d{4}\\s_{2}:_{2}\\s[a-zA-Z]{3}", "g" ); // 99/99/9999 __:__ XXX
+        reDate[reDate.length] = new RegExp( "\\d{2}\\/\\d{2}\\/\\d{4}\\s_{2}:_{2}", "g" ); // 99/99/9999 __:__        
+      }
+    }
+
+    for( var i=0; i < reDate.length; i++ )
+      if( reDate[i].test( this.txDate.value ) )
+        bOk = true;
+    
+    return bOk;
+  }
+
+  inpDate.validaDate = function( )
+  {
+    var day     = '';
+    var month   = '';
+    var year    = '';
+    var hour    = '';
+    var minute  = '';
+    var second  = '';
+    var weekDay = this.getWeekDay( this.txDate.value );
+
+    //Coleta um catacter a mais após o ano, para validar se foram digitados apenas 4 caracteres
+    //para o ano
+    year = this.txDate.value.substring( 6,11 );
+    //Acrescenta 1 espaço vazio após o ano digitado. Sem este espaço a data digita seria dd/mm/yyyy
+    //e não passaria no teste de data válida. Pois para passar no teste o 5º caracter tem que ser igual a ' '.
+    //Há esta necessidade pois quando a data é sugerida ela vem como ex: dd/mm/yyyy XXX.
+    //O 5º elemento é um ' ' e é uma data válida.
+    if( year == 0 )
+      return false;
+
+    year = year + ' ';
+
+    if( inpDate.bPortuguese )
+    {
+      day   = this.txDate.value.substring( 0,2 );
+      month = this.txDate.value.substring( 3,5 );
+    }
+    else
+    {
+      month = this.txDate.value.substring( 0,2 );
+      day   = this.txDate.value.substring( 3,5 );
+    }
+    
+    hour   = this.txDate.value.substring( 11,13 );
+    minute = this.txDate.value.substring( 14,16 );
+    second = this.getSeconds( this.txDate.value );
+    
+    //Validando dias, meses e anos válidos. Ano só pode conter 4 digitos. O 5º digito pode ser ' ' pois caso a data seja sugerida
+    //a mesma será igual a dd/mm/yyyy SEG por exemplo. Haverá um 5º caracter porém não é um ano inválido.
+    if( ( day > 31 || day == 0 ) || ( month > 12 || month == 0 ) || year.substring( 4, 5 ) != ' ' )
+      return false;
+    //Validando meses com 30 dias.
+    else if( ( month == 4 || month == 6 || month == 9 || month == 11 ) && day > 30 )
+      return false;
+    //Validando dias de fevereiro em no bissexto.
+    else if( year % 4 != 0 && month == 2 && day > 28 )
+      return false;
+    else if( year % 4 == 0 && month == 2 && day > 29 )
+      return false;
+    
+    //Validação da Hora
+    if( hour > 23 || minute > 59 )
+      return false;
+    
+    if( this.bShowSeconds && second > 59 )
+      return false;
+    
+    return true;
+  }
+
+  inpDate.adjustDates = function( )
+  {
+    if( this.dateFormatOk( ) && this.validaDate( ) )
+    {
+      var dt      = inpDate.getDate( this.txDate.value, true );
+      var dtFirst = inpDate.getDate( inpDate.firstDate, true );
+      var dtLast  = inpDate.getDate( inpDate.lastDate,  true );
+
+      //Verificar se a data está entre os limites especificados
+      if( dt != null && dtFirst != null && dt < dtFirst )
+        inpDate._setValue( inpDate.firstDate, true );
+
+      if( dt != null && dtLast != null && dt > dtLast )
+        inpDate._setValue( inpDate.lastDate, true );
+
+      //Coletar o Dia da Semana
+      var date = new Date( );
+      var day;
+      var month;
+      var year = this.txDate.value.substring( 6,11 );
+
+      if( inpDate.bPortuguese )
+      {
+        day   = this.txDate.value.substring( 0,2 );
+        month = this.txDate.value.substring( 3,5 );
+      }
+      else
+      {
+        month = this.txDate.value.substring( 0,2 );
+        day   = this.txDate.value.substring( 3,5 );
+      }
+
+      date.setFullYear( year, month - 1, day );
+
+      var weekDay = g_aDayTranslation[date.getDay( )][g_bEnglish ? 1 : 0];
+            
+      //Ajustar a Data no campo texto
+      if( this.bShowSeconds )
+        inpDate._setValue( this.txDate.value.substring( 0, 19 ) + ' ' + weekDay );
+      else
+        inpDate._setValue( this.txDate.value.substring( 0, 16 ) + ' ' + weekDay );
+    }
+    else
+      inpDate._setValue( "" );
+  }
+
+  inpDate.getDate = function( strDate, bBlankTime )
+  {
+    if( strDate == "" )
+      return null;
+
+    var dd = "";
+    var mm = "";
+    var yy = "";
+
+    if( inpDate.bPortuguese )
+    {
+      dd = strDate.substring( 0,2  );
+      mm = strDate.substring( 3,5  );
+      yy = strDate.substring( 6,10 );
+    }
+    else
+    {
+      dd = strDate.substring( 3,5  );
+      mm = strDate.substring( 0,2  );
+      yy = strDate.substring( 6,10 );
+    }
+    
+    if( bBlankTime )
+    {
+      var hour   = strDate.substring( 11,13 );
+      var minute = strDate.substring( 14,16 );
+      var second = this.getSeconds( strDate );
+      
+      return new Date( yy, mm - 1, dd, hour, minute, second, 0 );      
+    }
+
+    return new Date( yy, mm - 1, dd );
+  }
+
+  inpDate.focus = function( )
+  {
+    inpDate.txDate.focus( );
+  }
+  
+  inpDate.txDate.onfocus = function( )
+  {
+    if( ( this.value == "" || this.value.trim( ) == this.mask.replace( new RegExp( "#", "g" ), " " ).trim( ) ) && !this._parent.isReadOnly( ) )
+    {
+      this.value = this.mask.replace( new RegExp( "#", "g" ), " " );
+      setCaretPosition( this, 0 );
+    }
+  }
+
+  inpDate.txDate.onblur = function( )
+  {
+    inpDate.adjustDates( );
+
+    if( ( document.activeElement == null ||
+         document.activeElement.JSName != inpDate.txDate.strBtShowCalName ) &&
+        ( document.activeElement == null || document.activeElement.tagName != "IFRAME" ) && //Está vindo da janela de calendário
+        ( ( inpDate.aEventListenerLostFocus.length > 0 || inpDate.aEventListenerChange.length > 0 ) &&
+          !inpDate.bReadOnly ) )
+        {
+          inpDate.aEventListener = inpDate.aEventListenerLostFocus;
+          fireEvent.apply( inpDate,[] );
+
+          if( inpDate.txDate.value != inpDate.dtValue )
+          {
+            inpDate.aEventListener = inpDate.aEventListenerChange;
+            fireEvent.apply( inpDate,[] );
+            inpDate.dtValue = inpDate.txDate.value;
+          }
+        }
+  }
+  
+  inpDate.hasTime = function( )
+  {
+    var bHasTime = true;
+    var date     = adjustComponentValue( inpDate.txDate );
+    
+    if( !this.bMandatoryTime )
+    {
+      if( this.bShowSeconds )
+        bHasTime = (date.indexOf( '__:__:__' ) == -1);
+      else
+        bHasTime = (date.indexOf( '__:__' ) == -1);
+    }
+
+    return bHasTime;
+  }
+  
+  inpDate.getValue = function( )
+  {
+    var date = adjustComponentValue( inpDate.txDate );
+    var strData;
+
+    try
+    {
+      if( !this.bMandatoryTime )
+      {
+        if( this.bShowSeconds )
+          strData = date.replace( '__:__:__', '00:00:00' );
+        else
+          strData = date.replace( '__:__', '00:00' );
+      }
+      else
+        strData = date;
+      
+      //Remove o Dia da Semana.
+      strData = strData.substr( 0, strData.length - 4 );
+
+      return strData;
+    }
+    catch( e )
+    {
+      return date;
+    }
+  }
+
+  inpDate.getJsonValue = function( )
+  {
+    inpDate.adjustDates( );// Ajusta a data aos limites informados
+
+    var bHasTime = this.hasTime( );
+    var data     = this.getValue( );
+    var str;
+    
+    str = "{type:" + inpDate._type + ",value:'" + data + "',hasTime:" + bHasTime + ", firstDate:'" + inpDate.getFirstDate( ) + "', lastDate:'" + inpDate.getLastDate( ) + "'";
+
+    str += "}";
+    
+    return str;
+  }
+
+  inpDate.setJsonValue = function( json )
+  {
+    var bClear = false;
+
+    if( json.setup ) // Veio pelo Setup
+    {
+      var bChangeFirstLastDate = false;
+
+      if( json.setup.readOnly != undefined )
+        this.setReadOnly( json.setup.readOnly );
+
+      if( json.setup.clear != undefined )
+        bClear = json.setup.clear;
+
+      if( json.setup.clearFirstDate != undefined )
+        inpDate.clearFirstDate( );
+      else if( json.setup.firstDate != undefined )
+      {
+        inpDate.setFirstDate( json.setup.firstDate );
+        bChangeFirstLastDate = true;
+      }
+
+      if( json.setup.clearLastDate != undefined )
+        inpDate.clearLastDate( );
+      else if( json.setup.lastDate != undefined )
+      {
+        inpDate.setLastDate( json.setup.lastDate );
+        bChangeFirstLastDate = true;
+      }
+
+      inpDate.adjustDates( );
+
+      if( bChangeFirstLastDate && inpDate.txDate.value != inpDate.dtValue )
+      {
+        inpDate.aEventListener = inpDate.aEventListenerChange;
+        fireEvent.apply( inpDate, [] );
+        inpDate.dtValue = inpDate.txDate.value;
+      }
+    }
+
+    var jsonAux = ( json.setup ? json.setup : json );
+
+    if( !bClear )
+    {
+      if( jsonAux.value != undefined )
+        inpDate._setValue( jsonAux.value, !jsonAux.hasTime );
+    }
+    else
+    {
+      inpDate._setValue( "" );
+    }
+  }
+
+  inpDate.isEnglishDate = function( value )
+  {
+    var day = this.getWeekDay( value );
+
+    if( day == 'DOM' || day == 'SEG' || day == 'TER' ||
+        day == 'QUA' || day == 'QUI' || day == 'SEX' || day == 'SÁB' )
+      return false;
+    else
+      return true;
+  }
+
+  inpDate.translateDay = function( day )
+  {
+    var posTranslation = 0;
+    var posNoum        = 0;
+
+    if( inpDate.bPortuguese )
+    {
+      posTranslation = 0;
+      posNoum        = 1;
+    }
+    else
+    {
+      posTranslation = 1;
+      posNoum        = 0;
+    }
+
+    for( var i = 0; i < g_aDayTranslation.length; i++ )
+      if( g_aDayTranslation[i][posNoum] == day )
+        return g_aDayTranslation[i][posTranslation];
+    
+    return day;
+  }
+
+  inpDate.convertDate = function( value, bOnlySetDate )
+  {
+    value = value.trim( );
+    if( value.trim( ) == "" )
+    {
+      if( document.activeElement == this.txDate && !this.isReadOnly( ) )
+        return this.txDate.mask.replace( new RegExp( "#", "g" ), " " );
+      else
+        return "";
+    }
+
+    var dd, mm, yy, day;
+    
+    if( !this.isEnglishDate( value ) )
+    {
+      dd  = value.substring( 0,2  );
+      mm  = value.substring( 3,5  );
+      yy  = value.substring( 6,10 );
+      day = this.translateDay( this.getWeekDay( value ) );
+    }
+    else
+    {
+      dd  = value.substring( 3,5  );
+      mm  = value.substring( 0,2  );
+      yy  = value.substring( 6,10 );
+      day = this.translateDay( this.getWeekDay( value ) );
+    }
+    
+    var hh  = value.substring( 11,13 );
+    var min = value.substring( 14,16 );
+    var ss  = this.getSeconds( value );
+    
+    var strDate;
+
+    if( this.bPortuguese )
+      strDate = dd + '/' + mm + '/' + yy;
+    else
+      strDate = mm + '/' + dd + '/' + yy;
+    
+    if( bOnlySetDate )
+    {
+      var time;
+      
+      if( this.bShowSeconds )
+      {
+        time = this.txDate.value.substring( 11,19 );
+        
+        if( time.length != 8 )
+        {
+          if( this.bMandatoryTime )
+            time = "00:00:00";
+          else
+            time = "__:__:__";
+        }
+      }
+      else
+      {
+        time = this.txDate.value.substring( 11,16 );
+        
+        if( time.length != 5 )
+        {
+          if( this.bMandatoryTime )
+            time = "00:00";
+          else
+            time = "__:__";
+        }
+      }
+      return strDate + ' ' + time + ' ' + day;
+    }
+    else
+    {
+      if( this.bShowSeconds )
+        return strDate + ' ' + hh + ':' + min + ':' + ss + ' ' + day;
+      else
+        return strDate + ' ' + hh + ':' + min + ' ' + day;
+    }
+  }
+
+  inpDate._setValue = function( value, bOnlySetDate )
+  {
+    var newValue = value;
+    
+    if( newValue.length == 14 ) //Veio somente uma data. Acrescenta o tempo zerado.
+    {
+      if( this.bMandatoryTime )
+      {  
+        if( this.bShowSeconds )
+          newValue = newValue.substring( 0, 10 ) + ' 00:00:00 ' + newValue.substring( 11 );
+        else
+          newValue = newValue.substring( 0, 10 ) + ' 00:00 ' + newValue.substring( 11 );
+      }  
+      else
+      {
+        if( this.bShowSeconds )
+          newValue = newValue.substring( 0, 10 ) + ' __:__:__ ' + newValue.substring( 11 );
+        else
+          newValue = newValue.substring( 0, 10 ) + ' __:__ ' + newValue.substring( 11 );
+      }  
+    }
+    
+    //Se foi feito um setValue com a data completa em um campo sem segundos, tenho que remover os segundos
+    if( newValue.length == 23 && !this.bShowSeconds )
+      newValue = newValue.substring( 0, 16 ) + ' ' + newValue.substring( 20 );
+    
+    inpDate.txDate.value = inpDate.convertDate( newValue, bOnlySetDate );
+
+    if( inpDate.txDate.value.trim( ) == inpDate.txDate.mask.replace( new RegExp( "#", "g" ), " " ).trim( ) )
+      setCaretPosition( inpDate.txDate, 0 );
+  }
+
+  inpDate.txDate.oncontextmenu = function( pr_event ){ if( !pr_event ) pr_event = window.event; pr_event.cancelBubble = true; return false; };
+  
+  inpDate.txDate.onmousedown = function( pr_event )
+  {
+    if( !pr_event )
+      pr_event = window.event;
+
+    if( g_inpDateTimeDraggingValue || pr_event.button != 2 )
+      return;
+
+    var position = getMouseXY( pr_event );
+
+    g_inpDateTimeDraggingValue           = document.createElement( "DIV" );
+    g_inpDateTimeDraggingValue.innerHTML = this.value;
+
+    g_inpDateTimeDraggingValue.style.cursor   = "default";
+    g_inpDateTimeDraggingValue.style.font     = "10px arial";
+    g_inpDateTimeDraggingValue.style.position = "absolute";
+    g_inpDateTimeDraggingValue.style.left     = ( position[0] +  1 ) + "px";
+    g_inpDateTimeDraggingValue.style.top      = ( position[1] - 10 ) + "px";
+    g_inpDateTimeDraggingValue.style.zIndex   = 1000;
+
+    if( isIE( ) )
+      g_inpDateTimeDraggingValue.style.filter  = "alpha(opacity=60)";
+    else
+      g_inpDateTimeDraggingValue.style.opacity = "0.6";
+
+    document.body.appendChild( g_inpDateTimeDraggingValue );
+    document.body.focus( );
+    
+    document.oncontextmenu = function( ) { return false; };
+    addEvent( document     , "mousemove", inputDateTimeOnValueDrag      , false );
+    addEvent( document     , "mouseup"  , removeInputDateTimeOnValueDrag, false );
+    addEvent( document.body, "blur"     , removeInputDateTimeOnValueDrag, false );
+      
+    try
+    {
+      if( window != window.parent )
+        addEvent( window.parent.document, "mouseover", windowOut, false );
+    }
+    catch( e ){}
+  }
+
+  inpDate.txDate.onmouseup = function( pr_event )
+  {
+    if( this.disabled || this.readOnly )
+      return;
+
+    if( !pr_event )
+      pr_event = window.event;
+
+    if( pr_event.button == 2 && g_inpDateTimeDraggingValue )
+    {
+      this.value = g_inpDateTimeDraggingValue.innerHTML;
+      this.focus( );
+    }
+  }
+
+  $( inpDate.txDate ).addClass( strCssClass );
+  inpDate.btShowCal.tabIndex    = -1;
+  inpDate.btShowCal._parent     = inpDate;
+  inpDate.btShowCal.JSName      = strName + "_BtShowCal";
+  inpDate.btShowCal.bFirstClick = false;
+  
+  finalizeButtonSuggestEx.apply( inpDate.btShowCal, [ "", "", bReadOnly, true, 16, 20, [], "" ] );
+  var parentStyle = window.getComputedStyle ? window.getComputedStyle( inpDate.btShowCal.parentNode, null )
+                                            : inpDate.btShowCal.parentNode.currentStyle;
+  
+  inpDate.btShowCal.setAttribute( 'JSName', inpDate.btShowCal.JSName );
+  inpDate.txDate.strBtShowCalName = inpDate.btShowCal.JSName;
+
+  if( nIdSvc > 0 )
+  {
+    inpDate.btSugDate._parent  = inpDate;
+    inpDate.btSugDate.JSName   = strName + "_BtSugDate";
+    inpDate.btSugDate.tabIndex = -1;
+    inpDate.btSugDate.style.verticalAlign = "middle";
+
+    finalizeButtonSuggestEx.apply( inpDate.btSugDate,
+                                 [
+                                   ""  , "", bReadOnly,
+                                   true, 16, 20,
+                                   []  , ""
+                                 ]
+                               );
+
+    inpDate.btSugDate.setEvent( InputDate._suggestDate );
+    inpDate.btSugDate.setAttribute( 'JSName', inpDate.btSugDate.JSName );
+  }
+
+  inpDate.setReadOnly = function( bReadOnly )
+  {
+    if( inpDate.btShowCal.parentNode.readonly == 'true' && !bReadOnly )
+      return;
+
+    inpDate.bReadOnly = bReadOnly;
+    inpDate.btShowCal.setReadOnly( bReadOnly );
+    inpDate.txDate   .setReadOnly( bReadOnly );
+
+    if( !inpDate.bUseMenu )
+      inpDate.btShowCal.setEvent( InputDate._showCalendar );
+    else
+      inpDate.btShowCal.setEvent( inpDate.showMenu );
+
+    if( nIdSvc > 0 )
+      inpDate.btSugDate.setReadOnly( bReadOnly );
+  }
+
+  inpDate.isReadOnly = function( )
+  {
+    return inpDate.bReadOnly;
+  }
+
+  inpDate.afterPaste = InputDateTime.afterPaste;
+  inpDate.applyMask  = InputDateTime.applyMask;
+
+  if( !bClear )
+    inpDate._setValue( strValue );
+  
+  inpDate.setReadOnly( bReadOnly );
+
+  g_aInpDate[g_aInpDate.length] = inpDate;
+
+  inpDate.closeCalWin = function( )
+  {
+    if( inpDate.calWin && inpDate.bShow )
+    {
+      inpDate.calWin.hide( );
+      inpDate.bShow = false;
+    }
+  }
+
+  if( !g_bInpDateDocumentEventAdded )
+  {
+    addEvent( document, "click", closeInpDates );
+    g_bInpDateDocumentEventAdded = true;
+  }
+
+  if( dtFirstDate != undefined )
+    inpDate.setFirstDate( dtFirstDate ); 
+
+  if( dtLastDate != undefined )
+    inpDate.setLastDate( dtLastDate );
+}
+
+InputDateTime.showCalendar = function( )
+{
+  if( this.bShow )
+  {
+    this.closeCalWin( );
+    this.txDate.focus( );
+    
+    return;
+  }
+  
+  var nW = 204;
+  var nH = 176;
+
+  var nX = 0;
+  var nY = 0;
+
+  var nWc = this.btShowCal.getW( ) + 90 + ( this.IdSvc > 0 ? this.btSugDate.getW( ) : 0 );
+  var nHc = this.btShowCal.getH( );
+  
+  var position = calcOffset( this.txDate );
+  var nXc      = position[0];
+  var nYc      = position[1];
+  var nAjuste  = calcAjuste( this.txDate );
+  
+  var nTotH = nYc + nHc + nH;
+  var nTotW = nXc + nW;
+
+  nY = nTotH <= document.body.clientHeight ? nYc + nHc : nYc - nH;
+
+  if( nTotH <= document.body.clientHeight )
+  {
+    nX = nTotW <= document.body.clientWidth ? nXc : ( nXc + nWc - nW );
+    nY = nYc + nHc;
+  }
+  else if( nH <= nYc )
+  {
+    nX = nTotW <= document.body.clientWidth ? nXc : ( nXc + nWc - nW );
+    nY = nYc - nH;
+  }
+  else if( nTotW <= document.body.clientWidth )
+  {
+    nX = nXc;
+    nY = nYc + nHc;
+  }
+  else if( nTotW + nWc - nW <= nXc + nWc )
+  {
+    nX = nXc + nWc - nW;
+    nY = nYc + nHc;
+  }
+  else
+  {
+    nX = nXc;
+    nY = nYc + nHc;
+  }
+
+  this.adjustDates( );
+
+  var strID2    = '';
+  var strID5    = '';
+  var strLimits = '';
+  this.txDate.focus( );
+    
+  if( this.txDate.value )
+  {
+    strID2 = '&ID2=' + this.txDate.value;
+    strID5 = '&ID5=' + this.txDate.value;
+  }
+
+  if( this.firstDate != "" )
+    strLimits += '&FirstDate=' + this.firstDate;
+
+  if( this.lastDate != "" )
+    strLimits += '&LastDate=' + this.lastDate;
+
+  var strUrl = g_strURL + '?ID1=' + this.IdFillCal + strID2 + '&ID3=false&ID4=' + this.JSName + strID5 + strLimits;
+  var html   = postContent( strUrl, '' ); // Post para verificar a queda da sessão
+    
+  try
+  {
+    this.calWin        = window.parent.document.createElement( "DIV"    );
+    this.calWin.iFrame = window.parent.document.createElement( "IFRAME" );
+      
+    window.parent.document.body.appendChild( this.calWin );
+    window.parent.g_openedCalendar = this.calWin;
+  
+    this.calWin.onWindowMove = function( ){ window.parent.g_openedCalendar.move( ); }
+
+    if( document.addEventListener )
+      parent.g_forms[ parent.g_forms.length - 1 ].addEventListener( "move", this.calWin.onWindowMove, false );
+    else
+      parent.g_forms[ parent.g_forms.length - 1 ].attachEvent( "onmove", this.calWin.onWindowMove );
+
+    this.calWin.move = function( )
+    {
+      var nW = 204;
+      var nH = 176;
+      
+      var nX = 0;
+      var nY = 0;
+      
+      var nWc = this.inpDate.btShowCal.getW( ) + 90 + ( this.IdSvc > 0 ? this.btSugDate.getW( ) : 0 );
+      var nHc = this.inpDate.btShowCal.getH( );
+        
+      var position = calcOffset( this.inpDate.txDate );
+      var nXc      = position[0];
+      var nYc      = position[1];
+      var nAjuste  = calcAjuste( this.inpDate.txDate );
+        
+      var nTotH = nYc + nHc + nH;
+      var nTotW = nXc + nW;
+      
+      nY = nTotH <= this.inpDate.txDate.ownerDocument.body.clientHeight ? nYc + nHc : nYc - nH;
+      
+      if( nTotH <= this.inpDate.txDate.ownerDocument.body.clientHeight )
+      {
+        nX = nTotW <= this.inpDate.txDate.ownerDocument.body.clientWidth ? nXc : ( nXc + nWc - nW );
+        nY = nYc + nHc;
+      }
+      else if( nH <= nYc )
+      {
+        nX = nTotW <= this.inpDate.txDate.ownerDocument.body.clientWidth ? nXc : ( nXc + nWc - nW );
+        nY = nYc - nH;
+      }
+      else if( nTotW <= this.inpDate.txDate.ownerDocument.body.clientWidth )
+      {
+        nX = nXc;
+        nY = nYc + nHc;
+      }
+      else if( nTotW + nWc - nW <= nXc + nWc )
+      {
+        nX = nXc + nWc - nW;
+        nY = nYc + nHc;
+      }
+      else
+      {
+        nX = nXc;
+        nY = nYc + nHc;
+      }
+        
+      nX += parent.g_forms[ parent.g_forms.length - 1 ].getX( ) + 4;  //bordas
+      nY += parent.g_forms[ parent.g_forms.length - 1 ].getY( ) + 26; //barra de título da tela modal
+        
+      nX += nAjuste[0];
+      nY += nAjuste[1];
+        
+      this.style.left = nX + "px";
+      this.style.top  = nY + "px";
+    }
+
+    if( parent.g_forms.length > 0 )
+    {
+      nX += parent.g_forms[ parent.g_forms.length - 1 ].getX( ) + 4;  //bordas
+      nY += parent.g_forms[ parent.g_forms.length - 1 ].getY( ) + 26; //barra de título da tela modal
+    }
+  }
+  catch( e )
+  {
+    this.calWin        = document.createElement( "DIV"    );
+    this.calWin.iFrame = document.createElement( "IFRAME" );
+    g_openedCalendar   = this.calWin;
+      
+    document.body.appendChild( this.calWin );
+  }
+    
+  nX += nAjuste[0];
+  nY += nAjuste[1];
+    
+  this.calWin.style.position = "absolute";
+  this.calWin.style.left     = nX + "px";
+  this.calWin.style.top      = nY + "px";
+  this.calWin.style.height   = nH + "px";
+  this.calWin.style.width    = nW + "px";
+  this.calWin.style.zIndex   = 9999;
+    
+  this.calWin.inpDate = this;
+  this.calWin.appendChild( this.calWin.iFrame );
+  this.calWin.iFrame.src    = strUrl;
+  this.calWin.iFrame.width  = nW + "px";
+  this.calWin.iFrame.height = nH + "px";
+
+  this.calWin.hide = function( )
+  {
+    this.inpDate.bShow = false;
+    this.style.display = "none";
+    this.iFrame.src    = "";
+    this.iFrame.parentNode.removeChild( this.iFrame );
+    this.parentNode.removeChild( this );
+    
+    if( parent.g_openedCalendar == this )
+      parent.g_openedCalendar = undefined;
+    
+    try
+    {
+      removeEvent( parent.g_forms[ parent.g_forms.length - 1 ], "move", this.onWindowMove, false );
+    }
+    catch( e )
+    { }
+  }
+
+  this.bShow = true;
+}
+
+InputDateTime.suggestDate = function( )
+{
+  this._setValue( postContent( g_strURL, 'ID1=' + this.IdSugDate + '&ID2=' + this.IdSvc + '&ID3=' + buildQueryString( this.aSource ) + '&ID4=false' ) );
+  this.txDate.focus( );
+}
+
+function closeInpDates( pr_event )
+{
+  if( !pr_event )
+    var pr_event = window.event;
+    
+  var src = isIE( ) ? pr_event.srcElement : pr_event.target;
+    
+  for( var i = 0; i < g_aInpDate.length; i++ )
+    if( (src._parent && src._parent != g_aInpDate[i]) ||
+        (!src._parent && src.name != g_aInpDate[i].btShowCal.getImageUrl( ) ) )
+      g_aInpDate[i].closeCalWin( );
+}
+
+function inputDateTimeOnValueDrag( pr_event )
+{
+    if( !g_inpDateTimeDraggingValue )
+       return false;
+
+    if( !pr_event )
+        pr_event = window.event;
+
+    var position = getMouseXY( pr_event );
+    var nX = nY = 0;
+
+    position[0] +=  1;
+    position[1] -=  10;
+
+    g_inpDateTimeDraggingValue.style.left = position[0] + "px";
+    g_inpDateTimeDraggingValue.style.top  = position[1] + "px";
+}
+
+//Usado para retirar o valor do inputDate que está sendo arrastado, caso o aconteça para fora da janela. 
+function windowOut( )
+{
+  removeInputDateTimeOnValueDrag( );
+}
+
+function removeInputDateTimeOnValueDrag( pr_event )
+{
+  var currentWindow = window;
+  
+  if( !pr_event )
+      pr_event = window.event;  
+
+  if( !g_inpDateTimeDraggingValue )
+  {
+		currentWindow          = getTopWindow( );
+		g_inpDateTimeDraggingValue = currentWindow.g_inpDateTimeDraggingValue;
+		
+	    if( !g_inpDateTimeDraggingValue )
+	      return false;
+  }
+  
+  removeEvent( currentWindow.document,      "mousemove", inputDateTimeOnValueDrag      , false );
+  removeEvent( currentWindow.document,      "mouseup"  , removeInputDateTimeOnValueDrag, false );
+  removeEvent( currentWindow.document.body, "blur"     , removeInputDateTimeOnValueDrag, false );
+
+  try
+  {
+    if( window != window.parent )
+      removeEvent( window.parent.document, "mouseover", windowOut, false );
+  }
+  catch( e ){}
+  
+  currentWindow.document.body.removeChild( g_inpDateTimeDraggingValue );
+  g_inpDateTimeDraggingValue   = undefined;
+}

@@ -1,0 +1,761 @@
+g_swapbox_nIdLvSource = 0;
+g_swapbox_nIdLvTarget = 1;
+
+swapbox = function( pr_arg )
+{
+  var sb = {};
+
+  sb._bFilled            = false;
+  sb.lvSource            = undefined;
+  sb.lvTarget            = undefined;
+  sb.btSource2Target     = undefined;
+  sb.btAllSources2Target = undefined;
+  sb.btTarget2Source     = undefined;
+  sb.btAllTargets2Source = undefined;
+  sb.btMoveUp            = undefined;
+  sb.btMoveDown          = undefined;
+  
+  sb.strFocusLvName = undefined;
+  sb.internalName   = pr_arg.name;
+
+  sb.nIdLvSource = g_swapbox_nIdLvSource;
+  sb.nIdLvTarget = g_swapbox_nIdLvTarget;
+
+  sb.configureKeyboardNavigation = swapbox.configureKeyboardNavigation;
+  sb.getJsonValue                = swapbox.getJsonValue;
+  sb.setJsonValue                = swapbox.setJsonValue;
+  sb.setReadOnly                 = swapbox.setReadOnly;
+
+  sb.refreshListviews          = swapbox.refreshListviews;
+  sb.refreshButtons            = swapbox.refreshButtons;
+  sb.refreshSourceButtons      = swapbox.refreshSourceButtons;
+  sb.refreshTargetButtons      = swapbox.refreshTargetButtons;
+  sb.svc                       = swapbox.svc;
+  sb.moveFromSource2Target     = swapbox.moveFromSource2Target;
+  sb.moveFromAllSources2Target = swapbox.moveFromAllSources2Target;
+  sb.moveFromTarget2Source     = swapbox.moveFromTarget2Source;
+  sb.moveFromAllTargets2Source = swapbox.moveFromAllTargets2Source;
+  sb.moveUp                    = swapbox.moveUp;
+  sb.moveDown                  = swapbox.moveDown;
+  sb.selectionChange           = swapbox.selectionChange;
+  sb.onFocus                   = function( pr_event ){ if( lvSource ) lvSource.setFocus( true  ); };
+  sb.onBlur                    = function( pr_event ){ if( lvSource ) lvSource.setFocus( false ); if( lvTarget ) lvTarget.setFocus( false ); };
+  
+  sb.fireEventChange = swapbox.fireEventChange;
+  
+  sb.listview_configureDetachEvents = swapbox.listview_configureDetachEvents;
+  sb.listview_configureAttachEvents = swapbox.listview_configureAttachEvents;
+  sb.listview_setFocus              = swapbox.listview_setFocus;
+  sb.listview_setReadOnly           = swapbox.listview_setReadOnly;
+  
+  return sb;
+}
+
+swapbox.configureKeyboardNavigation = function( pr_bKeyboardNavigation )
+{
+  this.lvSource.nId = this.nIdLvSource;
+  this.lvTarget.nId = this.nIdLvTarget;
+  
+  this.lvSource.setFocus = swapbox.listview_setFocus;
+  this.lvTarget.setFocus = swapbox.listview_setFocus;
+  
+  this.lvSource.configureKeyboardNavigation( pr_bKeyboardNavigation );
+  this.lvTarget.configureKeyboardNavigation( pr_bKeyboardNavigation );
+  
+  this.lvSource.setFocus( false );
+  this.lvTarget.setFocus( false );
+}
+
+swapbox.listview_setFocus = function( pr_bFocus )
+{
+  if( this._bSettingFocus )
+    return;
+
+  this._bSettingFocus = true;
+
+  if( pr_bFocus )
+  {
+    if( document.activeElement.tagName != "BODY" )
+      document.body.focus( );
+ 
+    if( g_focusListview )
+      g_focusListview.setFocus( false );
+
+    g_focusListview = this;
+
+    this.swapbox.strFocusLvName = g_focusListview.internalName;
+    this.configureAttachEvents( );
+
+    if( !isIE7( ) && !isIE8( ) && !isIE8Compat( ) )
+      $( this._dataTable ).addClass( "focus" );
+    else
+    {
+      var row  = this._dataTable.rows[this.getSelectedRow( )];
+      var jRow = $( row );
+
+      if( jRow.hasClass( "par" ) )
+        jRow.css( "background-color", "#a0c4f7" );
+      else
+        jRow.css( "background-color", "#aaceff" );
+    }
+  }
+  else
+  {
+    if( g_focusListview == this )
+      g_focusListview = undefined;
+
+    this.configureDetachEvents( );
+
+    if( !isIE7( ) && !isIE8( ) && !isIE8Compat( ) )
+      $( this._dataTable ).removeClass( "focus" );
+    else if( this.internalName )
+    {
+      var row  = this._dataTable.rows[this.getSelectedRow( )];
+      var jRow = $( row );
+
+      if( jRow.hasClass( "par" ) )
+        jRow.css( "background-color", "#b0bed9" );
+      else
+        jRow.css( "background-color", "#9fafd1" );
+    }
+  }
+
+  this.bFocus         = pr_bFocus;
+  this._bSettingFocus = false;
+}
+
+swapbox.listview_setReadOnly = function( pr_bReadOnly )
+{
+  this.bReadOnly = pr_bReadOnly;
+  
+  if( this.bFocus )
+    return;
+}
+
+swapbox.listview_documentOnKeyDown = function( pr_event )
+{
+  if( this.bReadOnly )
+    return;
+
+  var nKey;
+
+  if( !pr_event )
+    pr_event = window.event;
+
+  nKey = pr_event.which || pr_event.keyCode;
+
+  if( nKey != 13 && nKey != 32 && ( nKey < 37 || nKey > 40 ) )
+    return;
+  else if( nKey == 13 || nKey == 32 )
+  {
+    g_focusListview.fireDblClickEvent( );
+    return;
+  }
+  else if( nKey == 37 || nKey == 39 )
+  {
+    var focusListview = g_focusListview.nId == g_swapbox_nIdLvSource ? g_focusListview.swapbox.lvTarget : g_focusListview.swapbox.lvSource;
+
+    focusListview.setFocus( true );
+    
+    return;
+  }
+
+  if ( nKey == 38 ) // Seta p/ Cima
+    g_focusListview.moveSelectUp( );
+  else if ( nKey == 40 ) // Seta p/ Baixo
+    g_focusListview.moveSelectDown( );
+  else
+    return;
+
+  pr_event.preventDefault( );
+}
+
+swapbox.listview_configureAttachEvents = function( )
+{
+  addEvent( document, "keydown", swapbox.listview_documentOnKeyDown, true );
+  addEvent( document, "click"  , swapbox.listview_documentOnClick  , true );
+}
+
+swapbox.listview_configureDetachEvents = function( )
+{
+  removeEvent( document, "keydown", swapbox.listview_documentOnKeyDown, true );
+  removeEvent( document, "click"  , swapbox.listview_documentOnClick  , true );
+}
+
+swapbox.listview_documentOnClick = function( pr_event )
+{
+  if( !pr_event )
+    pr_event = window.event;
+
+  if( !$( g_focusListview._divListView ).find( pr_event.srcElement ).length )
+    g_focusListview.setFocus( false );
+}
+
+swapbox.svc = function( pr_nSvc, pr_json )
+{
+  switch( pr_nSvc )
+  {
+    case this.nSvcLvTargetDblClickChange:
+    case this.nSvcBtTarget2Source:
+      this.moveFromTarget2Source( pr_json );
+      break;
+    case this.nSvcBtAllTargets2Source:
+      this.moveFromAllTargets2Source( pr_json );
+      break;
+    case this.nSvcLvSourceDblClickChange:
+    case this.nSvcBtSource2Target:
+      this.moveFromSource2Target( );
+      break;
+    case this.nSvcBtAllSources2Target:
+      this.moveFromAllSources2Target( );
+      break;
+    case this.nSvcBtMoveUp:
+      this.moveUp( );
+      break;
+    case this.nSvcBtMoveDown:
+      this.moveDown( );
+      break;
+    case this.nSvcLvTargetSelectionChange:
+      this.selectionChange( );
+      break;
+  }
+}
+
+swapbox.moveFromSource2Target = function( )
+{
+  var nSourceSelectedIndex = this.lvSource.getSelectedRow( );
+  var nTargetSelectedIndex;
+
+  var objFocusSourceRow;
+  var objSourceRow = this.lvSource._dataTable.rows[nSourceSelectedIndex];
+  var objTargetRow;
+
+  var bInsertRow = false;
+
+  if( this.lvTarget.getTotRows( ) == 0 )
+  {
+    if( !this.lvTarget._bFilled )
+      this.lvTarget._bFilled = true;
+
+    bInsertRow           = true;
+    nTargetSelectedIndex = 0;
+    objTargetRow         = this.lvTarget._dataTable.insertRow( -1 );
+  }
+  else
+  {
+    nTargetSelectedIndex = this.lvTarget.getSelectedRow( );
+    objTargetRow         = this.lvTarget._dataTable.rows[nTargetSelectedIndex];
+  }
+
+  if( nSourceSelectedIndex < this.lvSource.getTotRows( ) - 1 )
+    objFocusSourceRow = this.lvSource._dataTable.rows[nSourceSelectedIndex + 1];
+  else if( nSourceSelectedIndex != 0 )
+    objFocusSourceRow = this.lvSource._dataTable.rows[nSourceSelectedIndex - 1];
+
+  this.lvSource.unselectAllRows( );
+  this.lvTarget.unselectAllRows( );
+
+  objSourceRow.parentNode.removeChild ( objSourceRow );
+  objTargetRow.parentNode.insertBefore( objSourceRow, objTargetRow );
+
+  if( bInsertRow )
+  {
+    this.lvTarget._dataTable.deleteRow( this.lvTarget.getTotRows( ) - 1 );
+    objTargetRow = this.lvTarget._dataTable.rows[nTargetSelectedIndex];
+  }
+
+  if( objFocusSourceRow )
+    this.lvSource.selectRow( objFocusSourceRow );
+
+  this.lvTarget.selectRow( objTargetRow );
+
+  this.lvTarget._dataTable._TotalRows = parseInt( this.lvTarget._dataTable._TotalRows, 10 ) + 1;
+  this.lvSource._dataTable._TotalRows = parseInt( this.lvSource._dataTable._TotalRows, 10 ) - 1;
+
+  if( this.lvSource.getTotRows( ) == 0 )
+    this.lvSource._iSelectedRow = -1;
+
+  this._bFilled = false;
+
+  this.refreshListviews( );
+  this.fireEventChange ( );
+
+  if( !this._bFilled )
+  {
+    this.lvSource.refreshRowsStyles( );
+    this.lvTarget.refreshRowsStyles( );
+  }
+
+  this.refreshButtons( );
+}
+
+swapbox.moveFromAllSources2Target = function( )
+{
+  if( this.lvSource.getTotRows( ) == 0 )
+    return;
+
+  var nTargetSelectedIndex;
+  var nSourceLVSize = this.lvSource.getTotRows( );
+
+  var objSourceRow = this.lvSource._dataTable.rows[this.lvSource.getSelectedRow( )];
+  var objTargetRow;
+  var bInsertRow;
+
+  //Início da troca das linhas
+  
+  if( this.lvTarget.getTotRows( ) == 0 )
+  {
+    if( !this.lvTarget._bFilled )
+      this.lvTarget._bFilled = true;
+    
+    bInsertRow           = true;
+    nTargetSelectedIndex = 0;
+    objTargetRow         = this.lvTarget._dataTable.insertRow( -1 );
+  }
+  else
+  {
+    bInsertRow           = false;
+    nTargetSelectedIndex = this.lvTarget.getSelectedRow( );
+    objTargetRow         = this.lvTarget._dataTable.rows[nTargetSelectedIndex];
+  }
+
+  for( ; this.lvSource._dataTable.rows.length > 1; )
+  {
+    objSourceRow = this.lvSource._dataTable.rows[0];
+
+    objSourceRow.parentNode.removeChild ( objSourceRow );
+    objTargetRow.parentNode.insertBefore( objSourceRow, objTargetRow );
+  }
+
+  this.refreshListviews( );
+
+  //Esse trecho é executado pela última vez fora do for, para que as listviews possam ser atualizadas e, dessa forma, calcular de maneira
+  //correta a largura das mesmas.
+  objSourceRow = this.lvSource._dataTable.rows[0];
+
+  objTargetRow.parentNode.insertBefore( objSourceRow, objTargetRow );
+  
+  if( bInsertRow )
+  {
+    this.lvTarget._dataTable.deleteRow( this.lvTarget.getTotRows( ) - 1 );
+    objTargetRow = this.lvTarget._dataTable.rows[nTargetSelectedIndex];
+  }
+
+  //Fim da troca das linhas
+
+  this.lvTarget.selectRow( objTargetRow );
+
+  this.lvTarget._dataTable._TotalRows = parseInt( this.lvTarget._dataTable._TotalRows, 10 ) + nSourceLVSize;
+  this.lvSource._dataTable._TotalRows = 0;
+  this.lvSource._iSelectedRow         = -1;
+  this._bFilled                       = false;
+
+  this.refreshListviews( );
+  this.fireEventChange ( );
+
+  if( !this._bFilled )
+  {
+    this.lvSource.refreshRowsStyles( );
+    this.lvTarget.refreshRowsStyles( );
+  }
+  this.refreshButtons  ( );
+}
+
+swapbox.moveFromTarget2Source = function( pr_json )
+{
+  var nInsertPoint;
+  var nSourceSelectedIndex = this.lvSource.getSelectedRow( );
+  var nTargetSelectedIndex = this.lvTarget.getSelectedRow( );
+  
+  var objInsertPoint;
+  var objSourceRow = this.lvSource._dataTable.rows[nSourceSelectedIndex];
+  var objTargetRow = this.lvTarget._dataTable.rows[nTargetSelectedIndex];
+  var objFocusTargetRow;
+
+  if( nTargetSelectedIndex < this.lvTarget.getTotRows( ) - 1 )
+    objFocusTargetRow = this.lvTarget._dataTable.rows[nTargetSelectedIndex + 1];
+  else if( nTargetSelectedIndex != 0 )
+    objFocusTargetRow = this.lvTarget._dataTable.rows[nTargetSelectedIndex - 1];
+
+  nInsertPoint = parseInt( pr_json.target2SourcePositions[0] );
+
+  this.lvSource.unselectAllRows( );
+  this.lvTarget.unselectAllRows( );
+
+  //A linha será inserida no final da lista.
+  if( nInsertPoint == -2 )
+  {
+    if( !this.lvSource._bFilled )
+      this.lvSource._bFilled = true;
+
+    objInsertPoint = this.lvSource._dataTable.insertRow( -1 );
+
+    objTargetRow  .parentNode.removeChild ( objTargetRow );
+    objInsertPoint.parentNode.insertBefore( objTargetRow, objInsertPoint );
+
+    this.lvSource._dataTable.deleteRow( this.lvSource.getTotRows( ) - 1 );
+  }
+  //A linha não será inserida.
+  else if( nInsertPoint == -1 )
+  {
+    this.lvTarget._dataTable.deleteRow( nTargetSelectedIndex );
+  }
+  //A linha será inserida na lista
+  else
+  {
+    objInsertPoint = this.lvSource._dataTable.rows[nInsertPoint];
+
+    objTargetRow  .parentNode.removeChild ( objTargetRow );
+    objInsertPoint.parentNode.insertBefore( objTargetRow, objInsertPoint );
+  }
+
+  if( objFocusTargetRow )
+    this.lvTarget.selectRow( objFocusTargetRow );
+
+  if( nInsertPoint != -1 )
+  {
+    if( !objSourceRow )
+      objSourceRow = this.lvSource._dataTable.rows[0];
+
+    this.lvSource.selectRow( objSourceRow );
+
+    this.lvSource._dataTable._TotalRows = parseInt( this.lvSource._dataTable._TotalRows, 10 ) + 1;
+  }
+
+  this.lvTarget._dataTable._TotalRows = parseInt( this.lvTarget._dataTable._TotalRows, 10 ) - 1;
+
+  if( this.lvTarget.getTotRows( ) == 0 )
+    this.lvTarget._iSelectedRow = -1;
+
+  this._bFilled = false;
+
+  this.refreshListviews( );
+  this.fireEventChange ( );
+
+  if( !this._bFilled )
+  {
+    this.lvSource.refreshRowsStyles( );
+    this.lvTarget.refreshRowsStyles( );
+  }
+
+  this.refreshButtons( );
+}
+
+swapbox.moveFromAllTargets2Source = function( pr_json )
+{
+  var nInsertPoint;
+  var nTargetLVSize        = this.lvTarget.getTotRows( );
+  var nTargetLVSizeCont    = this.lvTarget.getTotRows( );
+  var nTotalInsert         = 0;
+
+  var objInsertPoint;
+  var objSourceRow = this.lvSource._dataTable.rows[this.lvSource.getSelectedRow( )];
+  var objTargetRow = this.lvTarget._dataTable.rows[this.lvTarget.getSelectedRow( )];
+  var objFocusTargetRow;
+
+  var i;
+
+  //Início da troca das linhas
+  for( i = 0; nTargetLVSizeCont > 1; nTargetLVSizeCont--, i++ )
+  {
+    objTargetRow = this.lvTarget._dataTable.rows[0];
+    nInsertPoint = pr_json.target2SourcePositions[i];
+
+    //A linha será inserida no final da lista.
+    if( parseInt( nInsertPoint ) == -2 )
+    {
+      if( !this.lvSource._bFilled )
+        this.lvSource._bFilled = true;
+      
+      objInsertPoint = this.lvSource._dataTable.insertRow( -1 );
+      
+      nTotalInsert++;
+
+      objTargetRow  .parentNode.removeChild ( objTargetRow );
+      objInsertPoint.parentNode.insertBefore( objTargetRow, objInsertPoint );
+
+      this.lvSource._dataTable.deleteRow( parseInt( this.lvSource.getTotRows( ) - 1 ) );
+    }
+    //A linha não será inserida.
+    else if( parseInt( nInsertPoint ) == -1 )
+    {
+      this.lvTarget._dataTable.deleteRow( 0 );
+    }
+    //A linha será inserida na lista
+    else
+    {
+      objInsertPoint = this.lvSource._dataTable.rows[parseInt( nInsertPoint )];
+      nTotalInsert++;
+
+      objTargetRow  .parentNode.removeChild ( objTargetRow );
+      objInsertPoint.parentNode.insertBefore( objTargetRow, objInsertPoint );
+    }
+  }
+
+  this.refreshListviews( );
+
+  //Esse trecho é executado pela última vez fora do for, para que eu possa atualizar as listviews antes e, dessa forma, calcular de maneira
+  //correta a largura da lista.
+  objTargetRow = this.lvTarget._dataTable.rows[0];
+  nInsertPoint = pr_json.target2SourcePositions[i];
+
+  //A linha será inserida no final da lista.
+  if( parseInt( nInsertPoint ) == -2 )
+  {
+    if( !this.lvSource._bFilled )
+      this.lvSource._bFilled = true;
+    
+    objInsertPoint = this.lvSource._dataTable.insertRow( -1 );
+    
+    nTotalInsert++;
+
+    objTargetRow  .parentNode.removeChild ( objTargetRow );
+    objInsertPoint.parentNode.insertBefore( objTargetRow, objInsertPoint );
+
+    this.lvSource._dataTable.deleteRow( parseInt( this.lvSource.getTotRows( ) - 1 ) );
+  }
+  //A linha não será inserida.
+  else if( parseInt( nInsertPoint ) == -1 )
+  {
+    this.lvTarget._dataTable.deleteRow( 0 );
+  }
+  //A linha será inserida no final da lista
+  else
+  {
+    objInsertPoint = this.lvSource._dataTable.rows[parseInt( nInsertPoint )];
+    nTotalInsert++;
+
+    objTargetRow  .parentNode.removeChild ( objTargetRow );
+    objInsertPoint.parentNode.insertBefore( objTargetRow, objInsertPoint );
+  }
+  
+  //Fim da troca das linhas
+
+  if( this.lvSource.getTotRows( ) > 0 )
+  {
+    if( !objSourceRow )
+      objSourceRow = this.lvSource._dataTable.rows[0];
+
+    this.lvSource.selectRow( objSourceRow );
+
+    this.lvSource._dataTable._TotalRows = parseInt( this.lvSource._dataTable._TotalRows, 10 ) + nTotalInsert;
+  }
+  
+  this.lvTarget._dataTable._TotalRows = 0;
+  this.lvTarget._iSelectedRow         = -1;
+  this._bFilled                       = false;
+
+  this.refreshListviews( );
+  this.fireEventChange ( );
+
+  if( !this._bFilled )
+  {
+    this.lvSource.refreshRowsStyles( );
+    this.lvTarget.refreshRowsStyles( );
+  }
+
+  this.refreshButtons( );
+}
+
+swapbox.moveUp = function( )
+{
+  this.lvTarget.moveUp( "cp_" + this.lvTarget.internalName );
+
+  this.refreshButtons( );
+  
+  this._bFilled = false;
+
+  this.fireEventChange( );
+
+  if( !this._bFilled )
+  {
+    this.lvSource.refreshRowsStyles( );
+    this.lvTarget.refreshRowsStyles( );
+  }
+}
+
+swapbox.moveDown = function( )
+{
+  this.lvTarget.moveDown( "cp_" + this.lvTarget.internalName );
+
+  this.refreshButtons( );
+  
+  this._bFilled = false;
+
+  this.fireEventChange( );
+
+  if( !this._bFilled )
+  {
+    this.lvSource.refreshRowsStyles( );
+    this.lvTarget.refreshRowsStyles( );
+  }
+}
+
+swapbox.selectionChange = function( )
+{
+  this.refreshButtons( );
+}
+
+swapbox.refreshButtons = function( )
+{
+  this.refreshSourceButtons( );
+  this.refreshTargetButtons( );
+}
+
+swapbox.refreshSourceButtons = function( )
+{
+  if( this.bReadOnly )
+  {
+    this.btSource2Target    .setReadOnly( true );
+    this.btAllSources2Target.setReadOnly( true );
+  
+    return;
+  }
+  
+  if( this.lvSource.getTotRows( ) == 0 )
+  {
+    this.btSource2Target    .setReadOnly( true );
+    this.btAllSources2Target.setReadOnly( true );
+  }
+  else
+  {
+    this.btSource2Target    .setReadOnly( false );
+    this.btAllSources2Target.setReadOnly( false );
+  }
+}
+
+swapbox.refreshTargetButtons = function( )
+{
+  var nTargetSelectedRow = this.lvTarget.getSelectedRow( );
+
+  if( this.bReadOnly )
+  {
+    this.btTarget2Source    .setReadOnly( true );
+    this.btAllTargets2Source.setReadOnly( true );
+    this.btMoveUp           .setReadOnly( true );
+    this.btMoveDown         .setReadOnly( true );
+    
+    return;
+  }
+
+  if( this.lvTarget.getTotRows( ) == 0 )
+  {
+    this.btTarget2Source    .setReadOnly( true );
+    this.btAllTargets2Source.setReadOnly( true );
+    this.btMoveUp           .setReadOnly( true );
+    this.btMoveDown         .setReadOnly( true );
+  }
+  else if( this.lvTarget.getTotRows( ) == 1 )
+  {
+    this.btTarget2Source    .setReadOnly( false );
+    this.btAllTargets2Source.setReadOnly( false );
+    this.btMoveUp           .setReadOnly( true  );
+    this.btMoveDown         .setReadOnly( true  );
+  }
+  else if( nTargetSelectedRow == this.lvTarget.getTotRows( ) - 1 )
+  {
+    this.btTarget2Source    .setReadOnly( false );
+    this.btAllTargets2Source.setReadOnly( false );
+    this.btMoveUp           .setReadOnly( false );
+    this.btMoveDown         .setReadOnly( true  );
+  }
+  else if( nTargetSelectedRow == 0 )
+  {
+    this.btTarget2Source    .setReadOnly( false );
+    this.btAllTargets2Source.setReadOnly( false );
+    this.btMoveUp           .setReadOnly( true  );
+    this.btMoveDown         .setReadOnly( false );
+  }
+  else
+  {
+    this.btTarget2Source    .setReadOnly( false );
+    this.btAllTargets2Source.setReadOnly( false );
+    this.btMoveUp           .setReadOnly( false );
+    this.btMoveDown         .setReadOnly( false );
+  }
+}
+
+swapbox.refreshListviews = function( )
+{
+  if( this.lvSource.getTotRows( ) == 0 )
+    this.lvSource._bFilled = false;
+
+  if( this.lvTarget.getTotRows( ) == 0 )
+    this.lvTarget._bFilled = false;
+
+  this.lvSource.updateFooter( );
+  this.lvTarget.updateFooter( );
+  
+  this.lvSource.trataResize( );
+  this.lvTarget.trataResize( );
+
+  this.lvSource.resetHeader( );
+  this.lvTarget.resetHeader( );
+}
+
+swapbox.getJsonValue = function( bComplete )
+{
+  var json;
+
+  json = "{" +
+         "  type:"           + this._type                    + "," +
+         "  value:"          +
+         "  {"               +
+         "    focusLvName:"  + this.strFocusLvName           + "," +
+         "    lvSourceName:" + this.lvSource.internalName    + "," +
+         "    lvTargetName:" + this.lvTarget.internalName    + "," +
+         "    lvSource:"     + this.lvSource.getJsonValue( ) + "," +
+         "    lvTarget:"     + this.lvTarget.getJsonValue( ) +
+         "  }"               +
+  		   "}";
+
+  return json;
+}
+
+swapbox.setJsonValue = function( pr_jsonValue )
+{
+  if( pr_jsonValue.setup )
+  {
+    var json = pr_jsonValue.setup;
+
+    if( json.bSync )
+    {
+      this.svc( json.nSvc, json );
+      return;
+    }
+
+    if( json.readOnly != undefined )
+      this.setReadOnly( json.readOnly );
+
+    if( json.lvSource )
+      this.lvSource.setJsonValue( json.lvSource );
+
+    if( json.lvTarget )
+      this.lvTarget.setJsonValue( json.lvTarget );
+
+    this.refreshButtons  ( );
+    this.refreshListviews( );
+
+    this._bFilled = true;
+  }
+}
+
+swapbox.setReadOnly = function( pr_bReadOnly )
+{
+  this.bReadOnly = pr_bReadOnly;
+
+  this.lvSource           .setReadOnly( pr_bReadOnly );
+  this.lvTarget           .setReadOnly( pr_bReadOnly );
+  this.btSource2Target    .setReadOnly( pr_bReadOnly );
+  this.btAllSources2Target.setReadOnly( pr_bReadOnly );
+  this.btTarget2Source    .setReadOnly( pr_bReadOnly );
+  this.btAllTargets2Source.setReadOnly( pr_bReadOnly );
+  this.btMoveUp           .setReadOnly( pr_bReadOnly );
+  this.btMoveDown         .setReadOnly( pr_bReadOnly );
+}
+
+swapbox.fireEventChange = function( )
+{
+  if( this.aEventListener.length > 0 )
+    fireEvent.apply( this, [] );
+}

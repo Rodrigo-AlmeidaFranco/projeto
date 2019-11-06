@@ -1,0 +1,559 @@
+/**
+ * Drive inputInteger versão 1.0
+ * 
+ * Browsers compatíveis:
+ * Firefox 10.0
+ * Chrome 17.0.963.46 m
+ * IE9 (documento em modo Quirks)
+ * Safari 5.1.2 (7534.52.7)
+ * Opera 11.60
+ */
+
+inputinteger = function( arg )
+{
+  return inputinteger.__constructor( arg );
+}
+
+inputinteger.__constructor = function( arg )
+{
+  var e = document.createElement( "INPUT" );
+
+  e._constructor = inputinteger._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+inputinteger._constructor = function(arg)
+{
+  this._type = 2;
+
+  if( arg["parent"] )
+  {
+    this._parent = document.getElementById( arg["parent"] );
+    this._parent.appendChild( this );
+  }
+
+  this.parentName        = arg["parent"];
+
+  this.internalValue     = '';
+  this.style.textAlign   = 'right';
+  this.strSeparator      = g_bEnglish ? "," : ".";
+  this.strDecimalDigit   = g_bEnglish ? "." : ",";
+  this.bChangeToPositive = true;
+  this.bEditMode         = false;
+  this.bSigned           = false;
+  this.bNegative         = false;
+  this.bReadOnly         = false;
+
+  //Variável necessária para se obter o valor que será removido pelo backSpace. O this.nOldValue não é eficiente para esta função, pois
+  //ele é atualizado para o novo valor que irá ficar após o backSpace muito rápido. O this.nOldValue está assim para permitir a alteração de um valor
+  //para 0. Portanto o this.nBackSpaceClear se faz necessário.
+  this.nBackSpaceClear = '';
+
+  this.setParent          = inputinteger.setParent;
+  this.setWidth           = inputinteger.setWidth;
+  this.setFocus           = inputinteger.setFocus;
+  this.isReadOnly         = inputinteger.isReadOnly;
+  this.setReadOnly        = inputinteger.setReadOnly;
+  this.getJsonValue       = inputinteger.getJsonValue;
+  this.getValue           = inputinteger.getValue;
+  this._setValue          = inputinteger._setValue;
+  this.setJsonValue       = inputinteger.setJsonValue;
+  this.applyFormat        = inputinteger.applyFormat;
+  this.clear              = inputinteger.clear;
+  this.getSelectionBounds = inputinteger.getSelectionBounds;
+  this.getCaretPosition   = inputinteger.getCaretPosition;
+  this.setCaretPosition   = inputinteger.setCaretPosition;
+  this.runEvent           = inputinteger.runEvent;
+  this.setChangeEvent     = inputinteger.setChangeEvent;
+  this.setMaxDigits       = inputinteger.setMaxDigits;
+  this.isSelection        = inputinteger.isSelection;
+  this.getMaxDigits       = inputinteger.getMaxDigits;
+  this.isSigned           = inputinteger.isSigned; 
+
+  this.onblur      = inputinteger.onblur;
+  this.oncut       = inputinteger.oncut;
+  this.onfocus     = inputinteger.onfocus;
+  this.ondragstart = function( ) { return false; };
+  this.onkeydown   = inputinteger.onkeydown;
+  this.oninput     = inputinteger.change;
+
+  return this;
+}
+
+inputinteger.setChangeEvent = function( pr_event )
+{
+  this.changeEvent = pr_event;
+}
+
+inputinteger.onkeydown = function( pr_event )
+{
+  var self = this;
+
+  this.oldValue         = this.value;
+  this.oldCaretStartPos = this.getSelectionBounds( this ).start;
+  this.oldCaretEndPos   = this.getSelectionBounds( this ).end;
+
+  if( !pr_event )
+    pr_event = window.event;
+
+  this.keyCode = pr_event.which ? pr_event.which : pr_event.keyCode;
+
+  this.isBackspace = this.keyCode == 8;
+  this.isDelete    = this.keyCode == 46;
+}
+
+inputinteger.change = function( pr_event )
+{
+  var self = this,
+    cursorPos;
+  
+  if( this.bSigned && !( this.isBackspace || this.isDelete ) )
+  {
+    // Quantidade de sinais de positivo ou negativo, para tratamento de campos com sinal.
+    // Quantidade de '-' no valor, para o caso de ter colado um conteúdo com diversos sinais negativos.
+    var nQtdMinusSign = this.value.replace( new RegExp( "[^-]", "g" ), "" ).length;
+    var nQtdPlusSign  = this.value.replace( new RegExp( "[^+]", "g" ), "" ).length;
+    
+    this.bNegative = ( nQtdMinusSign > 0 && nQtdMinusSign % 2 != 0 ) || ( this.nQtdPlusSign == 0 && this.bNegative );
+  }
+
+  if( this.value != this.oldValue )
+  {
+    if( this.oldValue == undefined )
+      this.oldValue = this.internalValue;
+
+    var bSelection = this.isSelection(this);
+    
+    if( this.internalValue.length == this.nMaxLen && !( this.isBackspace || this.isDelete ) && !bSelection )
+    {
+      this.internalValue = this.clear( this.oldValue, this.oldValue == '0' || this.oldValue == '-0' );
+      this.applyFormat( true );
+      
+      cursorPos = this.oldCaretEndPos;
+    }
+    else
+    {
+      var oldValue = this.oldValue;
+  
+      this.internalValue = this.clear( this.value, oldValue == '0' || oldValue == '-0' );
+  
+      // Tratamentos para caso os backspace ou delete apague um caracter que não faz parte do valor do componente, ex: separador decimal.
+      if( this.clear( oldValue ) == this.internalValue && this.oldCaretStartPos == this.oldCaretEndPos )
+        if( this.isBackspace )
+          this.internalValue =  this.clear( this.value.substring( 0, this.oldCaretStartPos - 2 ) + ( this.oldCaretStartPos < this.value.length ? this.value.substring( this.oldCaretStartPos - 1 ) : "" ) );
+        else if( this.isDelete )
+        {
+          this.internalValue  = this.clear( this.value.substring( 0, this.oldCaretStartPos     ) + ( this.oldCaretStartPos < this.value.length ? this.value.substring( this.oldCaretStartPos + 1 ) : "" ) );
+          this.oldCaretEndPos = ++this.oldCaretStartPos;
+        }
+      
+      if( this.isDelete && this.oldCaretStartPos == this.oldCaretEndPos )
+      {
+        if( this.bNegative && this.oldCaretStartPos == 1 && this.internalValue.length % 3 == 0 )
+          this.oldCaretEndPos++;
+        
+        this.oldCaretEndPos++;
+      }
+
+      this.applyFormat( true );
+      
+      cursorPos = this.value.length - oldValue.length + this.oldCaretEndPos;
+    }
+    
+      setTimeout( "inputinteger.setCaretPosition.apply( " + this._cpName + ", [" + ( cursorPos ) + "] );", 5 );
+  }
+
+  
+  this.isDelete         = undefined;
+  this.isBackspace      = undefined;
+  this.oldCaretStartPos = undefined;
+  this.oldCaretEndPos   = undefined;
+}
+
+inputinteger.runEvent = function( )
+{
+  this.bChangeToPositive = true;
+
+  if( this.aEventListener.length > 0 && !this.bEditMode && this.nBackSpaceClear != this.getValue( ) )
+  {
+    var bValidateEvent = true;
+    if( this._parent && this._parent.validateEvent )
+      bValidateEvent = this._parent.validateEvent( );
+
+    if( bValidateEvent )
+      fireEvent.apply( this, [] );
+  }
+  
+  // Dispara o evento do pai se ele existe. Utilizado para componentes complexos
+  if( /*&& !this.bEditMode*/ this._parent && this._parent.fireParentEvent )
+    this._parent.fireParentEvent( this );
+
+    if( this.changeEvent )
+    this.changeEvent( );
+
+  this.bEditMode       = false;
+  this.nBackSpaceClear = '';
+}
+
+inputinteger.setParent = function( parent )
+{
+  if( parent )
+  {
+    this._parent = parent;
+    this._parent.appendChild( this );
+  }
+}
+
+inputinteger.onblur = function( pr_event )
+{
+  if( this.bReadOnly )
+    return;
+
+  if( this.internalValue.length == 0 && this.bChangeToPositive )
+    this.bNegative = false;
+  
+  this.runEvent( );
+}
+
+inputinteger.setWidth = function( nWidth )
+{
+  this.style.width = nWidth + "px";
+}
+
+inputinteger.setJsonValue = function( json )
+{
+  if( json.setup != undefined )
+  {
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+    if( json.setup.maxDigits != undefined )
+      this.setMaxDigits( json.setup.maxDigits );
+    if( json.setup.signed != undefined )
+      this.bSigned = json.setup.signed;
+    if( json.setup.value != undefined )
+      this._setValue( json.setup.value );
+  }
+  else
+    this._setValue( json.value );
+
+  this.applyFormat( true );
+}
+
+inputinteger.setMaxDigits = function( pr_nMaxDigits )
+{
+  this.nMaxLen = pr_nMaxDigits;
+}
+
+inputinteger.getMaxDigits = function( )
+{
+  return this.nMaxLen;
+}
+
+inputinteger.isSigned = function( )
+{
+  return this.bSigned;
+}
+
+inputinteger._setValue = function( value )
+{
+  var str = "" + value;
+  if( value < 0 )
+  {
+    this.internalValue = str.substring( 1, str.length );
+    this.bNegative = true;
+  }
+  else
+  {
+    if( str == "0" )
+      this.internalValue = "";
+    else
+      this.internalValue = str;
+    
+    this.bNegative = false;
+  }
+}
+
+inputinteger.getJsonValue = function(pr_bComplete)
+{
+  var strJson = "";	
+  
+  if (pr_bComplete)
+	  strJson = "{ type:" + this._type + 
+	            ", setup: { readOnly: " + this.isReadOnly() +
+	            ", value:'" + ( this.internalValue.length == 0 ? "0" : 
+	            	          ( this.bNegative ? '-' : '') + this.internalValue ) + "'" +
+	            ", maxDigits:'" + this.getMaxDigits() + "'" +
+	            ", signed:" + this.isSigned() + " } }";
+  else
+	  strJson = "{ type:" + this._type + ",value:'" +
+                 ( this.internalValue.length == 0 ? "0" :
+                 ( this.bNegative ? '-' : '') + this.internalValue ) + "' }";
+  
+  return strJson;
+}
+
+inputinteger.getValue = function( )
+{
+  return this.internalValue.length == 0 ? "0" :
+    ( this.bNegative ? '-' : '' ) + this.internalValue;
+}
+
+inputinteger.setReadOnly = function( bReadOnly )
+{
+  if( this.parentNode.readonly == 'true' && !bReadOnly )
+    this.bReadOnly = true;
+
+  this.bReadOnly = bReadOnly;
+  this.readOnly  = bReadOnly;
+  
+  if( bReadOnly )
+    this.className = this.strCssClassRO;
+  else
+    this.className = this.strCssClassRW;
+}
+
+inputinteger.isReadOnly = function( )
+{
+  return this.bReadOnly;
+}
+
+inputinteger.applyFormat = function( bEditMode )
+{
+  var str           = "";
+  
+  //Melhorias no inputInteger.
+  //Faltou tratar quando é digitado um caracter no meio do texto.
+  
+//  var strInitialAlt = "";
+//  
+//  if( this.oldValue == undefined )
+//    this.oldValue = this.internalValue;
+//  
+//  var strOld          = this.oldValue;
+//  var strNew          = this.value;
+//  var nStartPos       = this.oldCaretStartPos;
+//  var nEndPos         = this.oldCaretEndPos;
+//  var strOldValue     = this.clear( strOld.substring( nStartPos, nEndPos), this.oldValue == '0' || this.oldValue == '-0' );
+//  var strNewValue     = strNew.substring( nStartPos, nEndPos );
+//  var strInitialValue = "";
+//  var strFinalValue   = ""
+//  
+//  if( this.isDelete || this.isBackspace )
+//    this.internalValue = this.clear( strNew, this.oldValue == '0' || this.oldValue == '-0' );
+//  else
+//  {
+//    if( nStartPos == 0 && nEndPos == 0 )
+//      this.internalValue = this.clear( strOld, this.oldValue == '0' || this.oldValue == '-0' );
+//    if( nStartPos == 0 && nEndPos == strOld.length )
+//      this.internalValue = this.clear( strNewValue, this.oldValue == '0' || this.oldValue == '-0' );
+//    else
+//    {
+//      strInitialValue = strOld.substring( 0, nStartPos );
+//      strFinalValue   = strOld.substring( nEndPos, strNew.length );
+//    }
+//    
+//    if( nStartPos != nEndPos )
+//    {
+//      strInitialAlt = strInitialValue.concat(strNewValue.substring( 0, strOldValue.length ));
+//      this.internalValue = this.clear( strInitialAlt.concat(strFinalValue), this.oldValue == '0' || this.oldValue == '-0' );
+//    }
+//  }
+
+//  if( strNew.length > strOld.length && nStartPos == 0 && nEndPos == 0 )
+//  this.internalValue = this.clear( strNew, this.oldValue == '0' || this.oldValue == '-0' ).substring( 0, this.nMaxLen );
+//
+//if( nStartPos == nEndPos && strNew != "" )
+//    this.internalValue = this.clear( strNew, this.oldValue == '0' || this.oldValue == '-0' ).substring( 0, this.nMaxLen );
+    
+  if( this.internalValue.length > this.nMaxLen )
+    this.internalValue = this.internalValue.substring( 0, this.nMaxLen );
+  
+  var j = 0;
+
+  for( var i = this.internalValue.length - 1; i >= 0; i--, j++ )
+  {
+    if( j == 3 )
+    {
+      str = this.strSeparator + str;
+      j = 0;
+    }
+
+    str = this.internalValue.charAt( i ) + str;
+  }
+
+  if( str.length == 0 )
+    str = "0";
+
+  if( this.bNegative && this.internalValue.length > 0 )
+    str = "-" + str;
+
+  this.bChangeToPositive = false;
+
+  if( this.value == str )
+  {
+    this.bEditMode       = false;
+    this.nBackSpaceClear = '';
+    return;
+  }
+
+  this.bEditMode = bEditMode;
+
+  if( document.activeElement != undefined && document.activeElement.internalName == this.internalName && this.bEditMode )
+  {
+    this.bEventRun = true;
+    this.runEvent( );
+  }
+
+  this.value = str;
+}
+
+inputinteger.oncut = function( pr_event )
+{
+  if( !pr_event )
+    pr_event = window.event;
+
+  pr_event.returnValue = false;
+  return true;
+}
+
+inputinteger.onfocus = function( pr_event )
+{
+  var self = this;
+
+  // Deve ser configurado após o retorno desta função, só após o retorno que o componente efetivamente tem o foco.
+  if( self.value == "0" || self.value == "-0" )
+    setTimeout( function( ){ self.setCaretPosition( !self.bNegative ? 1 : 2 ); }, 1 );
+
+  return true;
+}
+
+inputinteger.clear = function( str, bClearFirstZero )
+{
+  var strClear = str.replace( new RegExp( "[^0-9]", "g" ), "" );
+
+  if( strClear.length > 1 && strClear.indexOf( "0" ) == 0 && bClearFirstZero )
+    strClear = strClear.substring( 1 );
+
+  return strClear;
+}
+
+inputinteger.getSelectionBounds = function( elm )
+{
+  // Initialize
+  var nStart = 0;
+  var nEnd   = 0;
+
+  // IE Support
+  if( document.selection )
+   {
+     var oSel = document.selection.createRange( );
+     var nLen = oSel.text.length;
+
+     // Move selection start to 0 position
+     oSel.moveStart( 'character', -elm.value.length );
+
+     nStart = oSel.text.length - nLen;
+     nEnd   = nStart + nLen;
+  }
+  // Firefox support
+  else if( elm.selectionStart || elm.selectionStart == '0' )
+  {
+    nStart = elm.selectionStart;
+    nEnd   = elm.selectionEnd; //Verificar isto
+  }
+
+  // Return results
+  return { start: nStart, end: nEnd };
+}
+
+inputinteger.isSelection = function( elm )
+{
+  if( this.oldCaretStartPos == this.oldCaretEndPos )
+    return false;
+  else
+    return true;
+}
+
+inputinteger.getCaretPosition = function( elm )
+{
+  // Initialize
+  var nCaretPos = 0;
+
+  // IE Support
+  if( document.selection )
+   {
+     // Set focus on the element
+     elm.focus( );
+
+     // To get cursor position, get empty selection range
+     var oSel = document.selection.createRange( );
+
+     // Move selection start to 0 position
+     oSel.moveStart( 'character', -elm.value.length );
+
+     // The caret position is selection length
+     nCaretPos = oSel.text.length;
+  }
+  // Firefox support
+  else if( elm.selectionStart || elm.selectionStart == '0' )
+    nCaretPos = elm.selectionStart;
+
+  // Return results
+  return nCaretPos;
+}
+
+inputinteger.setCaretPosition = function( iCaretPos )
+{
+  this.focus( );
+
+  // IE
+  if( document.selection )
+  {
+    var range = document.selection.createRange( );
+
+    range.moveStart( 'character', -this.value.length );
+    range.moveEnd  ( 'character', -this.value.length );
+    range.moveStart( 'character', iCaretPos          );
+    range.select( );
+  }
+  // Everybody else
+  else if ( this.selectionStart || this.selectionStart == '0' )
+    this.setSelectionRange( iCaretPos, iCaretPos );
+}
+
+inputinteger.setFocus = function( )
+{
+  this.focus();
+}
+
+function createInputInteger( args )
+{
+  eval( args['jsName'] + " = inputinteger({parent:'" + args['parentName'] + "'});" );
+  eval( args['jsName'] + "._cpName = '" + args['jsName'] + "'" );
+}
+
+function finalizeInputInteger( args )
+{
+  this.bSigned = args["bSigned"];
+  this.strCssClassRO = args["strCssClassRO"];
+  this.strCssClassRW = args["strCssClassRW"];
+  this.nMaxLen = args["nMaxLen"];
+  this.internalName = args["strInternalName"];
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  if( args["nWidth"] )
+    this.setWidth( args["nWidth"] );
+  
+  this.setReadOnly( args["bReadOnly"] );
+
+  if( args["aEventListener"] )
+    this.aEventListener = args["aEventListener"];
+  else
+    this.aEventListener = [];
+
+  if( args["jsValue"] )
+    this.setJsonValue( args["jsValue"] );
+}

@@ -1,0 +1,4 @@
+if( isIE7( ) )
+  registry.loadUnit( "drivecombobox-ie7" );
+else
+  registry.loadUnit( "drivecombobox-x" );

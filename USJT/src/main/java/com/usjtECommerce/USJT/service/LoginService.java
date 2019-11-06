@@ -1,18 +1,19 @@
 package com.usjtECommerce.USJT.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import java.sql.SQLException;
 
+import com.usjtECommerce.USJT.DAO.UsuarioDAO;
 import com.usjtECommerce.USJT.model.Usuario;
-import com.usjtECommerce.USJT.repository.UsuariosRepo;
 
-@Service
 public class LoginService {
-	@Autowired
-	UsuariosRepo usuarioRepo;
-
-	public boolean logar(Usuario usuario) {
-		return usuarioRepo.findOneByLoginAndSenha(usuario.getLogin(), usuario.getSenha()) != null;
+	
+	UsuarioDAO dao = new UsuarioDAO();
+	public boolean verificarLogin(Usuario usuario) throws SQLException {
+		return dao.fazerLogin(usuario);
+	}
+	
+	public Usuario sessao(Usuario usuario) throws SQLException {
+		return dao.sessaoUsuario(usuario);
 	}
 	
 }

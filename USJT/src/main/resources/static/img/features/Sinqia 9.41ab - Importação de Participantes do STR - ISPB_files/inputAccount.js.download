@@ -1,0 +1,380 @@
+inputAccount = function( pr_arg )
+{
+  return inputAccount.__constructor( pr_arg )
+}
+
+inputAccount.__constructor = function( pr_arg )
+{
+  var e = document.createElement( "SPAN" );
+
+  e._constructor = inputAccount._constructor;
+  e._constructor( pr_arg );
+
+  return e;
+}
+
+inputAccount._constructor = function( arg )
+{
+  this._parent = document.getElementById( arg["parent"] );
+
+  this._parent.appendChild( this );
+
+  this._divDig = document.createElement( "DIV" );
+
+  this._bReadOnly = false;
+  this._type = 22;
+  this._nGetAccountName      = arg["nGetAccountName"];
+  this._nGetAccountMask      = arg["nGetAccountMask"];
+  this._nOpenSelectScreen    = arg["nOpenSelectScreen"];
+  this._strIdSvcInputAccount = arg["strIdSvcInputAccount"]; // Id de serviços do inputAccount
+  this._nAccount             = -1;
+  this._nPlan                = -1;
+
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField, bPortugues;
+  var strValue;
+
+  cpName        = arg["cpName"];       // Nome do componente no JavaScript
+  elName        = "el_" + arg["name"]; // Nome do componente no HTML
+  strName       = arg["name"];         // Nome do componente, nome dado ao componente no java
+  strTdClass    = arg["tdClass"];      // CSS para as TD do HTML
+  strCssField   = arg["cssField"];     // CSS para campos não ReadOnly
+  strCssROField = arg["cssROField"];   // CSS para campos ReadOnly
+  bPortugues    = arg["bPortugues"];   // Indica se o sistema está rodando em português
+
+  this.internalName   = strName;
+  this._strCssField   = strCssField;
+  this._strCssROField = strCssROField;
+  this.bOnFocus       = false;
+  this.bShowName      = arg["bShowName"];
+  this.bPortugues     = bPortugues;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  // Início da construção do DIV principal
+  // ----------------------------------------
+  this.appendChild( this._divDig );
+
+  var htmlShowName = "";
+  var htmlConta    = "";
+  var htmlLabel    = (arg["strLabel"] = '' ? '&nbsp;' : arg["strLabel"] );
+  if( this.bShowName )
+  {
+    htmlShowName = "<td>" +
+                     "<table border=0 cellspacing=0 cellpadding=0>" +
+                       "<tr><td style='text-align:left' class='" + strTdClass + "' id='" + elName + "_td_lbName'></td>" +
+                       "<tr>"+
+                         "<td class='" + strTdClass + "'>" +
+                           "<input type=text id='" + elName + "_txName' class='" + strCssROField + "' style='margin-left:2px;' maxlength='40' size='40' readonly>" +
+                         "</td>" +
+                       "</tr>" +
+                     "</table>" +
+                   "</td>";
+
+    htmlConta = "<td>" +
+                  "<table border=0 cellspacing=0 cellpadding=0>" +
+                    "<tr><td valign='bottom' style='text-align:left' class='" + strTdClass + "'>" + arg["strLabel"] + "</td>" +
+                    "<tr>" +
+                      "<td valign='bottom' id='" + elName + "_cpSearch" + "' class='" + strTdClass + "' align='right' height=16 valign='middle'></td>" +
+                    "</tr>" +
+                  "</table>" +
+                "</td>";
+  }
+  else
+    htmlConta = "<td valign='bottom' id='" + elName + "_cpSearch" + "' class='" + strTdClass + "' align='right' height=16 valign='middle'></td>";
+
+  this._divDig.innerHTML = "<table border=0 cellspacing=0 cellpadding=0>" +
+                             "<tr valign='bottom'>" +
+                               htmlConta +
+                               htmlShowName +
+                               "<td valign='bottom' id='" + elName + "_tdButton' class='" + strTdClass + "'></td>" +
+                             "</tr>" +
+                           "</table>";
+
+  // Account
+  createInputMaskNumber        ( cpName + "_cpSearch", elName + "_cpSearch", elName + "_cpSearch", cpName + "_cpSearch", 12, strCssField, strCssROField, 12, "_", '' );
+  finalizeInputMaskNumber.apply( eval(cpName + "_cpSearch"), ["_", "0", false, "right", "", []] );
+  this._divDig._imnAccount         = eval(cpName + "_cpSearch");
+  this._divDig._imnAccount._parent = this;
+
+  // BOTÃO
+  this._divDig._tdButton = document.getElementById( elName + "_tdButton" );
+  
+  if( isIE8( ) )
+    this._divDig._button = document.createElement( "INPUT" );
+  else
+  {
+    this._divDig._button = document.createElement( "BUTTON" );
+    this._divDig._button.innerHTML = "...";
+  }
+  
+  this._divDig._button.setAttribute( "value", "..."    );
+  this._divDig._button.setAttribute( "type",  "button" ); 
+  
+  this._divDig._button.labelValue     = "...";
+  this._divDig._button.style.height   = "21px";
+  this._divDig._button.className      = "registryButton";
+  this._divDig._button._parent        = this;
+  this._divDig._button.internalName   = cpName + "_button";
+  this._divDig._button.style.overflow = "hidden";  
+
+  this._divDig._button.style.marginBottom = "0px";
+
+  this._divDig._tdButton.appendChild( this._divDig._button );
+  this._divDig._button.onfocus = function( )
+                                {
+                                  if( !this._parent.bOnFocus )
+                                    this._parent.oldValue = this._parent._divDig._imnAccount.value.toUpperCase( );
+									
+                                  this._parent.bOnFocus = true;
+                                };
+
+  this._divDig._button.onblur = function( )
+                                {
+                                  if( document.activeElement != this._parent._divDig._imnAccount &&
+                                      !this._parent._isSelecting &&
+                                      this._parent.oldValue != this._parent._divDig._imnAccount.value.toUpperCase( ) )
+                                  {
+                                    this._parent.oldValue = "";
+                                    this._parent.bOnFocus = false;
+                                    this._parent.onchange( );
+                                  }
+                                };
+
+  this._divDig._button.onclick = function( pr_event )
+  {
+    if( !pr_event )
+      pr_event = window.event;
+    
+    if( this._parent._nPlan != -1 )
+    {
+      this._parent.oldValue = this._parent._divDig._imnAccount.value.toUpperCase( );
+      this._parent._isSelecting = true;
+      this._parent.openSelectDialog( );
+      pr_event.cancelBuble=true;
+    }
+    else
+    {
+      if( this._parent.bPortugues )
+        alert( 'Não foi associado nenhum Plano de Contas. Para localizar Contas, um Plano de Contas deve ser associado.' );
+      else
+        alert( 'Accounts Plan not associated. To search for Accounts, a Account Plan must be associated.' );
+    }
+  }
+
+  // Caso esteja marcado para exibir nome, cria os componentes
+  if( this.bShowName )
+  {
+    var tdTemp = document.getElementById( elName + "_td_lbName" );
+
+    this._divDig._lbName = document.createElement( "A" );
+    tdTemp.innerHTML     = "&nbsp;";
+    tdTemp.appendChild( this._divDig._lbName );
+    this._divDig._lbName.className = strTdClass;
+    this._divDig._lbName.innerHTML = ( bPortugues ? "Nome" : "Name" );
+    this._divDig._lbName.href      = "#";
+    this._divDig._lbName.ID1       = this._strIdSvcInputAccount;
+    this._divDig._lbName._parent   = this;
+    this._divDig._lbName.onclick   = inputAccount.showName;
+
+    this._divDig._txName              = document.getElementById( elName + "_txName" );
+    this._divDig._txName._type        = 4;
+    this._divDig._txName._parent      = this;
+    this._divDig._txName.setJsonValue = function( json ){ this.value = json.value; };
+    this._divDig._txName.getJsonValue = function( ){return '{ type:' + this._type + ',value:\"' + this.value + '\" }' };
+    this._divDig._txName.internalName = strName + "_txName";
+  }
+
+  // ---------------------------------------
+  // Final da construção do DIV principal
+
+  this.getJsonValue     = inputAccount.getJsonValue;
+  this.setJsonValue     = inputAccount.setJsonValue;
+  this.setReadOnly      = inputAccount.setReadOnly;
+  this.getReadOnly      = inputAccount.getReadOnly;
+  this.openSelectDialog = inputAccount.openSelectDialog;
+  this.setAccount       = inputAccount.setAccount;
+  this.getAccount       = inputAccount.getAccount;
+  this.setAccountPlan   = inputAccount.setAccountPlan;
+  this._countDigits     = inputAccount._countDigits;
+  this._changeMask      = inputAccount._changeMask;
+  this._removeLeftZeros = inputAccount._removeLeftZeros;
+  this.showName         = inputAccount.showName;
+  this.onchange         = fireEvent;
+  this.validateEvent    = inputAccount.validateEvent;
+  this.setEventListener = inputAccount.setEventListener;
+
+  this.setAccountPlan( arg["nPlan"]    );
+  this.setAccount    ( arg["nAccount"] );
+}
+
+inputAccount.setEventListener = function( aEL )
+{
+  this.aEventListener                     = aEL;
+  this._divDig._imnAccount.aEventListener = aEL;
+}
+
+inputAccount.setReadOnly = function( b )
+{
+  this._bReadOnly               = b;
+  this._divDig._button.disabled = b;
+  this._divDig._imnAccount.setReadOnly( b );
+}
+
+inputAccount.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputAccount.getJsonValue = function( bComplete )
+{
+  var value = this.getAccount( );
+  if( value != -1 )
+    return "{type:" + this._type + ", account:'" + value + "', plan:" + this._nPlan + "}";
+  else
+    return "{type:" + this._type + ", account:'', plan:" + this._nPlan + "}";
+}
+
+inputAccount.setJsonValue = function( json )
+{
+  if( json.setup ) // Veio pelo Setup
+  {
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+  }
+  var jsonAux = ( json.setup ? json.setup : json );
+
+  if( jsonAux.plan != undefined )
+    this.setAccountPlan( jsonAux.plan );
+  if( jsonAux.account != undefined )
+    this.setAccount( jsonAux.account );
+
+  this.showAccount( );
+}
+
+inputAccount._countDigits = function( mask )
+{
+  var count = 0;
+
+  for( i=0; i<mask.length; i++)
+    if( mask.charAt(i) == "#" ) count++;
+
+  return count;
+}
+
+inputAccount._changeMask = function( mask )
+{
+  return mask.replace( new RegExp( "#", "g" ), "_" );
+}
+
+inputAccount.setAccountPlan = function( nAP )
+{
+  if( this._nPlan != nAP )
+  {
+     this._nPlan = nAP;
+
+     if( nAP != -1  )
+     {
+       var strMask = postContent( g_strURL, 'ID1=' + this._strIdSvcInputAccount + '&ID2=' + this._nGetAccountMask + '&plan=' + this._nPlan + "&CompName=" + this.internalName );
+       this._divDig._imnAccount.nMaxDigits = this._countDigits( strMask );
+       this._divDig._imnAccount.strMask    = this._changeMask( strMask );
+     }
+     else
+     {
+       this._divDig._imnAccount.nMaxDigits = 0;
+       this._divDig._imnAccount.strMask    = '';
+       if( this.bShowName )
+         this._divDig._txName.value = '';
+     }
+     this._nAccount = -1;
+     this.setAccount( this._nAccount ); // Ajusta o valor a nova máscara
+  }
+}
+
+inputAccount.getAccount = function( )
+{
+  var acc = this._divDig._imnAccount.removeLetters( this._divDig._imnAccount.value, this._divDig._imnAccount.nMaxDigits );
+
+  if( acc == 0 )
+    return -1;
+  else
+    return acc;
+}
+
+inputAccount.setAccount = function( nAcc )
+{
+  this._nAccount = nAcc;
+
+  if( nAcc == -1 )
+  {
+    this._divDig._imnAccount.internalValue = this._divDig._imnAccount.removeLetters( '', this._divDig._imnAccount.nMaxDigits );
+    if( this.bShowName )
+      this._divDig._txName.value = '';
+  }
+  else
+    this._divDig._imnAccount.internalValue = this._divDig._imnAccount.removeLetters( new String(this._nAccount), this._divDig._imnAccount.nMaxDigits );
+
+  this._divDig._imnAccount.applyMask( this._divDig._imnAccount.strDPC );
+}
+
+inputAccount.showName = function( )
+{
+  if( this._parent._nPlan != -1 )
+  {
+    var value = this._parent.getAccount( );
+    var aResp = postContent( g_strURL, "ID1=" + this._parent._strIdSvcInputAccount + "&ID2=" + this._parent._nGetAccountName +
+                                       "&account=" + value + "&plan=" + this._parent._nPlan + "&CompName=" + this._parent.internalName );
+    this._parent._divDig._txName.value = aResp;
+  }
+}
+
+// Valida se o evento deve ser disparado pelo inputMask
+inputAccount.validateEvent = function( )
+{
+  if( document.activeElement.internalName != undefined )
+  {
+    if( document.activeElement.internalName == this._divDig._button.internalName )
+      return false;
+    else
+      return true;
+  }
+  else
+    return true;
+}
+
+inputAccount.openSelectDialog = function( )
+{
+  var value = this._divDig._imnAccount.removeLetters( this._divDig._imnAccount.value, this._divDig._imnAccount.nMaxDigits ),
+    topWindow = getTopWindow( );
+  
+  topWindow.g_inputAccount = this;
+  
+  showDialog( this._strIdSvcInputAccount, true, '&ID2=' + this._nOpenSelectScreen +
+    "&CompName=" + this.internalName +
+    "&value=" + value +
+    "&mask=" + this._divDig._imnAccount.strMask +
+    "&plan=" + this._nPlan );
+}
+
+function inputAccountSelect( )
+{
+  var cpinputAccount = parent.g_inputAccount;
+
+  if( eval( "cp_" + g_SuperCompName + "_lsSearch.getTotRows( )" ) > 0 )
+  {
+    cpinputAccount.setAccount( eval( "cp_" + g_SuperCompName + "_lsSearch.getColumnValue(0)" ).replace( new RegExp( "\\.", "g" ), "" ) );
+    if( cpinputAccount.bShowName )
+      cpinputAccount._divDig._txName.value = formatHTMLtoJS( eval( "cp_" + g_SuperCompName + "_lsSearch.getColumnValue(1)" ) );
+  }
+
+  cpinputAccount._isSelecting = true;
+  cpinputAccount._divDig._imnAccount.focus( );
+
+  parent.g_inputAccount = undefined;
+
+  if( cpinputAccount.oldValue != cpinputAccount._divDig._imnAccount.value.toUpperCase( ) )
+    cpinputAccount.onchange( );
+  
+  cpinputAccount.oldValue = "";
+
+  closeDialog( );
+}

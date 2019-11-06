@@ -1,0 +1,235 @@
+/**
+ * Drive radiobutton versão 1.0
+ * 
+ * Browsers compatíveis:
+ * Firefox 10.0
+ * Chrome 17.0.963.46 m
+ * IE9 (documento em modo Quirks)
+ * Safari 5.1.2 (7534.52.7)
+ * Opera 11.60
+ */
+
+radiobutton = function( arg ){ return radiobutton.__constructor( arg ) };
+
+radiobutton.__constructor = function( arg )
+{
+  var e = {};
+  e.internalName = arg["grupo"];
+
+  e._constructor = radiobutton._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+radiobutton._constructor = function( arg )
+{
+  this._type      = 9;
+  this._nSelected = 0;
+
+  this.createRadiobutton = radiobutton.createRadiobutton;
+  this.setJsonValue      = radiobutton.setJsonValue;
+  this.getJsonValue      = radiobutton.getJsonValue;
+  this.unload            = radiobutton.unload;
+  this.fireEvent         = fireEvent;
+  
+  this.qtdRadios = 0;
+  this._isCreated = true;
+
+  // Só vai chamar o fireEvent se houver algum evento associado
+  this.handleEvent = function( )
+  {
+    if( this.aEventListener.length > 0 )
+      this.fireEvent( );
+    if( this._parent )
+      if( this._parent.fireParentEvent )
+        this._parent.fireParentEvent( this );
+  }
+
+  return this;
+}
+
+radiobutton.unload = function( )
+{
+  this._isCreated = false;
+}
+
+radiobutton.createRadiobutton = function( strParent, strId, strLabel )
+{
+  e = document.createElement( "SPAN" );
+
+  e._group = this;
+
+  var nIndex   = this.qtdRadios++;
+  var strIndex = this.internalName + "_" + nIndex;
+
+  e._parent = document.getElementById( strParent );
+  e._parent.appendChild( e );
+  
+  e.innerHTML =
+    "<TABLE class='radioContainer'><TR><TD id='td_" + strIndex + "_radio' ></TD><TD NOWRAP id='td_" + strIndex + "_label' class='" + e._parent.className + "'></TD></TR></TABLE>";
+
+  // no IE7 o radio deve ser criado com o tipo e nome já informado, senão não funciona
+  if( isIE7( ) )
+    e._radio = document.createElement("<INPUT type='RADIO' name='" + this.internalName + "'>");
+  else
+  {
+    e._radio           = document.createElement( "INPUT" );
+    e._radio.type      = "RADIO";
+    e._radio.className = "radio";
+    e._radio.name      = this.internalName;
+  }
+  
+  e._radio.id    = strId;
+  e._radio.value = nIndex;
+
+  e._radio._parent = e;
+  
+  radioTd = document.getElementById( "td_" + strIndex + "_radio" );
+  radioTd.appendChild( e._radio );
+  
+  if( nIndex == 0 )
+    e._radio.checked = true;
+
+  e._label           = document.createElement( "LABEL" );
+  e._label.innerHTML = strLabel;
+  e._label.htmlFor   = strId;
+
+  var tdLabel = document.getElementById( "td_" + strIndex + "_label" );
+  tdLabel.appendChild( e._label );
+
+//  e.onclick = function()
+//  {
+//    if( !this._radio.bReadOnly )
+//    {
+//      if( this._group._nSelected != this._radio.value )
+//      {
+////        this._radio.checked = true;
+//        this._group._nSelected = this._radio.value;
+//        this._group.handleEvent( );
+//      }
+//    }
+//    else
+//    {
+//      this._radio.disabled = true;
+////      eval( this._group.internalName + "[" + this._group._nSelected + "].checked = true;" );
+//    }
+//  };
+
+  e._radio.onclick = function( pr_event )
+  {
+    this.onchange( );
+
+      this.focus( );
+  }
+
+  e._radio.onchange = function( pr_event )
+  {
+    var radioGroup = this._parent._group;
+
+    if( radioGroup._nSelected != this.value )
+    {
+      radioGroup._nSelected = this.value;
+      radioGroup.handleEvent( );
+    }
+  };
+
+  e._radio.onfocus = function( pr_event )
+  {
+    var radioGroup = this._parent;
+
+    if( radioGroup._label.innerHTML )
+    	radioGroup._label.style.borderColor = "#111";
+
+    if( !isIE( ) && pr_event )
+  	  pr_event.preventDefault( );
+  }
+
+  e._radio.onblur = function( pr_event )
+  {
+    var radioGroup = this._parent;
+
+    if( isIE6( ) )
+      radioGroup._label.style.borderColor = "tomato";
+    else
+      radioGroup._label.style.borderColor = "transparent";
+
+    if( !isIE( ) )
+      pr_event.preventDefault( );
+  }
+
+  e.setReadOnly = function( b )
+  {
+    this._radio.bReadOnly = b;
+
+    if( document.activeElement.id != this._radio.id )
+      this._radio.disabled = b;
+  }
+
+  e.setLabel = function( str )
+  {
+    this._label.innerHTML = str;
+  }
+
+  e.setValue = function( bCheck )
+  {
+    this._radio.checked = bCheck;
+    
+    if( bCheck )
+      this._group._nSelected = this._radio.value;
+  }
+
+  return e;
+}
+
+radiobutton.setJsonValue = function( json )
+{
+  if( json.setup != undefined )
+  {
+    var bInitDialog = false;
+    if( json.setup.value != undefined )
+    {
+      if( isIE7( ) )
+        eval( this.internalName + "[" + json.setup.value + "].checked = true;" );
+      else
+        $( "input[name='" + this.internalName + "']:eq(" + json.setup.value + ")" ).attr( 'checked', true );	
+		
+      this._nSelected = json.setup.value;
+    }
+
+    var itens = json.setup.itens;
+
+    for( var i = 0; i < itens.length; i++ )
+    {
+      if( itens[i].readOnly != undefined )
+        eval( "cp__" + this.internalName + "_" + itens[i].index + ".setReadOnly( " + itens[i].readOnly + " );" );
+
+      if( itens[i].label != undefined )
+      {
+        eval( "cp__" + this.internalName + "_" + itens[i].index + ".setLabel( '" + itens[i].label + "' );" );
+        if( !bInitDialog )
+          bInitDialog = true;
+      }
+    }
+    /*
+     * Se essa linha fosse chamada acima ( onde está "bInitDialog = true;") o loop dos itens parava, sendo
+     * assim não configurava todos os itens do grupo
+     */
+    if( bInitDialog )
+    	resizeDialog( ); //Só preciso de um resize da tela. Antes estava um initDialog!
+  }
+  else
+  {
+    if( isIE7( ) )
+      eval( this.internalName + "[" + json.value + "].checked = true;" );
+    else
+      $( "input[name='" + this.internalName + "']:eq(" + json.value + ")" ).attr( 'checked', true );
+
+    this._nSelected = json.value;
+  }
+}
+
+radiobutton.getJsonValue = function( )
+{
+  return "{type:" + this._type + ",value:'" + this._nSelected + "'}";
+}

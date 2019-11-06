@@ -1,0 +1,201 @@
+inputSecurityIssuers = function( arg )
+{
+  return inputSecurityIssuers.__constructor( arg );
+}
+
+inputSecurityIssuers.__constructor = function(arg)
+{
+  var e = document.createElement( "SPAN" );
+
+  e._constructor = inputSecurityIssuers._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+inputSecurityIssuers._constructor = function( arg )
+{
+  this._parent = document.getElementById( arg["parent"] );
+
+  this._parent.appendChild( this );
+
+  this._divDig = document.createElement( "DIV" );
+
+  this._bReadOnly = false;
+  this._type = 20;
+  this._nOpenSelectScreen = arg["nOpenSelectScreen"];
+  this._strIdSvcinputSecurityIssuers = arg["strIdSvcInputSecurityIssuers"]; // Id de serviços do inputSecurityIssuers
+
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField, bPortugues;
+  var strValue;
+
+  cpName        = arg["cpName"];       // Nome do componente no JavaScript
+  elName        = "el_" + arg["name"]; // Nome do componente no HTML
+  strName       = arg["name"];         // Nome do componente, nome dado ao componente no java
+  strTdClass    = arg["tdClass"];      // CSS para as TD do HTML
+  strCssField   = arg["cssField"];     // CSS para campos não ReadOnly
+  strCssROField = arg["cssROField"];   // CSS para campos ReadOnly
+  bPortugues    = arg["bPortugues"];   // Indica se o sistema está rodando em português
+  strValue      = arg["strValue"];     // Valor inicial do componente
+
+  this.internalName   = strName;
+  this._strCssField   = strCssField;
+  this._strCssROField = strCssROField;
+  this.bOnFocus       = false;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  // Início da construção do DIV principal
+  // ----------------------------------------
+  this.appendChild( this._divDig );
+
+  this._divDig.innerHTML = "<table border=0 cellspacing=0 cellpadding=0>" +
+                             "<tr>" +
+                               "<td class='" + strTdClass + "'>" +
+                                 "<input type=text id='" + elName + "_cpSearch' class='" + strCssField + "' maxlength='20' size='20'>" +
+                               "</td>" +
+                               "<td id='" + elName + "_tdButton' class='" + strTdClass + "'></td>" +
+                             "</tr>" +
+                           "</table>";
+
+// SecurityIssuers
+  this._divDig._txSecurityIssuers = document.getElementById(elName + "_cpSearch");
+  this._divDig._txSecurityIssuers._type = 4;
+  this._divDig._txSecurityIssuers._parent = this;
+  this._divDig._txSecurityIssuers.setJsonValue=function( json ){this.value=json.value;};
+  this._divDig._txSecurityIssuers.getJsonValue=function( ){return '{type:' + this._type + ',value:\"' + this.value + '\"}'};
+  this._divDig._txSecurityIssuers.internalName=strName + "_cpSearch";
+  this._divDig._txSecurityIssuers.value = strValue;
+  this._divDig._txSecurityIssuers.onpaste = Input_Paste;
+  this._divDig._txSecurityIssuers.onkeypress = Input_KeyPress;
+  this._divDig._txSecurityIssuers.onfocus = function()
+                                     {
+                                       this._parent.bOnFocus = true;
+                                       if( !this._parent._isSelecting )
+                                         this._parent.oldValue = this.value;
+                                       else
+                                         this._parent._isSelecting = false;
+                                     };
+  this._divDig._txSecurityIssuers.onblur = function()
+                                    {
+                                      if( document.activeElement != this._parent._divDig._button )
+                                      {
+                                        this._parent.bOnFocus = false;
+                                        if( this._parent.oldValue != this.value )
+                                          this._parent.onchange( );
+                                        this._parent.oldValue = "";
+                                      }
+                                    };
+
+  // BOTÃO
+  this._divDig._tdButton = document.getElementById( elName + "_tdButton" );
+  this._divDig._button = document.createElement( "BUTTON" );
+  this._divDig._button.innerHTML    = "...";
+  this._divDig._button.style.height = "21px";
+  this._divDig._button._parent      = this;
+  this._divDig._button.type         = 'button';
+
+  this._divDig._tdButton.appendChild( this._divDig._button );
+  this._divDig._button._parent = this;
+  this._divDig._button.onfocus = function( pr_event )
+                                {
+                                  if( !this._parent.bOnFocus )
+                                    this._parent.oldValue = this._parent._divDig._txSecurityIssuers.value;
+                                  this._parent.bOnFocus = true;
+                                };
+
+  this._divDig._button.onblur = function( pr_event )
+                                {
+                                  if( document.activeElement != this._parent._divDig._txSecurityIssuers &&
+                                      !this._parent._isSelecting &&
+                                      this._parent.oldValue != this._parent._divDig._txSecurityIssuers.value )
+                                  {
+                                    this._parent.oldValue = "";
+                                    this._parent.bOnFocus = false;
+                                    this._parent.onchange( );
+                                  }
+                                };
+
+  this._divDig._button.onclick = function( pr_event )
+  {
+    if( !pr_event )
+      pr_event = window.event;
+
+    this._parent._isSelecting = true;
+    this._parent.openSelectDialog( );
+    pr_event.cancelBuble = true;
+  }
+
+  // ---------------------------------------
+  // Final da construção do DIV principal
+
+  this.onchange         = fireEvent;
+  this.getJsonValue     = inputSecurityIssuers.getJsonValue;
+  this.setJsonValue     = inputSecurityIssuers.setJsonValue;
+  this.setReadOnly      = inputSecurityIssuers.setReadOnly;
+  this.getReadOnly      = inputSecurityIssuers.getReadOnly;
+  this.openSelectDialog = inputSecurityIssuers.openSelectDialog;
+}
+
+inputSecurityIssuers.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+  this._divDig._txSecurityIssuers.readOnly = b;
+  this._divDig._txSecurityIssuers.className = ( b == true ? this._strCssROField : this._strCssField );
+  this._divDig._button.disabled = b;
+}
+
+inputSecurityIssuers.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputSecurityIssuers.getJsonValue = function( bComplete )
+{
+  return "{type:4, value:'" + adjustComponentValue( this._divDig._txSecurityIssuers ) + "'}";
+}
+
+inputSecurityIssuers.setJsonValue = function( json )
+{
+  if( json.value != undefined )
+    this._divDig._txSecurityIssuers.value = json.value;
+  else
+  {
+    if( json.setup.value != undefined )
+      this._divDig._txSecurityIssuers.value = json.setup.value;
+
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+  }
+}
+
+// Valida se o inputinteger deve disparar o evento de mudança de carteira
+inputSecurityIssuers.validateEvent = function( )
+{
+  return true;
+}
+
+inputSecurityIssuers.openSelectDialog = function( )
+{
+  getTopWindow( ).g_inputSecurityIssuers = this;
+  showDialog( this._strIdSvcinputSecurityIssuers, true, '&ID2=' + this._nOpenSelectScreen +
+              "&CompName=" + this.internalName +
+              "&value=" + escape( adjustComponentValue( this._divDig._txSecurityIssuers ) ) );
+}
+
+function inputSecurityIssuersSelect( )
+{
+  var cpinputSecurityIssuers = parent.g_inputSecurityIssuers;
+
+  if( eval( "cp_" + g_SuperCompName + "_lsSearch.getTotRows( )" ) > 0 )
+  {
+    cpinputSecurityIssuers._divDig._txSecurityIssuers.value = formatHTMLtoJS( eval( "cp_" + g_SuperCompName + "_lsSearch.getColumnValue(0)" ) )
+  }
+
+  cpinputSecurityIssuers._isSelecting = true;
+  cpinputSecurityIssuers._divDig._txSecurityIssuers.focus( );
+
+  parent.g_inputSecurityIssuers = undefined;
+
+  closeDialog( );
+}

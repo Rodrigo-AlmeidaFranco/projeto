@@ -1,0 +1,921 @@
+addEvent( window, "load", function( ) 
+{
+  getTopWindow( ).initWindowManager( );
+} );
+
+var g_bWindowManagerInit = false;
+
+function initWindowManager( )
+{
+  if( window != getTopWindow( ) )
+  {
+    getTopWindow( ).initWindowManager( );
+    return;
+  }
+  
+  if( g_bWindowManagerInit )
+  {
+    return;
+  }
+
+  g_bWindowManagerInit = true;
+  registry.loadCSS( "registry.util",   true );
+  registry.loadCSS( "registry.window", true );
+  createOverlay( );
+  
+  // A chamada das funções de unload da página devem ser de cima para baixo, a da janela principal deve ser
+  // a última.
+  var oldBeforeunload = window.onbeforeunload,
+    beforeunload = function( ) {
+      closeAllWindows( );
+      
+      if( typeof oldBeforeunload === "function" )
+      {
+        oldBeforeunload( );
+      }
+    };
+  
+  window.onbeforeunload = beforeunload;
+}
+
+//deprecated?
+function onWindowScroll( )
+{
+  var jOverlay = getJOverlay( );
+
+  jOverlay[0].style.top  = document.body.scrollTop;
+  jOverlay[0].style.left = document.body.scrollLeft;
+}
+
+/**
+ * Função de criação da janela. Para instanciar janelas DEVE ser utilizada essa função, pois faz
+ * tratamentos referentes à gerência das janelas.
+ * 
+ * @param pr_url url a ser carregada na imagem.
+ * @param pr_settings configuração da janela, podem ser passados os seguintes parâmetros:
+ *    title: título da janela, opcional, caso seja vazio, ficará em branco.
+ *    helpUrl: url do botão de help, opcional, se não for passado, o botão não será apresentado.
+ *    width: largura da janela. default: 300.
+ *    height: altura da janela. default: 200.
+ *    closeFn: função de fechamento da janela, opcional, caso seja passada, deve incluir a chamada pra destruir o diálogo.
+ *    center: indica que a janela deve ficar centralizada. default: false.
+ *    draggable: indica que a janela pode ser arrastada. default: true.
+ *    closeButton: indica que a janela deve apresentar o botão de fechamento. default: false.
+ *    x: posição x. default: null.
+ *    y: posição y. default: null.
+ *                    
+ * @returns a referência da janela.
+ */
+function addWindow( pr_url, pr_settings )
+{
+  function modalWindow( pr_url, pr_settings )
+  {
+    pr_settings = pr_settings || {};
+  
+    var self        = this,
+      url           = pr_url || "",
+      divContainer  = document.createElement( "div"  ),
+      divContainerSombra,
+      jDivContainer = $( divContainer ),
+      divTitle      = document.createElement( "div"  ),
+      spanTitle     = document.createElement( "span" ),
+      spanHelpButton,
+      spanCloseButton,
+      onBeforeDestroyFunction = function( ) { },
+      iframe   = document.createElement( "iframe" ),
+      settings = {
+        title: pr_settings.title || "",
+        helpUrl: pr_settings.helpUrl,
+        width:  pr_settings.width || 300,
+        height: pr_settings.height || 200,
+        closeFn: pr_settings.closeFn || function( ){ self.close( ); },
+        center: pr_settings.center || false,
+        draggable: ( typeof pr_settings.draggable !== "undefined" ? pr_settings.draggable : true ),
+        closeButton: ( typeof pr_settings.closeButton !== "undefined" ? pr_settings.closeButton : false ),
+        x: pr_settings.x,
+        y: pr_settings.y
+      };
+  
+    if( typeof pr_settings.closeFn === "string" )
+    {
+      // A função deve ser executada no contexto da janela. No Registry, a janela em foco é sempre a última.
+      settings.closeFn = function( ){ self.getFrameWindow( )[pr_settings.closeFn]( ); };
+    }
+    
+    // Se passar falso no botão de fechamento mas tenha definido uma função customizada para o fechamento, deve mostrar o botão.
+    if( !settings.closeButton && typeof pr_settings.closeFn !== "undefined" )
+    {
+      settings.closeButton = true;
+    }
+  
+    this.isOpen     = true;  //Informa se a janela está aberta
+    this.isVisible  = false; //Informa se a janela está visível. Preciso do controle pois existem casos em que a janela deve ser fechada antes de ser exibida!
+    this.bAbortShow = false; //Informa se a janela deve ser realmente exibida. Pode ocorrer de estar no tramite do show da janela e ela ser fechada antes do show terminar!
+    this.nLevel     = g_aWin.length;
+    
+    divTitle    .className = "titleContainer";
+    spanTitle   .className = "title";    
+    divContainer.className = "window";
+  
+    divContainer.style.filter = "Alpha(opacity=0)";
+
+    iframe.setAttribute( "frameBorder", 0 );
+    iframe.src       = url;
+    iframe.className = "frame";
+    iframe.id        = "GUID_5"; //Configurado um ID por causa do TestComplete. Se for alterado, deverá ser comunicado ao QT.
+  
+    divTitle     .appendChild( spanTitle    );
+    divContainer .appendChild( divTitle     );    
+    divContainer .appendChild( iframe       );
+    document.body.appendChild( divContainer );
+    
+    this.show = function( )
+    {
+      jDivContainer
+        .animate( {
+          opacity: 1
+        }, {
+          duration: 240,
+          easing: "swing",
+          complete: function( )
+          {
+            self.isVisible = true;
+            
+            if( self.bAbortShow )
+            {
+              self.close( );
+            }
+          }
+        } );
+    }
+  
+    this.close = function( pr_event )
+    {
+      if( getTopWindow( ).g_openedCalendar )
+        getTopWindow( ).g_openedCalendar.hide( );
+      
+      if( !self.isVisible )
+      {
+        self.bAbortShow = true;
+        return;
+      }
+      
+      //Motivo do TRY-CATCH. Erro de acesso não autorizado a um método quando rodando no IE8.
+      //Simulação: Processo 106. Bloquear Indice no Chrome. Acessar no IE8. Desbloquear no Chrome.
+      //Ocorre o erro mas o código executa. Investigar.
+      try
+      {
+        onBeforeDestroyFunction.apply( self.getFrameWindow( ), [] );
+      } catch( e ){ };
+  
+      jDivContainer
+        .animate( {
+          opacity: 0
+        }, {
+          duration: 240,
+          easing: "swing",
+          complete: function( ) {
+            jDivContainer.addClass( "hidden" );
+            self.isVisible = false;
+            self.destroy( );
+          }
+        } );
+  
+      self.isOpen = false;
+      checkWindowsHierarchy( );
+    }
+      
+    this.destroy = function( )
+    {
+      iframe.src = "about:blank";
+      jDivContainer.remove( );
+      
+      url                     =
+      divContainer            =
+      jDivContainer           =
+      divTitle                =
+      spanTitle               =
+      spanHelpButton          =
+      spanCloseButton         =
+      iframe                  =
+      settings                = null;
+  
+      removeDialog( self );
+      checkWindowsHierarchy( );
+    }
+  
+    this.resize = function( )
+    {
+      var height,
+        width,
+        frameDocument = this.getFrameWindow( ).document,
+        table = frameDocument.getElementById( g_strRegistryTbPrincipal );
+
+      if( table )
+      {
+        height = ( 2 * table.offsetTop  ) + table.offsetHeight + 2;
+        width  = ( 2 * table.offsetLeft ) + table.offsetWidth  + 2;
+      }
+      else
+      {
+        //Precisa considerar o padding/margin
+        height = $(frameDocument.body).outerHeight( true );
+        width  = $(frameDocument).width( );
+      }
+      
+      //MANTIS#33111: Em alguns casos, o maldito IE calcula uma altura decimal.
+      //Problema: no javascript ele me retorna arredondado para baixo. Mas quando renderiza, arredonda para cima =/
+      if( isIE( ) )
+        height = height + 1;
+
+      this.setHeight( height );
+      this.setWidth ( width  );
+    }
+  
+    this.setTitle = function( pr_strTitle )
+    {
+      spanTitle.innerHTML = pr_strTitle || "";
+    }
+  
+    this.setBeforeDestroyFunction = function( pr_fn )
+    {
+      if( typeof pr_fn === "undefined" )
+      {
+        pr_fn = function( ) { };
+      }
+  
+      onBeforeDestroyFunction = pr_fn;
+    }
+  
+    this.setCenter = function( pr_bCenter )
+    {
+      if( pr_bCenter )
+      {
+        jDivContainer.addClass( "center" );
+        settings.center = true;
+        
+        var containerHeight = divContainer.offsetHeight,
+            windowHeight    = $(getTopWindow( ).window).height( );
+        var marginTop  = divContainer.offsetHeight / -2,
+            marginLeft = divContainer.offsetWidth  / -2;
+         
+        //Verifica se a janela não cabe verticalmente na tela. Se não couber, alinha ao topo. 
+        if( windowHeight < containerHeight )
+        	marginTop += (containerHeight - windowHeight) / 2;
+  
+        divContainer.style.marginTop  = marginTop  + "px";
+        divContainer.style.marginLeft = marginLeft + "px";
+      }
+      else
+      {
+        jDivContainer.removeClass( "center" );
+        settings.center = false;
+  
+        divContainer.style.marginTop  = "";
+        divContainer.style.marginLeft = "";
+      }
+    }
+  
+    this.setWidth = function( pr_nWidth )
+    {
+      divContainer.style.width = ( pr_nWidth + 2 ) + "px";
+  
+      if( settings.center )
+      {
+        divContainer.style.marginLeft = "-" + ( divContainer.offsetWidth / 2 ) + "px";
+      }
+    }
+    
+    this.setHeight = function( pr_nHeight )
+    {
+      //MANTIS#32745
+      //O certo era redimensionar para o tamanho correto. Mas como existem telas que ultrapassam a resolução padrão,
+      //a solução foi reduzir o tamanho da janela e permitir o scroll dentro da tela.      
+      var h = pr_nHeight;
+      
+      if( h > $(getTopWindow( ).window).height( ) )
+        h = 540;
+      
+      // Inclui o cabeçalho
+      // divContainer.style.height = ( pr_nHeight + divTitle.offsetHeight ) + "px";
+      // iframe.style.height = pr_nHeight + "px";
+      //MANTIS#32745
+      divContainer.style.height = ( h + divTitle.offsetHeight ) + "px";
+      iframe.style.height       = h + "px";
+      
+      $(this.getFrameWindow( ).document.body).css( "heigth", pr_nHeight );
+
+      if( settings.center )
+      {
+        divContainer.style.marginTop = "-" + ( divContainer.offsetHeight / 2 ) + "px";
+      }
+    }
+    
+    this.setZIndex = function( pr_zIndex )
+    {
+      divContainer.style.zIndex = pr_zIndex;
+    }
+    
+    this.getFrameWindow = function( )
+    {
+      if( iframe.contentWindow )
+        return iframe.contentWindow;
+      
+      return iframe.document.parentWindow;
+    }
+    
+    this.getX = function( )
+    {
+      return jDivContainer.offset( ).left;
+    }
+    
+    this.getY = function( )
+    {
+      return jDivContainer.offset( ).top;
+    }
+    
+    this.setX = function( pr_x )
+    {
+      if( typeof pr_x !== "undefined" )
+      {
+        divContainer.style.left = pr_x + "px";
+      }
+      else
+      {
+        divContainer.style.left = "";
+      }
+    }
+    
+    this.setY = function( pr_y )
+    {
+      if( typeof pr_y !== "undefined" )
+      {
+        divContainer.style.top = pr_y + "px";
+      }
+      else
+      {
+        divContainer.style.top = "";
+      }
+    }
+  
+    this.addHelpButton = function( )
+    {
+      spanHelpButton = document.createElement( "span" );
+      spanHelpButton.className = "helpButton";
+      spanHelpButton.onclick = function( ){ showHelp( settings.helpUrl ); };
+      
+      divTitle.appendChild( spanHelpButton );
+    }
+  
+    this.addCloseButton = function( )
+    {
+      spanCloseButton = document.createElement( "span" );
+      spanCloseButton.className = "closeButton";
+      spanCloseButton.onclick = settings.closeFn;
+      
+      divTitle.appendChild( spanCloseButton );
+    }
+    
+    this.configure = function( )
+    {
+      var dragCancelElements = "";
+  
+      this.setTitle ( settings.title  );
+      this.setWidth ( settings.width  );
+      this.setHeight( settings.height );
+      
+      if( !settings.center )
+      {
+        this.setX( settings.x );
+        this.setY( settings.y );
+      }
+      else
+      {
+        this.setCenter( settings.center );
+      }
+      
+      if( settings.helpUrl )
+      {
+        this.addHelpButton( );
+        
+        dragCancelElements += ".helpButton";
+      }
+      
+      if( settings.closeButton )
+      {
+        this.addCloseButton( );
+        
+        if( dragCancelElements.length )
+        {
+          dragCancelElements += ", .closeButton";
+        }
+        else
+        {
+          dragCancelElements += ".closeButton";
+        }
+      }      
+      
+      if( settings.draggable )
+      {
+        jDivContainer
+          .addClass( "draggable" )
+          .draggable( {
+            cancel: dragCancelElements,
+            handle: ".titleContainer",
+            iframeFix: true,
+            start: function( pr_event, pr_ui )
+                   {
+                     if( self.getFrameWindow( ).closeInpDates )
+                     {
+                       self.getFrameWindow( ).closeInpDates( pr_event );
+                     }
+                   }
+          } );
+      }
+    }
+    
+    this.configure( );
+  }
+  
+  if( !isTopWindow( ) )
+  {
+    return getTopWindow( ).addWindow( pr_url, pr_settings );
+  }
+  
+  //Exibe o Overlay antes para poder impedir vários clicks na tela anterior.
+  showOverlay( );
+  
+  var win = new modalWindow( pr_url, pr_settings );
+  win.getFrameWindow( ).frameElement.dialog = win;
+  
+  g_aWin.push( win );
+  
+  checkWindowsHierarchy( );
+  
+  return win;
+}
+
+/**
+ * Necessário rever hierarquia de janelas toda vez que ocorre uma inclusão de janelas.
+ * Utilizado para colocar foco na janela certa, esconder o overlay e configurar a propriedade "level" da janela.
+ */
+function checkWindowsHierarchy( )
+{
+  if( !isTopWindow( ) )
+  {
+    getTopWindow( ).checkWindowsHierarchy( );
+    return;
+  }
+
+  if( !g_aWin.length )
+  {
+    return;
+  }
+  else if( !areThereAnyWindowsOpened( ) )
+  {
+    hideOverlay( );
+    return;
+  }
+  
+  //Preciso percorrer toda a hierarquia, pois uma janela abaixo das demais pode ter sido fechada.
+  //Isso acontece com Progressos muito rápidos.
+  for( var i = 0, j = 0; i < g_aWin.length; i++ )
+  {
+    if( g_aWin[i].isOpen )
+    {
+      g_aWin[i].nLevel = j;
+      g_aWin[i].setZIndex( registry.ui.window.blurredZIndex + j );
+      j++;
+    }
+  }
+  
+  //Seta a janela superior com foco
+  var winData = getLastWindowData( );
+
+  if( winData )
+  {
+    winData.window.setZIndex( registry.ui.window.focusedZIndex );
+  }
+}
+
+function showOverlay( )
+{
+  if( !isTopWindow( ) )
+  {
+    getTopWindow( ).showOverlay( );
+    return;
+  }
+
+  var jOverlay = getJOverlay( );
+  
+  //MANTIS#35381:
+  //Em alguns navegadores como IE10 e anteriores, quando uma janela é fechada e outra é imediatamente aberta, aconteça
+  //da animação de fechamento ainda estar sendo executada. Portanto, a outra janela fecha, removendo o overlay que deveria existir.
+  //Para isso, a exibição do overlay é atrasado até que o outro tenha terminado. Ver hideOverlay.
+  if( jOverlay.isHidding )
+  {
+    setTimeout( 'getTopWindow( ).showOverlay( )', 50 );
+    return;
+  }
+  
+  jOverlay
+    .removeClass( "hidden" )
+    .animate( {
+      opacity: registry.ui.window.overlayOpacity
+    }, {
+      duration: 200,
+      easing: "swing"
+    } );
+}
+
+function hideOverlay( )
+{
+  if( !isTopWindow( ) )
+  {
+    getTopWindow( ).hideOverlay( );
+    return;
+  }
+
+  var jOverlay = getJOverlay( );
+
+  if( jOverlay.hasClass( "hidden" ) )
+  {
+    return;
+  }
+
+  var nOldOpacity = parseFloat( jOverlay.css( "opacity" ) );
+  
+  jOverlay.isHidding = true;
+
+  jOverlay
+    .animate( {
+      opacity: 0
+    }, {
+      duration: 200,
+      easing: "swing",
+      complete: function( ) {
+        jOverlay.isHidding = false;
+        jOverlay.addClass( "hidden" );
+      }
+    } );
+  
+  /*
+   * Quando a animação não faz nada pois o valor inicial é igual o final, a animação não roda e, consequentemente,
+   * não chama a função de término. O plugin de animação que utilizo do jQuery não usa os callbacks "always", "done"
+   * e "fail" do jQuery, portanto, tenho que verificar se houve necessidade da animação rodar, caso não precise, chamo
+   * manualmente a função de término, que esconde o overlay.
+   */
+  if( nOldOpacity === 0 )
+  {
+    jOverlay.isHidding = false;
+    jOverlay.addClass( "hidden" );
+  }
+}
+
+function createOverlay( )
+{
+  if( typeof window["g_window_overlay"] !== "undefined" )
+  {
+    return;
+  }
+  
+  var divOverlay = document.createElement( "div" );
+  
+  divOverlay.className    = "overlay hidden";
+  divOverlay.style.zIndex = registry.ui.window.overlayZIndex;
+  
+  document.body.appendChild( divOverlay );
+
+  window["g_window_overlay"] = $( divOverlay );
+}
+
+function getJOverlay( )
+{
+  return window["g_window_overlay"];
+}
+
+function registerOnBeforeDestroyDialog( pr_fn )
+{
+  getDialog( ).setBeforeDestroyFunction( pr_fn );
+}
+
+function registerCpFocusBeforeDestroyDialog( pr_strCpName )
+{
+  getDialog( ).setBeforeDestroyFunction( function( ) { setWindowBeforeCpFocus( pr_strCpName ); } );
+}
+
+function closeDialog( )
+{
+  getDialog( ).close( );
+}
+
+function closeAllWindows( )
+{
+  if( !isTopWindow( ) )
+  {
+    getTopWindow( ).closeAllWindows( pr_dialog );
+    return;
+  }
+
+  for( var i = g_aWin.length - 1; i >= 0; i-- )
+  {
+    win = g_aWin[i];
+
+    if( win.isOpen )
+    {
+      win.close( );
+    }
+  }
+}
+
+function removeDialog( pr_dialog )
+{
+  if( !isTopWindow( ) )
+  {
+    getTopWindow( ).removeDialog( pr_dialog );
+    return;
+  }
+
+  g_aWin.splice( pr_dialog.nLevel, 1 );
+  pr_dialog = null;
+}
+
+/**
+ * Retorna o diálogo corrente.
+ */
+function getDialog( )
+{
+  if( window.frameElement && window.frameElement.dialog )
+  {
+    return window.frameElement.dialog;
+  }
+
+  return null;
+}
+
+/**
+ * Utilizado por janelas de confirmação, quando precisam chamar uma função da janela correspondente.
+ */
+function getWindowFrameBefore( )
+{
+  if( !isTopWindow( ) )
+  {
+    return getTopWindow( ).getWindowFrameBefore( );
+  }
+
+  return getWindowBefore( ).getFrameWindow( );
+}
+
+/**
+ * Utilizado por janelas de confirmação, quando precisam chamar uma função da janela correspondente.
+ */
+function getWindowBefore( )
+{
+  if( !isTopWindow( ) )
+  {
+    return getTopWindow( ).getWindowBefore( );
+  }
+  
+  if( g_aWin.length === 0 )
+  {
+    return null;
+  }
+  else if( g_aWin.length === 1 )
+  {
+    // Discutível, pois caso tenha somente uma janela aberta, a janela principal não é um janela modal.
+    //return getTopWindow( );
+	return null; //Tem que retornar null. MANTIS#29881
+  }
+  else
+  {
+    return g_aWin[g_aWin.length - 2];
+  }
+}
+
+function getLastWindow( )
+{
+  if( !isTopWindow( ) )
+  {
+    return getTopWindow( ).getLastWindow( );
+  }
+
+  return g_aWin[g_aWin.length - 1];
+}
+
+function getWindowByLevel( pr_nLevel )
+{
+  if( pr_nLevel >= g_aWin.length )
+  {
+    throw new Error( "Um claro caso de ArrayIndexOutOfBounds :P Posição " + pr_nLevel + " - Só tem " + g_aWin.length + " janelas abertas." );
+  }
+
+  return g_aWin[pr_nLevel];
+}
+
+function getTopWindow( )
+{
+  if( window == top )
+  {
+    return window;
+  }
+  else
+  {
+    try
+    {
+      return parent.getTopWindow( );
+    }
+    // Caso esteja dentro de um iframe, dará erro de domínio.
+    catch( e )
+    {
+      return window;
+    }
+  }
+}
+
+function isTopWindow( )
+{
+  return window == getTopWindow( );
+}
+
+function closeFocusWindow( )
+{
+  if( !isTopWindow( ) )
+  {
+    getTopWindow( ).closeFocusWindow( );
+    return;
+  }
+
+  var win;
+
+  for( var i = g_aWin.length - 1; i >= 0; i-- )
+  {
+    win = g_aWin[i];
+
+    if( win.isOpen )
+    {
+      win.close( );
+      return;
+    }
+  }
+}
+
+function areThereAnyWindowsOpened( )
+{
+  if( !isTopWindow( ) )
+  {
+    return getTopWindow( ).areThereAnyWindowsOpened( );
+  }
+
+  var win;
+
+  for( var i = 0; i < g_aWin.length; i++ )
+  {
+    win = g_aWin[i];
+
+    if( win.isOpen )
+    {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function getHowManyWindowsOpened( )
+{
+  if( !isTopWindow( ) )
+  {
+    return getTopWindow( ).getHowManyWindowsOpened( );
+  }
+
+  return g_aWin.length;
+}
+
+function getLastWindowData( )
+{
+  if( !isTopWindow( ) )
+  {
+    return getTopWindow( ).getLastWindowData( );
+  }
+
+  var win;
+
+  for( var i = g_aWin.length - 1; i >= 0; i-- )
+  {
+    win = g_aWin[i];
+
+    if( win.isOpen )
+    {
+      return { window: win, index: i };
+    }
+  }
+
+  return null;
+}
+
+function getFrameWindow( pr_win )
+{
+  return pr_win.getFrameWindow( );
+}
+
+function initDialog( pr_strTitle )
+{
+  var win = getDialog( );
+
+  win.resize( );
+  win.setCenter( true );
+  
+  if( pr_strTitle )
+    win.setTitle( pr_strTitle );
+  
+  win.show( );
+}
+
+function lockScreenLoad( )
+{
+  initDialog( _( "Bloqueio de Objetos" ) );
+}
+
+function resizeDialog( pr_win )
+{
+  var win = getDialog( );
+
+  // Se a janela for nula é pq é a tela principal
+  if( win )
+  {
+    win.resize( );
+  }
+}
+
+function centralizeDialog( )
+{
+  var win = getDialog( );
+
+  // Se a janela for nula é pq é a tela principal
+  if( win )
+  {
+    win.setCenter( true );
+  }
+}
+
+function setLastWindowCpFocus( pr_cpName )
+{
+  var win    = getLastWindow( ),
+    winFrame = win.getFrameWindow( )
+    topWin   = getTopWindow( ),
+    comp;
+
+  try
+  {
+    topWin.document.getElementById( g_strTxArgBusca ).focus( );
+    topWin.document.getElementById( g_strTxArgBusca ).blur ( );
+
+    if( win )
+    {
+      comp = winFrame[pr_cpName];
+    }
+    else
+    {
+      comp = topWin[pr_cpName];
+    }
+    
+    if( comp && comp.focus )
+    {
+      // Caso o componente esteja em algum dos casos que não possa receber foco.
+      try
+      {
+        comp.focus( );
+      }
+      catch( e )
+      { }
+    }
+  }
+  catch( e ){ }
+}
+
+function setWindowBeforeCpFocus( pr_cpName )
+{
+  var dialog = getDialog( ),
+    topWin = getTopWindow( ),
+    comp;
+  
+  if( dialog.nLevel > 0 )
+  {
+    comp = topWin.g_aWin[dialog.nLevel - 1].getFrameWindow( )[pr_cpName];
+  }
+  else
+  {
+    comp = topWin[pr_cpName];
+  }
+
+  if( comp && comp.focus )
+  {
+    // Caso o componente esteja em algum dos casos que não possa receber foco.
+    try
+    {
+      comp.focus( );
+    }
+    catch( e )
+    { }
+  }
+}

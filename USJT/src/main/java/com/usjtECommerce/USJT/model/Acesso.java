@@ -2,30 +2,34 @@ package com.usjtECommerce.USJT.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
 
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-@Entity
 public class Acesso implements Serializable {
+	
+	/**
+	 * 
+	 */
 	private static final long serialVersionUID = 1L;
-	@Id
-	@GeneratedValue(strategy=GenerationType.IDENTITY)
+	
+	
+	private Long id_acesso;
 	private Integer codigo;
-	private String nome;
+	public String nome;
 	private String descricao;
 	
 	
 	
 	
-	public static long getSerialversionuid() {
-		return serialVersionUID;
+	
+	public Acesso() {
+		super();
+	}
+	
+	
+	public Long getId_acesso() {
+		return id_acesso;
+	}
+	public void setId_acesso(Long id_acesso) {
+		this.id_acesso = id_acesso;
 	}
 	public Integer getCodigo() {
 		return codigo;
@@ -46,6 +50,9 @@ public class Acesso implements Serializable {
 		this.descricao = descricao;
 	}
 	
+	
+	
+
 	
 	
 }

@@ -1,0 +1,134 @@
+function configTextMask( comp, mapConfig )
+{
+  comp.configMaskEvents    = textMask.configMaskEvents;
+  comp.configMaskValues    = textMask.configMaskValues;
+  comp.applyMaskOnValue    = textMask.applyMaskOnValue;
+  comp.applyMaskOnKeyValue = textMask.applyMaskOnKeyValue;
+  comp.treatMaskKeyPress   = textMask.treatMaskKeyPress;
+
+  comp.configMaskValues( mapConfig );
+  
+  comp.configMaskEvents( );
+}
+
+textMask = function( )
+{ }
+
+textMask.configMaskEvents = function( )
+{
+  this.keyPressEvent = this.onkeypress;
+  this.pasteEvent    = this.onpaste;
+
+  this.onkeypress = function( pr_event )
+  {
+    var bTreatKeyPress = this.keyPressEvent ? this.keyPressEvent( pr_event ) : true;
+    var nKey;
+    
+    if( !pr_event )
+      nKey = window.event.keyCode;
+    else
+      nKey = pr_event.which || pr_event.keyCode;
+    
+    //Ignora Arrows, Home, End, DEL, Backspace.
+    if( (nKey >= 35 && nKey <= 40) || nKey == 8 || nKey == 46 )
+      return true;
+
+    if( bTreatKeyPress )
+      if( this.treatMaskKeyPress )
+        return this.treatMaskKeyPress( nKey, pr_event );
+      else
+        return true;
+
+    return false;
+  }
+
+  this.onpaste = function( pr_event )
+  {
+    var self = this;
+
+    if( this.pasteEvent )
+      this.pasteEvent( pr_event );
+
+    if( this.applyMaskOnValue )
+    {
+      clearTimeout( this.pasteTimeout );
+      this.pasteTimeout = setTimeout( function() { self.value = self.applyMaskOnValue( self.value ); }, 10 );
+    }
+
+    return true;
+  }
+}
+
+textMask.configMaskValues = function( mapConfig )
+{
+  if( mapConfig )
+  {
+    this.bLowerCase = mapConfig.bLowerCase;
+    this.bLetter    = mapConfig.bLetter;
+    this.bNumeric   = mapConfig.bNumeric;
+
+    //Boolean protegido pois caso o usuário queria maiúsculas e minúsculas, o valor deve vir nulo.
+    if( this.bLowerCase == true )
+      this.style.textTransform = "lowercase";
+    else if( this.bLowerCase == false )
+      this.style.textTransform = "uppercase";
+  }
+}
+
+textMask.applyMaskOnValue = function( strValue )
+{
+  var strMask = "";
+  var regExp;
+
+  if( this.bLetter )
+    strMask = "\\d";
+
+  if( this.bNumeric )
+    strMask = "\\D";
+  
+  if( this.bLetter && this.bNumeric )
+    strMask = "";
+
+  strValue = strValue.replace( new RegExp( strMask, "g" ), "" );
+
+  //Boolean protegido pois caso o usuário queria maiúsculas e minúsculas, o valor deve vir nulo.
+  if( this.bLowerCase == true )
+    strValue = strValue.toLowerCase( );
+  else if( this.bLowerCase == false )
+    strValue = strValue.toUpperCase( );
+
+  return strValue;
+}
+
+textMask.applyMaskOnKeyValue = function( pr_key, pr_event )
+{
+  var strMask = "";
+  var regExp;
+  var strKeyValue = String.fromCharCode( pr_key ).trim( );
+  
+  if( this.bLetter )
+    strMask = "\\d";
+
+  if( this.bNumeric )
+    strMask = "\\D";
+  
+  if( this.bLetter && this.bNumeric )
+    strMask = "";
+
+  strKeyValue = strKeyValue.replace( new RegExp( strMask, "g" ), "" );
+
+  return strKeyValue;
+}
+
+textMask.treatMaskKeyPress = function( pr_key, pr_event )
+{
+  var strKeyValue = String.fromCharCode( pr_key ).trim( );
+  var bReturn;
+  
+  if( strKeyValue.length == 0 )
+    return true;
+  if( this.applyMaskOnKeyValue( pr_key, pr_event ).length > 0 )
+    return true;
+
+  return false;
+}

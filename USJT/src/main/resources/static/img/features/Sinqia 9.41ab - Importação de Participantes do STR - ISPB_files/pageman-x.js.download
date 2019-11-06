@@ -1,0 +1,959 @@
+
+pageman = function( arg ){ return pageman.__constructor( arg ) };
+//------------------------------------------------------------------------------
+
+pageman.__constructor = function( arg )
+{
+  var e = document.createElement( "DIV" );
+
+  e._constructor = pageman._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+pageman._constructor = function( arg )
+{
+  var self = this;
+  
+  this._parent = document.getElementById( arg["parent"] );
+  this._parent.appendChild( this );
+
+  this.nScrollBtsWidth = 42;
+  this.nHelpBtnWidth   = 20;
+  this.position        = 0;
+
+  if( arg["name"] )
+    this._strName = arg["name"];
+
+  if( arg["width"] )
+    this._nW = parseInt( arg["width"] );
+  else
+    this._nW = 100;
+
+  if( arg["height"] )
+    this._nH = parseInt( arg["height"] );
+  else
+    this._nH = 100;
+
+  if( arg["bWizard"] )
+    this._bWizard = arg["bWizard"] == true;
+  else
+    this._bWizard = false;
+
+  if( g_nScrollBarWidth == undefined )
+    g_nScrollBarWidth = getScrollBarWidth( );
+
+  this.style.width    = this._nW + "px";
+  this.style.height   = this._nH + "px";
+  this.innerHTML =
+    "<table cellpadding=0 cellspacing=0 style='width:" + this._nW + "px'>" +
+    "<tr>" +
+    "<td id=_tabs" + this._parent.id + " valign=middle></td><td id=_bts" + this._parent.id + " valign=middle style='display:none;'></td>" +
+    "</tr>" +
+    "</table>";
+  this.align     = "left";
+  this.className = "pageman" + ( this._bWizard ? " wizard" : "" );
+  
+  this.tdTabs  = document.getElementById( "_tabs"  + this._parent.id );
+  this.tdBts   = document.getElementById( "_bts"   + this._parent.id );
+  this.tdPages = document.getElementById( "_pages" + this._parent.id );
+
+  this._divTabsAux = document.createElement( "DIV" );
+  this._divTabsAux.style.overflow = "hidden";
+  this._divTabsAux.style.width    = ( 2 * this._nW ) + "px";
+  this._divTabsAux._parent = this;
+  this.tdTabs.appendChild( this._divTabsAux );
+
+  this._divTabs = document.createElement( "DIV" );
+  this._divTabs.style.overflow = "hidden";
+  this._divTabs.style.maxWidth = this._nW + "px";
+  
+  this._divTabs._parent = this;
+  this._divTabsAux.appendChild( this._divTabs );
+
+  this._divTabs._ulTabs = document.createElement( "UL" );
+  this._divTabs.className = "tabsContainer";
+
+  this._divTabs.appendChild( this._divTabs._ulTabs );
+
+  // Foi incluída uma div para fazer o complemento da borda de baixo do componente, se usasse a borda do próprio ul, o que é muito mais óbvio,
+  // parte da borda apareceria nas curvas da aba selecionada, o que causa um conforto visual maior do que a presença dessa div =p
+  this._divTabs._ulTabs._divComplemento = document.createElement( "DIV" );
+  this._divTabsAux.appendChild( this._divTabs._ulTabs._divComplemento );
+  this._divTabs._ulTabs._divComplemento.style.width = this._nW + "px";
+  
+  this._divTabs._ulTabs                .className = "tabs";
+  this._divTabs._ulTabs._divComplemento.className = "complemento";
+
+  this._containerBtnsAux = document.createElement( "UL" );
+
+  this._containerBtnsAux.className = "scrollContainer";
+  
+  this._containerBtnsAux._parent = this;
+  this._divTabs._ulTabs._divComplemento.appendChild( this._containerBtnsAux );
+
+  this._containerBtnsAux._containerBtnLeft  = document.createElement( "LI" );
+  this._containerBtnsAux._containerBtnRight = document.createElement( "LI" );
+  this._containerBtnsAux._containerBtnHelp  = document.createElement( "LI" );
+  this._containerBtnsAux.appendChild( this._containerBtnsAux._containerBtnLeft  );
+  this._containerBtnsAux.appendChild( this._containerBtnsAux._containerBtnRight );
+  this._containerBtnsAux.appendChild( this._containerBtnsAux._containerBtnHelp  );
+  this._containerBtnsAux._containerBtnLeft .className = "hidden";
+  this._containerBtnsAux._containerBtnRight.className = "hidden";
+  this._containerBtnsAux._containerBtnHelp .className = "hidden";
+  
+  $( this._containerBtnsAux._containerBtnHelp ).addClass( "solo" );
+  
+  this._containerBtnsAux._btnLeft  = document.createElement( "SPAN" );
+  this._containerBtnsAux._btnRight = document.createElement( "SPAN" );
+  this._containerBtnsAux._btnHelp  = document.createElement( "SPAN" );
+  this._containerBtnsAux._btnLeft .className = "btnLeft";
+  this._containerBtnsAux._btnRight.className = "btnRight";
+  this._containerBtnsAux._btnHelp .className = "btnHelp";
+  this._containerBtnsAux._containerBtnLeft .appendChild(  this._containerBtnsAux._btnLeft  );
+  this._containerBtnsAux._containerBtnRight.appendChild(  this._containerBtnsAux._btnRight );
+  this._containerBtnsAux._containerBtnHelp .appendChild(  this._containerBtnsAux._btnHelp  );
+  
+  this._containerBtnsAux._btnLeft .bReadOnly     = false;
+  this._containerBtnsAux._btnRight.bReadOnly     = false;
+  this._containerBtnsAux._btnHelp .bReadOnly     = false;
+  this._containerBtnsAux._btnHelp .onclick       = function( pr_event ){ if( !this.bReadOnly ) self.showHelp( ) };
+  this._containerBtnsAux._btnLeft .oncontextmenu = function( pr_event ){ return false; };
+  this._containerBtnsAux._btnRight.oncontextmenu = function( pr_event ){ return false; };
+  this._containerBtnsAux._btnHelp .oncontextmenu = function( pr_event ){ return false; };
+  
+  if( this._bWizard )
+  {
+    this._containerBtnsAux._btnLeft .onclick = function( pr_event ){ if( !this.bReadOnly ) self.previousPage( ); };
+    this._containerBtnsAux._btnRight.onclick = function( pr_event ){ if( !this.bReadOnly ) self.nextPage    ( ); };
+  }
+  else
+  {
+    this._containerBtnsAux._btnLeft .onmouseover = function( pr_event ){ if( !this.bReadOnly ) self.startScrollLeft ( ); };
+    this._containerBtnsAux._btnLeft .onmouseout  = function( pr_event ){ if( !this.bReadOnly ) self.stopScroll      ( ); };
+    this._containerBtnsAux._btnRight.onmouseover = function( pr_event ){ if( !this.bReadOnly ) self.startScrollRight( ); };
+    this._containerBtnsAux._btnRight.onmouseout  = function( pr_event ){ if( !this.bReadOnly ) self.stopScroll      ( ); };
+  }
+
+  this._divPages           = document.createElement( "DIV" );
+  this._divPages.className = "pageContainer";
+  this._divPages.style.height = this._nH - ( this._bWizard ? 21 : 22 ) + "px";
+  this._divPages._parent = this;
+  
+  this._divPagesContainer = document.createElement( "DIV" );
+  this._divPagesContainer.style.width = this._nW - 2 + "px";
+  this._divPagesContainer.className   = "pagesContainer";
+  
+  this.appendChild( this._divPagesContainer );
+  this._divPagesContainer.appendChild( this._divPages );
+
+  if( !this._bWizard )
+  {
+    this._mn = drivepopupmenu( );
+    this._mn.attach( this._containerBtnsAux._btnLeft  );
+    this._mn.attach( this._containerBtnsAux._btnRight );
+  }
+
+  this._bReadOnly = false;
+
+  this._aTabs            = []
+  this._nSelectedTab     = -1;
+  this._nFirstVisibleTab = 0;
+  this._nLastVisibleTab  = undefined;
+  this.bTabScrolling     = false;
+  this.maxMarginLeft     = -1;
+  this.tabsMargin        = 0;
+  this.scrollAnimation   = undefined;
+  
+  this.addPage                = pageman.addPage;
+  this._addPage               = pageman._addPage;
+  this._addTab                = pageman._addTab;
+  this.selectPage             = pageman.selectPage;
+  this.unselectPage           = pageman.unselectPage;
+  this.doScrollLeft           = pageman.doScrollLeft;
+  this.doScrollRight          = pageman.doScrollRight;
+  this.makeTabVisible         = pageman.makeTabVisible;
+  this.attachHint             = pageman.attachHint;
+  this._selectPage            = pageman._selectPage;
+  this.loadPage               = pageman.loadPage;
+  this.getFowardPage          = pageman.getFowardPage;
+  this.getBackwardPage        = pageman.getBackwardPage;
+  this.addPageChangeEvent     = pageman.addPageChangeEvent;
+  this.handleSelectPage       = pageman.handleSelectPage;
+  this.delayedLoadPage        = pageman.delayedLoadPage;
+  this.setJsonValue           = pageman.setJsonValue;
+  this.findTab                = pageman.findTab;
+  this.setVisible             = pageman.setVisible;
+  this.setDisplay             = pageman.setDisplay;
+  this.configVisibleTabs      = pageman.configVisibleTabs;
+  this.openMenu               = pageman.openMenu;
+  this.showHelp               = pageman.showHelp;
+  this.refreshTabsWidth       = pageman.refreshTabsWidth;
+  this.refreshButtons         = pageman.refreshButtons;
+  this.nextPage               = pageman.nextPage;
+  this.previousPage           = pageman.previousPage;
+  this.pageSwitch             = pageman.pageSwitch;
+  this.animateScrollLeft      = pageman.animateScrollLeft;
+  this.animateScrollRight     = pageman.animateScrollRight;
+  this.stopScroll             = pageman.stopScroll;
+  this.startScrollLeft        = pageman.startScrollLeft;
+  this.startScrollRight       = pageman.startScrollRight;
+  this.wipeLeft               = pageman.wipeLeft;
+  this.wipeRight              = pageman.wipeRight;
+  this.isFirstTab             = pageman.isFirstTab;
+  this.isLastTab              = pageman.isLastTab;
+  this.setActiveTab           = pageman.setActiveTab;
+
+  if( isTouchDevice( ) )
+  {
+    $( this._divPages ).touchwipe( 
+      { 
+        wipeLeft:  function( ) { self.wipeLeft (); },
+        wipeRight: function( ) { self.wipeRight(); }
+      }
+    );
+  }
+  
+  return this;
+}
+
+pageman.startScrollLeft = function( )
+{
+  if( this._containerBtnsAux._btnLeft.bReadOnly )
+    return;
+  
+  if( this._containerBtnsAux._btnRight.bReadOnly )
+  {
+    $( this._containerBtnsAux._btnRight ).removeClass( "disabled" );
+
+    this._containerBtnsAux._btnRight.bReadOnly = false;
+  }
+  
+  this.bTabScrolling = true;
+  this.animateScrollLeft( );
+}
+
+pageman.startScrollRight = function( )
+{
+  if( this._containerBtnsAux._btnRight.bReadOnly )
+    return;
+  
+  if( this._containerBtnsAux._btnLeft.bReadOnly )
+  {
+    $( this._containerBtnsAux._btnLeft ).removeClass( "disabled" );
+
+    this._containerBtnsAux._btnLeft.bReadOnly = false;
+  }
+  
+  this.bTabScrolling = true;
+  this.animateScrollRight( );
+}
+
+pageman.animateScrollLeft = function( )
+{
+  if( this.bTabScrolling )
+  {
+    var self   = this;
+    var margin = self.tabsMargin - 20;
+    
+    if( margin < 0 )
+      margin = 0;
+      
+    self.tabsMargin = margin;
+    self._divTabs._ulTabs.style.marginLeft = margin * -1 + "px";
+    
+    if( margin != 0 )
+      self.scrollAnimation = setTimeout( function( ){ self.animateScrollLeft( ); }, 50 );
+    else
+    {
+      $( self._containerBtnsAux._btnLeft ).addClass( "disabled" );
+
+      self._containerBtnsAux._btnLeft.bReadOnly = true;
+    }
+  }
+}
+
+pageman.animateScrollRight = function( )
+{
+  if( this.bTabScrolling )
+  {
+    var self   = this;
+    var margin = self.tabsMargin + 20;
+    
+    if( margin > self.maxMarginLeft )
+      margin = self.maxMarginLeft;
+      
+    self.tabsMargin = margin;
+    self._divTabs._ulTabs.style.marginLeft = margin * -1 + "px";
+    
+    if( margin != self.maxMarginLeft )
+      self.scrollAnimation = setTimeout( function( ){ self.animateScrollRight( ); }, 50 );
+    else
+    {
+      $( self._containerBtnsAux._btnRight ).addClass( "disabled" );
+
+      self._containerBtnsAux._btnRight.bReadOnly = true;
+    }
+  }
+}
+
+pageman.stopScroll = function( )
+{
+  clearTimeout( this.scrollAnimation ); 
+  this.bTabScrolling = false;
+}
+
+pageman.wipeLeft = function( )
+{
+  if( this._nSelectedTab != undefined && this._nSelectedTab < this._divTabs._ulTabs.childNodes.length - 1 )
+    this.selectPage( this._nSelectedTab + 1 );
+}
+
+pageman.wipeRight = function( )
+{
+  if( this._nSelectedTab != undefined && this._nSelectedTab > 0 )
+    this.selectPage( this._nSelectedTab - 1 );
+}
+
+pageman.openMenu = function( pr_event )
+{
+  if( !pr_event )
+    pr_event = window.event;
+  
+//  // Caso seja menu aberto clicando no cabeçalho, a linha enviada será -1
+//  if( row != -1 )
+//  {
+//    // Caso seja menu aberto pelo botão de menu do teclado, a linha enviada será undefined
+//    if( !row )
+//    {
+//      row = this._dataTable.rows[this._iSelectedRow];
+//      
+//      var position = calcOffset( row );
+//
+//      pr_event.clientX = position[0] + ( $( row ).width ( ) / 3 * 2 );
+//      pr_event.clientY = position[1] + ( $( row ).height( ) / 3 * 2 );
+//    }
+//    
+//    var nOldSelected = this._iSelectedRow;
+//    var nNewSelected = row.rowIndex;
+//  
+//    if( nOldSelected != nNewSelected )
+//    {
+//      this.fireUnselectEvent( );
+//      this.selectRow( row, pr_event );
+//      this.fireSelectEvent( );
+//    }
+//  }
+
+  this._mn.open( pr_event );
+
+  return false;
+}
+
+pageman.showHelp = function( )
+{
+  if( this.currentHelp )
+    window.open( getContextURL( ) + "Doc/" + this.currentHelp );
+}
+
+pageman.setVisible = function( bVisible )
+{
+  if( bVisible )
+  {
+    this.style.visibility = "visible";
+    this.refreshTabsWidth( );
+  }
+  else
+  {
+    this.style.visibility = "hidden";
+    this._parent.style.height = 0;
+  }
+}
+
+pageman.setDisplay = function( bDisplay )
+{
+  if( bDisplay )
+  {
+    this.style.display = "";
+    
+    this.refreshTabsWidth( );
+  }
+  else
+  {
+    this.style.display = "none";
+    g_bNeedResize = true;
+  }
+}
+
+pageman.configVisibleTabs = function( pr_map )
+{
+  if( !pr_map )
+    return;
+  
+  //Se não tem nada especificado ou o array não tem o mesmo número de abas que a tab, não faza nada.
+  if( pr_map.length == 0 || pr_map.length != this._divTabs._ulTabs.childNodes.length )
+    return;
+
+  var nNewTabsWidth = 0;
+
+  //Percorre o array de tabs criadas e configura cada uma delas para a nova visibilidade
+  var aChanges = pr_map;
+  for( var i = 0; i < aChanges.length; i++ )
+  {
+    var tab = this.findTab( aChanges[i][0] );
+    if( tab != undefined )
+    {
+      tab.setVisible( aChanges[i][1] == '1' );
+      if( aChanges[i][1] == '1' )
+        nNewTabsWidth += tab.parentNode.clientWidth;
+    }
+  }
+
+  //Tab atual não está mais visível? Escolhe a primeira visível.
+  if( !this._divTabs._ulTabs.childNodes[this._nSelectedTab].childNodes[0]._visible )
+    for( var i = 0; i < this._divTabs._ulTabs.childNodes.length; i++ )
+      if( this._divTabs._ulTabs.childNodes[i].childNodes[0]._visible )
+      {
+        this.selectPage( i );
+        break;
+      }
+
+  if( nNewTabsWidth > this._nW )
+  {
+    $( this._containerBtnsAux._containerBtnLeft  ).removeClass( "hidden" );
+    $( this._containerBtnsAux._containerBtnRight ).removeClass( "hidden" );
+
+    $( this._containerBtnsAux._containerBtnHelp ).removeClass( "solo" );
+  }
+  else
+  {
+    $( this._containerBtnsAux._containerBtnLeft  ).addClass( "hidden" );
+    $( this._containerBtnsAux._containerBtnRight ).addClass( "hidden" );
+
+    $( this._containerBtnsAux._containerBtnHelp ).addClass( "solo" );
+  }
+
+  this._divTabs._ulTabs.style.maxWidth = this._nW - $( this._containerBtnsAux ).outerWidth( false ) + "px";
+}
+
+pageman.setJsonValue = function( json )
+{
+  if( json.setup != undefined )
+  {
+    if( json.setup.visibility != undefined )
+      this.setVisible( json.setup.visibility );
+    if( json.setup.display != undefined )
+    {
+      this.setDisplay( json.setup.display );
+
+      //Função chamada aqui pois indicando pela variável global faz com que a janela pai da janela se redimensiona
+      //e chamando aqui faz com que a janela pai do pageMan se redimensione.
+      resizeDialog( );
+    }
+    
+    if( json.setup.activeTabIndex != undefined )
+    	this.setActiveTab( json.setup.activeTabIndex );
+  }
+  
+  if( !this.bWizard )
+    this.configVisibleTabs( json.setup.map );
+}
+
+pageman.findTab = function( name )
+{
+  for( var i = 0; i < this._divTabs._ulTabs.childNodes.length; i++ )
+    if( this._divTabs._ulTabs.childNodes[i].childNodes[0]._name == name )
+      return this._divTabs._ulTabs.childNodes[i].childNodes[0];
+
+  return undefined;
+}
+
+pageman.refreshTabsWidth = function( )
+{
+  var totalTabsWidth = 0;
+  var nBtnsWidth = $( this._containerBtnsAux ).outerWidth( );
+
+  for( var i = 0; i < this._divTabs._ulTabs.childNodes.length; i++ )
+    totalTabsWidth += this._divTabs._ulTabs.childNodes[i].style.display != "none" ? getElementRectWidth( this._divTabs._ulTabs.childNodes[i] ) : 0;
+
+  totalTabsWidth++;
+
+  this._divTabs._ulTabs.style.width = totalTabsWidth + "px";
+
+  if( totalTabsWidth + nBtnsWidth > this._nW )
+  {
+    $( this._containerBtnsAux._containerBtnLeft  ).removeClass( "hidden" );
+    $( this._containerBtnsAux._containerBtnRight ).removeClass( "hidden" );
+
+    $( this._containerBtnsAux._containerBtnHelp ).removeClass( "solo" );
+
+    nBtnsWidth = $( this._containerBtnsAux ).outerWidth( );
+
+    this._divTabs.style.maxWidth = this._nW - nBtnsWidth + "px";
+    this.maxMarginLeft = totalTabsWidth - this._nW + nBtnsWidth;
+  }
+  else
+  {
+    if( this._bWizard )
+    {
+      $( this._containerBtnsAux._containerBtnLeft  ).removeClass( "hidden" );
+      $( this._containerBtnsAux._containerBtnRight ).removeClass( "hidden" );
+
+      $( this._containerBtnsAux._containerBtnHelp ).removeClass( "solo" )
+    }
+
+    if( nBtnsWidth > 0 )
+      this._containerBtnsAux.style.marginLeft = this._nW - $( this._divTabs._ulTabs ).outerWidth( ) - nBtnsWidth + "px";
+
+    $( this._divTabs._ulTabs ).css( "margin-left", 0 );
+  }
+}
+
+pageman.addPage = function( strCaption, strPageName, strHelpUrl, bRefresh, aEvents )
+{
+  this._addTab( strCaption, strPageName );
+  this._divPages.style.zIndex = -1;
+
+  this._addPage( strCaption, strPageName, strHelpUrl, bRefresh, aEvents );
+}
+
+pageman._addTab = function( strCaption, strPageName )
+{
+  var self   = this;
+  var divTab = document.createElement( "DIV" );
+  divTab._parent   = this;
+  divTab._name     = strPageName;
+  divTab._visible  = true;
+
+  divTab.setVisible = function( bVisible )
+  {
+    this._visible = bVisible;
+
+    if( this._visible )
+      this.parentNode.style.display = '';
+    else
+      this.parentNode.style.display = 'none';
+    
+    self.refreshTabsWidth( );
+  }
+
+  divTab.innerHTML = strCaption;
+  
+  var cell = document.createElement( "LI" );
+  this._divTabs._ulTabs.appendChild( cell );
+
+  cell.appendChild( divTab );
+  cell._nPos   = this._divTabs._ulTabs.childNodes.length - 1;
+  cell.onclick = function( )
+  {
+    self.selectPage( this._nPos );
+  }
+
+  cell.style.display = this._bWizard ? "none" : "";
+  
+  if( !this._bWizard )
+    this._mn.addItem( { text:strCaption, onselected: function( ){ self.selectPage( cell._nPos ); } } );
+}
+
+pageman.selectPage = function( i )
+{
+  closeDropDowns( );
+
+  if( i < 0 || i >= this._divTabs._ulTabs.childNodes.length )
+    return;
+  else if( i == this._nSelectedTab && !this._bWizard )
+  {
+    this.makeTabVisible( i );
+    return;
+  }
+
+  var tab = this._divTabs._ulTabs.childNodes[i];
+
+  // Troquei de classe devido ao problema de múltiplas classes do IE Quirks e, para não ficar um salseiro,
+  // deixei com duas classes que tem praticamente a mesma coisa.
+  $( this._divPages.childNodes[i] ).removeClass( "page" ).addClass( "pageSelected" );
+
+  this._selectPage( i );
+
+  if( !this._bWizard )
+  {
+    if( !this.isFirstTab( tab ) && !isIEQuirks( ) )
+      $( this._divTabs._ulTabs.childNodes[i - 1] ).addClass( "rightSelected" );
+  
+    if( !this.isLastTab( tab ) && !isIEQuirks( ) )
+      $( this._divTabs._ulTabs.childNodes[i + 1] ).addClass( "leftSelected" );
+  }
+  else
+  {
+    if( this._nSelectedTab != -1 )
+      this._divTabs._ulTabs.childNodes[this._nSelectedTab].style.display = "none";
+
+    tab.style.display = "";
+  }
+  
+  $( tab ).addClass( "selected" );
+
+  if( this._divTabs._ulTabs.childNodes.length > 1 )
+    this.unselectPage( this._nSelectedTab );
+
+  this.refreshTabsWidth( );
+
+  if( !this._bWizard )
+    this.makeTabVisible( i );
+  
+  this._nSelectedTab = i;
+}
+
+pageman.isFirstTab = function( tab )
+{
+  return tab._nPos == 0;
+}
+
+pageman.isLastTab = function( tab )
+{
+  return tab._nPos == this._divTabs._ulTabs.childNodes.length - 1;
+}
+
+pageman.makeTabVisible = function( i )
+{
+  if( i < 0 )
+    return;
+
+  var tab   = this._divTabs._ulTabs.childNodes[i];
+  var jTab  = $( tab );
+  var jTabs = $( this._divTabs );
+  var jUl   = $( this._divTabs._ulTabs );
+
+  // Pego o offset da div que contém o UL, pois o UL varia o offset a medida que o marginLeft é alterado, além disso, a distância da esquerda
+  // de ambos é a mesma. 
+  var ulOffsetLeft   = jUl  .offset( ).left;
+  var tabsOffsetLeft = jTabs.offset( ).left;
+  var tabOffsetLeft  = jTab .offset( ).left;
+  var ulWidth  = jTabs.outerWidth( );
+  var tabWidth = jTab .outerWidth( );
+  var marginDiff;
+
+  if( tabOffsetLeft < 0 )
+  {
+    marginDiff = tabOffsetLeft - tabsOffsetLeft - 1;
+
+    if( this.tabsMargin + marginDiff < 0 )
+      marginDiff++;
+
+    jUl.animate( { "margin-left": "-=" + marginDiff + "px" }, "slow" );
+    this.tabsMargin += marginDiff;
+  }
+  else if( tabOffsetLeft - tabsOffsetLeft + tabWidth > ulWidth )
+  {
+    marginDiff = ulWidth - tabOffsetLeft + tabsOffsetLeft - tabWidth;
+
+    jUl.animate( { "margin-left": "+=" + marginDiff + "px" }, "slow" );
+    this.tabsMargin -= marginDiff;
+  }
+
+  this.refreshButtons( );
+}
+
+pageman.refreshButtons = function( )
+{
+  if( this.tabsMargin == 0 )
+  {
+    $( this._containerBtnsAux._btnLeft ).addClass( "disabled" );
+
+    this._containerBtnsAux._btnLeft.bReadOnly = true;
+  }
+  else
+  {
+    $( this._containerBtnsAux._btnLeft ).removeClass( "disabled" );
+
+    this._containerBtnsAux._btnLeft.bReadOnly = false;
+  }
+
+  if( this.tabsMargin == this.maxMarginLeft )
+  {
+    $( this._containerBtnsAux._btnRight ).addClass( "disabled" );
+
+    this._containerBtnsAux._btnRight.bReadOnly = true;
+  }
+  else
+  {
+    $( this._containerBtnsAux._btnRight ).removeClass( "disabled" );
+
+    this._containerBtnsAux._btnRight.bReadOnly = false;
+  }
+}
+
+pageman.unselectPage = function( i )
+{
+  if( i < 0 || i >= this._divTabs._ulTabs.childNodes.length )
+    return;
+
+  var tabel = document.getElementById( "_tab" + this._parent.id + "_" + i );
+
+  var tab = this._divTabs._ulTabs.childNodes[i];
+
+  if( this._bWizard )
+    tab.style.display = "none";
+
+  if( !this.isFirstTab( tab ) && !isIEQuirks( ) )
+    $( this._divTabs._ulTabs.childNodes[i - 1] ).removeClass( "rightSelected" );
+
+  if( !this.isLastTab( tab ) && !isIEQuirks( ) )
+    $( this._divTabs._ulTabs.childNodes[i + 1] ).removeClass( "leftSelected" );
+
+  $( tab ).removeClass( "selected" );
+
+  // Troquei de classe devido ao problema de múltiplas classes do IE Quirks e, para não ficar um salseiro,
+  // deixei com duas classes que tem praticamente a mesma coisa.
+  $( this._divPages.childNodes[i] ).removeClass( "pageSelected" ).addClass( "page" );
+}
+
+pageman.nextPage = function( )
+{
+  var nTab = this._nSelectedTab;
+
+  $( this._containerBtnsAux._btnLeft ).removeClass( "disabled" );
+
+  this._containerBtnsAux._btnLeft.bReadOnly = false;
+  
+  if( this._bWizard )
+  {
+    var nNewTab = this.getFowardPage( this._nSelectedTab, -1 );
+  
+    if( this._nSelectedTab == nNewTab )
+      return;
+    else
+      nTab = nNewTab;
+  }
+  else
+    nTab = this._nSelectedTab + 1;
+  
+  this.selectPage( nTab );
+  
+  if( this._nSelectedTab >= this._divTabs._ulTabs.childNodes.length - 1 )
+  {
+    $( this._containerBtnsAux._btnRight ).addClass( "disabled" );
+
+    this._containerBtnsAux._btnRight.bReadOnly = true;
+  }
+}
+
+pageman.previousPage = function( )
+{
+  var nTab = this._nSelectedTab;
+
+  $( this._containerBtnsAux._btnRight ).removeClass( "disabled" );
+
+  this._containerBtnsAux._btnRight.bReadOnly = false;
+ 
+  if( this._bWizard)
+  {
+    var nNewTab = this.getBackwardPage( this._nSelectedTab, -1 );
+    
+    if( this._nSelectedTab == nNewTab )
+      return;
+    else
+      nTab = nNewTab;
+  }
+  else
+    nTab = this._nSelectedTab - 1;
+  
+  this.selectPage( nTab );
+  
+  if( this._nSelectedTab == 0 )
+  {
+    $( this._containerBtnsAux._btnLeft ).addClass( "disabled" );
+
+    this._containerBtnsAux._btnLeft.bReadOnly = true;
+  }
+}
+
+pageman._addPage = function( strCaption, strPageName, strHelpUrl, bRefresh, aEvents )
+{
+  var divPage = document.createElement( "DIV" );
+
+  if( this._divPages.offsetHeight != 0 ) //Está escondido dentro de um Div
+    divPage.style.height = this._divPages.offsetHeight - 1 + "px";
+  else
+    divPage.style.height = this._nH - 1 + "px";
+
+  divPage.style.width = this._nW - 2 + "px";
+  divPage.className   = "page";
+  divPage.bRefresh    = bRefresh;
+  divPage._parent     = this;
+  divPage._bLoaded    = false;
+  divPage._name       = strPageName;
+  divPage._helpUrl    = strHelpUrl;
+
+  if( aEvents && aEvents.length > 0 )
+    divPage.aEvents = aEvents;
+  else
+    divPage.aEvents = [];
+
+  if( strHelpUrl )
+    $( this._containerBtnsAux._containerBtnHelp  ).removeClass( "hidden" );
+
+  this._divPages.appendChild( divPage );
+
+  divPage._nPos = this._divPages.childNodes.length - 1;
+  
+  this._divPages.style.width = ( this._divPages.childNodes.length * ( this._nW - 1 ) ) + "px";
+}
+
+pageman._selectPage = function( i )
+{
+  if( this._nSelectedTab == i )
+    return;
+  
+  if( this._nSelectedTab >= 0 )
+  {
+    var divPage = this._divPages.childNodes[this._nSelectedTab];
+    
+    divPage.aEventListener = divPage.aEvents;
+    fireEvent.apply( divPage, [] );
+  }
+  
+  this.currentHelp = this._divPages.childNodes[i]._helpUrl;
+  
+  if( this.currentHelp )
+  {
+    $( this._containerBtnsAux._btnHelp ).removeClass( "disabled" );
+
+    this._containerBtnsAux._btnHelp.bReadOnly = false;
+  }
+  else
+  {
+    $( this._containerBtnsAux._btnHelp ).addClass( "disabled" );
+
+    this._containerBtnsAux._btnHelp.bReadOnly = true;
+  }
+  
+  if( !this._divPages.childNodes[i]._bLoaded || this._divPages.childNodes[i].bRefresh )
+    this.loadPage( i );
+  else
+    this.pageSwitch( i );
+}
+
+pageman.delayedLoadPage = function( i )
+{
+  g_isLoading = true;
+  eval( decodeEntities( postContent( g_strURL, 'ID1=' + this.ID1 + '&_PmName=' + this.internalName + '&_iPage=' + i ) ) );
+
+  this._divPages.childNodes[i].innerHTML = json.html;
+
+  eval( json.js );
+  g_isLoading = false;
+  this._divPages.childNodes[i]._bLoaded = true;
+
+  this.pageSwitch( i );
+
+  hideShield( );
+}
+
+// Atualizar junto com verificação de performance do Registry
+pageman.pageSwitch = function( nPos )
+{
+  var pageWidth = this._nW - 1;
+
+  var posDiff   = pageWidth * nPos * -1 - this.position;
+  this.position = pageWidth * nPos * -1;
+
+  if( isTouchDevice( ) )
+    $( this._divPages ).animate( { "margin-left": "+=" + posDiff + "px" }, "slow" );
+  else
+    $( this._divPages ).css( "margin-left", this.position + "px" );
+}
+
+pageman.loadPage = function( i )
+{
+  var self = this;
+
+  if( this._divPages.childNodes[i]._bLoaded && !this._divPages.childNodes[i].bRefresh )
+    return;
+
+  showShield( );
+  this._divPages.childNodes[i].innerHTML = "";
+
+  setTimeout( function( ){ self.delayedLoadPage( i ); }, 1 );
+}
+
+pageman.handleSelectPage = function( i )
+{
+  if( i < this._nSelectedTab )
+    this.selectPage( this.getBackwardPage( this._nSelectedTab, i ) );
+  else if( i > this._nSelectedTab )
+    this.selectPage( this.getFowardPage( this._nSelectedTab, i ) );
+  else
+    this.selectPage( i );
+}
+
+pageman.getFowardPage = function( nCurrentPage, nNextPage )
+{
+  var nPage;
+
+  if( this._divPages.childNodes[nCurrentPage].aFowardEventSources )
+  {
+    var aResp = stringToJson(
+      postContent( g_strURL, 'ID1=' + this.IDChangePage + '&ID3=' +
+                           buildQueryString( this._divPages.childNodes[nCurrentPage].aFowardEventSources ) +
+                           '&type=1&SourceName=' + this._strName + '&CurrentPage=' + nCurrentPage ) );
+
+    if( aResp.Page >= 0 )
+      nPage = aResp.Page;
+    else
+      nPage = nNextPage;
+
+    return nPage;
+  }
+
+  if( nNextPage >= 0 )
+    nPage = nNextPage;
+  else
+    nPage = ++nCurrentPage;
+
+  return nPage;
+}
+
+pageman.getBackwardPage = function( nCurrentPage, nNextPage )
+{
+  var nPage;
+
+  if( this._divPages.childNodes[nCurrentPage].aBackwardEventSources )
+  {
+    var aResp = stringToJson(
+      postContent( g_strURL, 'ID1=' + this.IDChangePage + '&ID3=' +
+                           buildQueryString( this._divPages.childNodes[nCurrentPage].aBackwardEventSources ) +
+                           '&type=-1&SourceName=' + this._strName + '&CurrentPage=' + nCurrentPage ) );
+
+    if( aResp.Page >= 0 )
+      nPage = aResp.Page;
+    else
+      nPage = nNextPage;
+
+    return nPage;
+  }
+
+  if( nNextPage >= 0 )
+    nPage = nNextPage;
+  else
+    nPage = --nCurrentPage;
+
+  return nPage;
+}
+
+pageman.addPageChangeEvent = function( aEvent )
+{
+  if( aEvent.type == -1 )
+    this._divPages.childNodes[aEvent.page].aBackwardEventSources = aEvent.sources;
+  else if( aEvent.type == 1 )
+    this._divPages.childNodes[aEvent.page].aFowardEventSources = aEvent.sources;
+}
+
+pageman.setActiveTab = function( nActiveTabIndex )
+{		
+	if( nActiveTabIndex == undefined || nActiveTabIndex < 0 || nActiveTabIndex > this._divTabs._ulTabs.childNodes.length - 1 )
+		return;
+			 
+	this.selectPage( nActiveTabIndex );
+}

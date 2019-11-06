@@ -1,0 +1,325 @@
+button = function( pr_arg )
+{
+  return button._constructor( pr_arg );
+}
+
+button._constructor = function( pr_arg )
+{
+  var e = document.createElement( "BUTTON" );
+
+  e._constructor = button.__constructor;
+  e._constructor( pr_arg );
+
+  return e;
+}
+
+button.__constructor = function( pr_arg )
+{
+  this.imageHeight         = 0;
+  this.imageWidth          = 0;
+  this.isImageVisible      = false;
+  this.disabled            = false;
+  this.isVisibleReadOnly   = true;
+  this.bVisualJson         = true;
+  this.mouseUpEvent        = null;
+  this.imageSrc            = pr_arg["imgUrl"];
+  this.labelValue          = pr_arg["label"];
+  this.labelValue          = this.labelValue.trim( );
+  this.value               = this.labelValue;
+  
+  this.setAttribute( "imageSrc", this.imageSrc );
+  
+  this.className  = "registryButton";
+  this.setAttribute( "type", "button" );
+
+  this.addEvent               = button.addEvent;
+  this.hide                   = function( ){ this.setDisplay( false ); };
+  this.show                   = function( ){ this.setDisplay( true  ); };
+  this.getH                   = button.getHeight;
+  this.getHeight              = button.getHeight;
+  this.getImageUrl            = button.getImageUrl;
+  this.getCaption             = button.getValue;
+  this.getLabel               = button.getValue;
+  this.getJsonValue           = button.getJsonValue;
+  this.getValue               = button.getValue;
+  this.getW                   = button.getWidth;
+  this.getWidth               = button.getWidth;
+  this.isReadOnly             = button.isReadOnly;
+  this.setDisplay             = button.setDisplay;
+  this.setEvent               = button.setEvent;
+  this.setH                   = button.setHeight;
+  this.setHeight              = button.setHeight;
+  this.setImageDisplay        = button.setImageDisplay;
+  this.setImageX              = button.setImageX;
+  this.setImageY              = button.setImageY;
+  this.setImageUrl            = button.setImageUrl;
+  this.setJsonValue           = button.setJsonValue;
+  this.setParent              = button.setParent;
+  this.setCaption             = button.setValue;
+  this.setLabel               = button.setValue;
+  this.setReadOnly            = button.setReadOnly;
+  this.setValue               = button.setValue;
+  this.setW                   = button.setWidth;
+  this.setWidth               = button.setWidth;
+  this.setVisibility          = button.setVisibility;
+  this.setVisibleReadOnly     = button.setVisibleReadOnly;
+  this._setReadOnly           = button._setReadOnly;
+
+  this.onmousedown = button.mouseDown;
+  
+  //O Evento usado era o onmouseup, foi substituído pelo onclick pois causava anomalias no IE6, travando o sistema após o clique em telas de cadastro.
+  this.onclick = button.mouseClick;
+  this.setHeight( this.imageHeight );
+  this.setWidth ( this.imageWidth  );
+
+  pr_arg["parent"].appendChild( this );
+  this.imageClass = pr_arg["imageClass"];
+  
+  if( this.imageClass )
+  {
+    $( this ).button( {
+        icons: {
+        primary: pr_arg["imageClass"]
+      },
+      text: false
+    } );
+  }
+}
+
+button.mouseDown = function( pr_event )
+{
+  if( this.isImageVisible )
+    this.style.backgroundPosition = "-" + this.imageWidth + "px 0px";
+}
+
+button.mouseClick = function( pr_event )
+{
+  var bEventSet = false;
+  
+  if( !pr_event )
+    pr_event = window.event;
+  else
+  {
+    /*
+     * Configurei o evento na janela para que em algumas funções eu possa utilizar sem passar como parâmetro.
+     * Passando como parâmetro pode influenciar em funções que já possui parâmetros em sua assinatura.
+     */
+    bEventSet = true;
+    window.event = pr_event;
+  }
+
+  if( pr_event && pr_event.button == 2 )
+    return;
+
+  if( this.mouseUpEvent )
+    this.mouseUpEvent( );
+
+  if( bEventSet )
+    window.event = null;
+
+  if( this.isImageVisible )
+    this.style.backgroundPosition = "0px 0px";
+}
+
+button.addEvent = function( pr_strEventName, pr_event )
+{
+  if( document.addEventListener )
+    this.addEventListener( pr_strEventName, pr_event, false );
+  else
+    this.attachEvent( "on" + pr_strEventName, pr_event );
+}
+
+button.getHeight = function( )
+{
+  return this.imageHeight;
+}
+
+button.getImageUrl = function( )
+{
+  return this.imageSrc;
+}
+
+button.getJsonValue = function( bComplete )
+{
+  var strJson = "";
+  var strCaption = this.getImageUrl( ) != (getContextURL( ) + "Obj/") ? '' :  this.labelValue;
+  
+  if( bComplete )
+  {
+    strJson = "{ "            +
+                "type:"       + this._type    + "," +
+                "setup:"      +
+                "{ "          +
+                  "readOnly:" + this.disabled + "," +
+                  "caption:'" + strCaption    + "'" +
+                "} "          +
+              "}";
+  }
+  return strJson;
+}
+
+button.getValue = function( )
+{
+  return this.labelValue;
+}
+
+button.getWidth = function( )
+{
+  return this.imageWidth;
+}
+
+button.isReadOnly = function( )
+{
+  return this.disabled;
+}
+
+button.setDisplay = function( pr_isDisplay )
+{
+  if( pr_isDisplay )
+    $( this ).removeClass( "hidden" );
+  else
+    $( this ).addClass( "hidden" );
+}
+
+button.setEvent = function( pr_event )
+{
+  this.mouseUpEvent = pr_event;
+}
+
+button.setHeight = function( pr_nHeight )
+{
+  this.imageHeight  = pr_nHeight;
+
+  if( pr_nHeight > 0 )
+    this.style.height = pr_nHeight + "px";
+}
+
+button.setImageX = function( pr_nXPosition )
+{
+  this.style.backgroundPositionX = pr_nXPosition + "px";
+}
+
+button.setImageY = function( pr_nYPosition )
+{
+  this.style.backgroundPositionY = pr_nYPosition + "px";
+}
+
+button.setImageDisplay = function( pr_isVisible )
+{
+  this.isImageVisible = pr_isVisible;
+
+  if ( pr_isVisible )
+  {
+    if( !this.imageClass )
+    {
+      $( this ).addClass( "imageButton" );
+      this.innerHTML = "";
+      
+      this.style.background = "url('" + this.imageSrc + "') 0px 0px no-repeat";
+    }
+  }
+  else
+  {
+    $( this ).removeClass( "imageButton" );
+    this.innerHTML = this.labelValue;
+    
+    this.style.backgroundImage = "";
+  }
+}
+
+button.setImageUrl = function( pr_strImageUrl )
+{
+  this.imageSrc = pr_strImageUrl;
+  this.setAttribute( "imageSrc", this.imageSrc );
+  
+  if( this.isImageVisible )
+    this.style.background = "url('" + pr_strImageUrl + "') 0px 0px no-repeat";
+}
+
+button.setJsonValue = function( json )
+{
+  if( json.setup )
+  {
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+    if( json.setup.caption != undefined )
+      this.setCaption( json.setup.caption );
+  }
+};
+
+button.setParent = function( pr_parent )
+{
+  if( pr_parent && document.getElementById( pr_parent ) )
+  {
+    this.parentNode.removeChild( this );
+
+    this._parent = pr_parent;
+    document.getElementById( pr_parent ).appendChild( this );
+
+    this.setAttribute( "_parent", this._parent );
+  }
+}
+
+button.setReadOnly = function( pr_isReadOnly )
+{
+  if( this.parentNode.readonly == 'true' )
+    pr_isReadOnly = true;
+
+  this._setReadOnly( pr_isReadOnly );
+}
+
+button._setReadOnly = function( pr_isReadOnly )
+{
+  this.disabled = pr_isReadOnly;
+
+  if( pr_isReadOnly && !this.imageClass )
+    if( this.isImageVisible )
+      $( this ).addClass( "imageButton" );
+    else
+      $( this ).removeClass( "imageButton" );
+    
+  this.setDisplay( !this.disabled || this.isVisibleReadOnly );
+
+  if( this.imageClass )
+    $( this ).button( "refresh" );
+  else if( this.isImageVisible )
+    this.style.backgroundPosition = "-" + ( this.imageWidth * ( this.disabled ? 2 : 0 ) ) + "px 0px";
+}
+
+button.setValue = function( pr_strCaption )
+{
+  this.labelValue = pr_strCaption;
+  this.innerHTML  = pr_strCaption;
+  this.value      = pr_strCaption;
+}
+
+button.setVisibility = function( pr_bVisible )
+{
+  this.style.visibility = pr_bVisible ? "visible" : "hidden";
+}
+
+button.setVisibleReadOnly = function( pr_isVisibleReadOnly )
+{
+  this.isVisibleReadOnly = pr_isVisibleReadOnly;
+}
+
+button.setWidth = function( pr_nWidth )
+{
+  this.imageWidth  = pr_nWidth;
+ 
+  if( pr_nWidth == 0 )
+    this.style.width = "auto";
+  else
+    this.style.width = pr_nWidth + "px";
+}
+
+function setUnselectable( pr_element )
+{
+  if( pr_element.nodeType == 1 )
+  {
+    pr_element.unselectable = "on";
+    
+    for( var i = 0; i < pr_element.childNodes.length; i++ )
+      setUnselectable( pr_element.childNodes[i] );
+  }
+}

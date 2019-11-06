@@ -1,0 +1,84 @@
+var g_strBaseUrl              = g_strContext + "/Obj/";
+var g_bPainelTarefasCarregado = false;
+var g_envioAvisoFechamentoTAB = true;
+  
+function atualizaMsgGif( )
+{
+	if( document.MeuGif )
+	{
+	  if( g_MessengerGif == "" )
+	  {
+	    document.MeuGif.style.visibility = 'hidden';
+	    document.MeuGif.style.display    = 'none';
+	  }
+	  else
+	  {
+	    document.MeuGif.style.visibility = 'visible';
+	    document.MeuGif.style.display    = '';
+	  }
+
+		document.MeuGif.src = g_MessengerGif;
+	  document.MeuGif.alt = g_MessengerAlt;
+	}
+}
+
+function infAlturaImg( )
+{
+    if( document.MenuImage )
+        return document.MenuImage.height;
+    else
+        return 0;
+}
+
+function sair( )
+{
+    if( isExecutandoTarefas( ) )
+    {
+      alert( i18n.t( "home:existe-tarefas" ) );
+      
+      if( !g_bPainelTarefasCarregado )
+        redirectTo( g_strServletURL + "?ID1=" + g_strIDSvcPrcPnlTarefas );
+    }
+    else
+    {
+      if( confirm( i18n.t( "home:saida" ) ) )
+        redirectTo( g_strServletURL + "?ID1=" + g_strIDSvcSaida );
+    }
+}
+
+function showDivJVM( )
+{
+	redirectTo( g_strServletURL );
+}
+
+function setTabStatus( pr_status )
+{
+    if( !g_bTabControlDisabled )
+    {
+      var resp = executePostContent( g_strServletURL, "ID1=" + g_strIDSvcTabStatus + "&Status=" + pr_status, {responseAsJson:true} );
+      
+      if( !resp.bOk )
+      {
+        g_envioAvisoFechamentoTAB = false;
+        redirectTo( g_strServletURL + "?ID1=" + g_strIDSvcTabStatusError );
+      }      
+    }
+}
+
+function redefineBeforeUnloadEvent( )
+{
+  var oldBeforeUnload = window.onbeforeunload,
+	  beforeUnload = function( ) 
+	  {
+	  	  if( g_envioAvisoFechamentoTAB )
+	  		  setTabStatus( false );
+	      
+	      if( typeof oldBeforeUnload === "function" )
+	    	  oldBeforeUnload( );
+	  };
+	  
+  if( isIPad( ) )
+    window.onpagehide = beforeUnload;
+  else
+    window.onbeforeunload = beforeUnload;
+}

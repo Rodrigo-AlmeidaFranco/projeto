@@ -2,51 +2,40 @@ package com.usjtECommerce.USJT.model;
 
 import java.io.Serializable;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-@Entity
 public class Usuario implements Serializable{
 	private static final long serialVersionUID = 1L;
-	@Id
-	@GeneratedValue(strategy=GenerationType.IDENTITY)
-	private Long id;
+	private Integer id_usuario;
+	private Integer direito;
+	private Integer acesso;
 	private String login;
 	private String senha;
 	private String nome;
 	
 	
-	public static long getSerialversionuid() {
-		return serialVersionUID;
+	
+	public Usuario() {
+		super();
+	}
+	public int getId_usuario() {
+		return id_usuario;
 	}
 	
 	
-	
-	/**
-	 * @return the id
-	 */
-	public Long getId() {
-		return id;
+	public Integer getDireito() {
+		return direito;
 	}
-
-
-
-	/**
-	 * @param id the id to set
-	 */
-	public void setId(Long id) {
-		this.id = id;
+	public void setDireito(Integer direito) {
+		this.direito = direito;
 	}
-
-
-
+	public Integer getAcesso() {
+		return acesso;
+	}
+	public void setAcesso(Integer acesso) {
+		this.acesso = acesso;
+	}
+	public void setId_usuario(Integer id_usuario) {
+		this.id_usuario = id_usuario;
+	}
 	public String getLogin() {
 		return login;
 	}
@@ -65,6 +54,13 @@ public class Usuario implements Serializable{
 	public void setNome(String nome) {
 		this.nome = nome;
 	}
+	public static long getSerialversionuid() {
+		return serialVersionUID;
+	}
+	
+	
+
+
 	
 	
 	

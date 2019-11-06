@@ -1,0 +1,623 @@
+var g_ajaxRequest = '';
+
+//Esse IF está aqui porque o Registry carrega a util de novo, após a carga inicial do AMNet.
+//Essa carga dupla deve ser removida!
+if( !i18n_resources )
+	var i18n_resources = null;
+
+/*
+ * Useful functions that might not be declared.
+ */
+if( !Array.prototype.indexOf )
+{
+  Array.prototype.indexOf = function(elt /*, from*/)
+  {
+    var len = this.length >>> 0;
+
+    var from = Number(arguments[1]) || 0;
+    from = (from < 0) ? Math.ceil(from) : Math.floor(from);
+    if (from < 0)
+      from += len;
+
+    for (; from < len; from++)
+    {
+      if (from in this &&
+          this[from] === elt)
+        return from;
+    }
+    return -1;
+  };
+}
+
+if( !String.prototype.trim )
+{
+  String.prototype.trim = function( )
+  {
+    return this.replace( /^\s*/, "" ).replace( /\s*$/, "" );
+  }
+}
+
+if( !String.prototype.contains )
+{
+  String.prototype.contains = function( string )
+  {
+    return this.indexOf( string ) != -1;
+  }
+}
+
+if( !String.prototype.booleanValue )
+{
+  String.prototype.booleanValue = function( )
+  {
+    return this == "true";
+  }
+}
+
+if(!String.prototype.repeat) 
+{
+  String.prototype.repeat = function(count) 
+  {
+    'use strict';
+    if (this == null) {
+      throw new TypeError('can\'t convert ' + this + ' to object');
+    }
+    var str = '' + this;
+    count = +count;
+    if (count != count) {
+      count = 0;
+    }
+    if (count < 0) {
+      throw new RangeError('repeat count must be non-negative');
+    }
+    if (count == Infinity) {
+      throw new RangeError('repeat count must be less than infinity');
+    }
+    count = Math.floor(count);
+    if (str.length == 0 || count == 0) {
+      return '';
+    }
+    // Ensuring count is a 31-bit integer allows us to heavily optimize the
+    // main part. But anyway, most current (August 2014) browsers can't handle
+    // strings 1 << 28 chars or longer, so:
+    if (str.length * count >= 1 << 28) {
+      throw new RangeError('repeat count must not overflow maximum string size');
+    }
+    var rpt = '';
+    for (var i = 0; i < count; i++) {
+      rpt += str;
+    }
+    return rpt;
+  }
+}
+
+function compareNoCase( a, b )
+{
+  var x = a.toLowerCase( );
+  var y = b.toLowerCase( );
+
+  if( x < y ) return -1;
+  if( x > y ) return  1;
+
+  return 0;
+}
+
+/*
+ * Converte uma string no formato json usado pela antiga domapi em objeto.
+ */
+function stringToJson( pr_string )
+{
+  try
+  {
+    eval( "this.__r = " + pr_string );
+    return this["__r"];
+  } catch( e )
+  {
+    throw new Error( "Erro na interpretação do JSON: " + pr_string );
+    return { };
+  }
+};
+
+jsonToString = function( arg )
+{
+  function isUndefined(a){
+    return typeof a == 'undefined';
+  };
+  //------
+  function quote(s){
+    var r = s;
+    var R = new RegExp('"',"g");
+    return '"' + r.replace(R,'\\"') + '"';
+  };
+  //------
+  var i, o, v;
+  switch(typeof arg){
+    case 'object':
+      if(arg){
+        if(arg.constructor == Array){
+          o = '[';
+          for(i = 0; i < arg.length; ++i){
+            v = jsonToString(arg[i]);
+            if (v != 'function' && !isUndefined(v))
+              o += (o != '[' ? ',' : '') + v;
+            else
+              o += ',';
+          }
+          return o + ']';
+        }else if(typeof arg.toString != 'undefined'){
+          if(arg.toJsonString) return arg.toJsonString();
+          o = '{';
+          for (i in arg){
+            v = jsonToString(arg[i]);
+            if (v != 'function' && !isUndefined(v))
+              o += (o != '{' ? ',' : '') + quote(i) + ':' + v;
+          }
+          return o + '}';
+        } else return;
+      }
+      return 'null';
+    case 'unknown'   :
+    case 'undefined' : return;
+    case 'string'    : return quote(arg);
+    case 'function'  : return 'function';
+    default          : return String(arg);
+  }
+};
+
+/*
+ * Event manipulators to make event handling easier.
+ */
+function addEvent( pr_obj, pr_event, pr_function, pr_useCapture )
+{
+  if( pr_obj.addEventListener )
+    pr_obj.addEventListener( pr_event, pr_function, ( true && pr_useCapture ) );
+  else
+    pr_obj.attachEvent( "on" + pr_event, pr_function );
+}
+
+function removeEvent( pr_obj, pr_event, pr_function, pr_useCapture )
+{
+  if( pr_obj.removeEventListener )
+    pr_obj.removeEventListener( pr_event, pr_function, ( true && pr_useCapture ) );
+  else
+    pr_obj.detachEvent( "on" + pr_event, pr_function );
+}
+
+//JQuery não retorna o width fracional.
+//Será corrigido no JQuery 3.0; ver https://github.com/jquery/jquery/issues/1724
+//
+//Recupera o width real de um elemento.
+function getElementRectWidth( pr_el )
+{
+  var rect = pr_el.getBoundingClientRect();
+
+  var width;
+  if (rect.width) //Available for IE9+
+    width = rect.width;
+  else //Calculate width for IE8 and below   
+    width = rect.right - rect.left;
+  
+  return width;
+}
+
+//JQuery não retorna o height fracional.
+//Será corrigido no JQuery 3.0; ver https://github.com/jquery/jquery/issues/1724
+//
+//Recupera o height real de um elemento.
+function getElementRectHeight( pr_el )
+{
+  var rect = pr_el.getBoundingClientRect();
+
+  var height;
+  if (rect.height) //Available for IE9+
+    height = rect.height;
+  else //Calculate height for IE8 and below   
+    height = rect.bottom - rect.top;
+
+  return height;
+}
+
+/*
+ * Text input util functions
+ */
+function getSelectionBounds( pr_elm )
+{
+  // Initialize
+  var nStart = 0;
+  var nEnd   = 0;
+
+  // IE Support
+  if( document.selection )
+   {
+     var oSel = document.selection.createRange( );
+     var nLen = oSel.text.length;
+
+     // Move selection start to 0 position
+     oSel.moveStart( 'character', -pr_elm.value.length );
+
+     nStart = oSel.text.length - nLen;
+     nEnd   = nStart + nLen;
+  }
+  // Firefox support
+  else if( pr_elm.selectionStart || pr_elm.selectionStart == '0' )
+  {
+    nStart = pr_elm.selectionStart;
+    nEnd   = pr_elm.selectionEnd; //Verificar isto
+  }
+
+  // Return results
+  return { start: nStart, end: nEnd };
+}
+
+//No IE11, fizeram o favor de colocar o clipboardData fora do evento.
+function getClipboardData( pr_event )
+{
+  if( pr_event.clipboardData )
+    return pr_event.clipboardData;
+  else 
+    return window.clipboardData;
+}
+
+/*
+ * String util functions
+ */
+function leftPadding( pr_str, pr_char, pr_length )
+{
+  for( var i = 0; i < pr_length; i++ )
+  {
+    pr_str += pr_char;
+  }
+
+  return pr_str;
+}
+ 
+function rightPadding( pr_str, pr_char, pr_length )
+{
+  for( var i = 0; i < pr_length; i++ )
+  {
+    pr_str = pr_char + pr_str;
+  }
+
+  return pr_str;
+}
+
+/*
+ * What navigator am I using??
+ */
+function isIE( )
+{
+  //Isso não funciona para o IE11. Se for alterado contemplar o IE11, os campos numéricos podem deixar de funcionar
+  return navigator.userAgent.indexOf( "MSIE" ) != -1;
+}
+
+function isIEQuirks( )
+{
+  return isIE( ) && compareNoCase( document.compatMode, "backcompat" ) == 0;
+}
+
+function isIE6( )
+{
+  return navigator.userAgent.indexOf( "MSIE 6" ) != -1;
+}
+
+/*
+ * IE9 e 8 no modo de compatibilidade informam o userAgent do IE7, porém, enviam
+ * a versão do Trident (renderizador) que está em uso.
+ */
+function isIE7( )
+{
+  return navigator.userAgent.indexOf( "MSIE 7"  ) != -1
+      && navigator.userAgent.indexOf( "Trident" ) == -1;
+}
+
+function isIE7CompatView( )
+{
+  return navigator.userAgent.indexOf( "MSIE 7"  ) != -1 
+      && navigator.userAgent.indexOf( "Trident" ) != -1;
+}
+
+function isIE8( )
+{
+  return navigator.userAgent.indexOf( "MSIE 8" ) != -1;
+}
+
+function isIE8Compat( )
+{
+  return navigator.userAgent.indexOf( "MSIE 7" )
+    && navigator.userAgent.indexOf( "Trident/4" ) != -1;
+}
+
+function isIE8DocMode( )
+{
+  return document.documentMode == 8;
+}
+
+function isIE9( )
+{
+  return navigator.userAgent.indexOf( "MSIE 9" ) != -1;
+}
+
+function isIE9Compat( )
+{
+  return navigator.userAgent.indexOf( "MSIE 7" )
+    && navigator.userAgent.indexOf( "Trident/5" ) != -1;
+}
+
+function isIE9DocMode( )
+{
+  return document.documentMode == 9;
+}
+
+function isIE9Full( )
+{
+  return navigator.userAgent.indexOf( "MSIE 9" ) != -1 && isIE9DocMode( );
+}
+
+function isFirefox( )
+{
+  return navigator.userAgent.indexOf( "Firefox/" ) != -1;
+}
+
+function isChrome( )
+{
+  return navigator.userAgent.indexOf( "Chrome/" ) != -1;
+}
+
+function isSafari( )
+{
+  return navigator.userAgent.indexOf( "Safari/" ) != -1 && !isChrome( );
+}
+
+function isOpera( )
+{
+  return navigator.userAgent.indexOf( "Opera/" ) != -1;
+}
+
+function isIPad( )
+{
+  return navigator.userAgent.indexOf( "iPad" ) != -1;
+}
+
+function isIPhone( )
+{
+  return navigator.userAgent.indexOf( "iPhone" ) != -1;
+}
+
+function isIOs( )
+{
+  return isIPad( ) || isIPhone( );
+}
+
+function isAndroid( )
+{
+  return navigator.userAgent.indexOf( "Android" ) != -1;
+}
+
+function isTouchDevice( )
+{
+  return isAndroid( ) || isIOs( );
+}
+
+function buildAjaxRequest( )
+{
+  var aXMLHTTP  = ["Msxml2.XMLHTTP.6.0", "Msxml2.XMLHTTP.4.0", "MSXML2.XMLHTTP", "Microsoft.XMLHTTP"]; //activeX versions to check for in IE
+  g_ajaxRequest = "Nenhum Objeto foi encontrado!";
+  
+  if( window.XMLHttpRequest ) // if Mozilla, Safari etc
+  {
+    g_ajaxRequest = "Mozilla Object!";
+    return new XMLHttpRequest( );
+  }
+  else if( window.ActiveXObject ) //Test for support for ActiveXObject in IE first (as XMLHttpRequest in IE7 is broken)
+  {
+    for( var i = 0; i < aXMLHTTP.length; i++ )
+    {
+      try
+      {
+        var obj = new ActiveXObject( aXMLHTTP[i] );
+        g_ajaxRequest = aXMLHTTP[i];
+        return obj;
+      }
+      catch( e ){ }
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Executa um POST síncrono no servidor, retornando a resposta enviada como resposta.
+ * Pode ser passado como parâmetro um objeto json com os seguintes parâmetros:
+ *  fnCallback: função de callback que será chamada para tratar a resposta. Será passado para essa função o objeto de request.
+ *  responseAsJson: define se a resposta será retornada no formato JSON. Isso somente se aplica se não for definida uma função de callback. 
+ */
+function executePostContent( pr_strURL, pr_strQueryString, pr_settings )
+{
+  var req = buildAjaxRequest( );
+
+  if( req == undefined )
+    throw new Error( 'Não foi encontrado um objeto válido para efetuar uma conexão Ajax!' );
+
+  req.open( 'POST', pr_strURL, false );
+
+  req.setRequestHeader( "Cache-Control", "no-cache"   );
+  req.setRequestHeader( "Pragma",        "no-cache"   );
+  req.setRequestHeader( "Expires",       "0"          );
+  req.setRequestHeader( "encoding",      "ISO-8859-1" );
+  req.setRequestHeader( "Content-type",  "application/x-www-form-urlencoded" );
+ 
+  req.send( pr_strQueryString );
+  
+  if( pr_settings && pr_settings.fnCallback )
+	  return pr_settings.fnCallback.apply( window, [req] );
+  else if( pr_settings && pr_settings.responseAsJson )
+	  return stringToJson( req.responseText );
+  else
+      return req.responseText;
+}
+
+/**
+ * Executa um POST assíncrono no servidor. A resposta deve ser tratada pela função de callback.
+ * Pode ser passado como parâmetro um objeto json com os seguintes parâmetros:
+ *  responseAsJson: define se a resposta passada para a função de callback estará no formato JSON. 
+ */
+function executePostContentAsync( pr_strURL, pr_strQueryString, pr_fnCallback, pr_settings )
+{
+  try
+  {
+    var request;
+
+    if( request == undefined )
+    {
+      request = buildAjaxRequest( );
+
+      if( request == undefined )
+        throw new Error( "Não foi encontrado um objeto válido para efetuar uma conexão Ajax!" );
+
+      request.open( "POST", pr_strURL, true );
+
+      request.setRequestHeader( "Cache-Control", "no-cache"   );
+      request.setRequestHeader( "Pragma",        "no-cache"   );
+      request.setRequestHeader( "Expires",       "0"          );
+      request.setRequestHeader( "encoding",      "ISO-8859-1" );
+      request.setRequestHeader( "Content-type",  "application/x-www-form-urlencoded" );
+
+      request.onreadystatechange = function( )
+      {
+        if( request != undefined && request.readyState == 4 )
+        {
+          if( request.status == 200 )
+          {
+            if( pr_settings && pr_settings.responseAsJson )
+              pr_fnCallback.apply( window, [request, stringToJson( request.responseText ) ] );
+            else
+              pr_fnCallback.apply( window, [request, request.responseText] );        		
+          }
+          else if( request.status == 500 )
+          {
+        	if( pr_settings && pr_settings.fnErrorCallback )
+              pr_settings.fnErrorCallback.apply( window, [request] );
+          }
+        }
+      };
+      
+      request.send( pr_strQueryString );
+    }
+    else
+      throw new Error( "Já existe uma conexão assíncrona aberta na chamada do executePostContentAsync!" );
+  }
+  catch( e )
+  {
+    throw new Error( "Ocorreu um erro na chamada assíncrona ao servidor. Erro: " + e.message );
+    return '';
+  }
+  
+  return request;
+}
+
+function abrirJanelaNavegador( url, width, height )
+{
+  var w = (width  == undefined ? 750 : width );
+  var h = (height == undefined ? 500 : height);
+
+  var left = (screen.width  - w)/2;
+  var top  = (screen.height - h)/2;
+  
+  var newURL = url;
+  
+  return window.open( newURL,'','resizable=yes,scrollbars=yes,menubar=no,toolbar=no,top=' + top + ',left=' + left + ',width=' + w + ',height=' + h );
+}
+
+/**
+ * Efetua o redirect para a URL informada. Esse método trata o ID da janela no redirect.
+ */
+function redirectTo( pr_strURL )
+{
+	window.location = pr_strURL;
+}
+
+/**
+ * Inicializa o tratamento de internacionalização no JavaScript.
+ * @param pr_language Linguagem usada.
+ * @param pr_namespace Namespace da linguagem.
+ */
+function init_i18n( pr_language, pr_namespace )
+{
+	var option = { 
+			lng: pr_language,
+			ns: { namespaces: pr_namespace },
+			resStore: i18n_resources,
+			fallbackLng: false
+			};
+	i18n.init( option );
+}
+
+/**
+ * Muda a linguagem corrente.
+ * @param pr_language Linguagem usada.
+ */
+function change_i18nLanguage( pr_language )
+{
+	i18n.setLng( pr_language, function(t) { } );
+}
+
+/**
+ * Faz o merge do resource padrão que é sempre carregado com um resource específico.
+ * @param pr_resource
+ */
+function merge_i18nResources( pr_resource )
+{
+	if( i18n_resources == null )
+		i18n_resources = pr_resource;
+	else
+	{		
+		$.extend( i18n_resources.dev,      pr_resource.dev      );
+		$.extend( i18n_resources.en,       pr_resource.en       );
+		$.extend( i18n_resources["en-US"], pr_resource["en-US"] );
+		$.extend( i18n_resources["pt-BR"], pr_resource["pt-BR"] );
+	}
+}
+
+/**
+ * Define um array de funções para tratar os eventos de visibilidade.
+ * Todas as funções que tratam eventos de visibilidade recebem um parâmetro boolean para indicar a visibilidade.
+ * Se estiver visivel, recebe true. Caso contrário, recebe false. 
+ */
+var g_aVisibilityEvents = new Array();
+
+function attachPageVisibilityEvent( pr_object, pr_event )
+{
+  g_aVisibilityEvents.push( {obj:pr_object, fn:pr_event} );
+}
+
+function hookPageVisibilityEvents( )
+{
+  $(document).on({
+    'show': function() {
+      g_aVisibilityEvents.forEach(function(ve) { ve.fn.apply(ve.obj,[true]); });
+    },
+    'hide': function() {
+      g_aVisibilityEvents.forEach(function(ve) { ve.fn.apply(ve.obj,[false]); });      
+    }
+  });
+}
+
+jQuery.fn.textWidth = function()
+{
+  var _t = jQuery(this);
+  var html_org = _t.html();
+  if(_t[0].nodeName=='INPUT'){
+      html_org = _t.val();
+  }
+  var html_calcS = '<span>' + html_org + '</span>';
+  jQuery('body').append(html_calcS);
+  var _lastspan = jQuery('span').last();
+  //console.log(_lastspan, html_calc);
+  _lastspan.css({
+      'font-size' : _t.css('font-size')
+      ,'font-family' : _t.css('font-family')
+  })
+  var width =_lastspan.width() + 5;
+  //_t.html(html_org);
+  _lastspan.remove();
+  return width;
+};

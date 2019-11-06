@@ -1,0 +1,5 @@
+if( isIE( ) )
+  registry.loadUnit( "inputinteger-ie" );
+//  registry.loadUnit( "inputinteger-old" );
+else
+  registry.loadUnit( "inputinteger-x" );

@@ -1,24 +1,19 @@
 package com.usjtECommerce.USJT.model;
 
 import java.io.Serializable;
+import java.util.List;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-@Entity
 public class Produtos implements Serializable{
 	private static final long serialVersionUID = 1L;
-	@Id
-	@GeneratedValue(strategy=GenerationType.IDENTITY)
+	private Integer id_produto;
+	
+    private List<Comentario> comentario;
+	
 	private Integer codUser;
-	private String produto;
+	private String nome;
+	private String marca;
+	private String descricao;
+	private String img;
 	private Double precoCompra;
 	private Double precoVenda;
 	private Integer codFornecedor;
@@ -26,8 +21,21 @@ public class Produtos implements Serializable{
 	
 	
 	
-	public static long getSerialversionuid() {
-		return serialVersionUID;
+	
+	public Produtos() {
+		super();
+	}
+	public Integer getId_produto() {
+		return id_produto;
+	}
+	public void setId_produto(Integer id_produto) {
+		this.id_produto = id_produto;
+	}
+	public List<Comentario> getComentario() {
+		return comentario;
+	}
+	public void setComentario(List<Comentario> comentario) {
+		this.comentario = comentario;
 	}
 	public Integer getCodUser() {
 		return codUser;
@@ -35,11 +43,29 @@ public class Produtos implements Serializable{
 	public void setCodUser(Integer codUser) {
 		this.codUser = codUser;
 	}
-	public String getProduto() {
-		return produto;
+	public String getNome() {
+		return nome;
 	}
-	public void setProduto(String produto) {
-		this.produto = produto;
+	public void setNome(String nome) {
+		this.nome = nome;
+	}
+	public String getMarca() {
+		return marca;
+	}
+	public void setMarca(String marca) {
+		this.marca = marca;
+	}
+	public String getDescricao() {
+		return descricao;
+	}
+	public void setDescricao(String descricao) {
+		this.descricao = descricao;
+	}
+	public String getImg() {
+		return img;
+	}
+	public void setImg(String img) {
+		this.img = img;
 	}
 	public Double getPrecoCompra() {
 		return precoCompra;
@@ -65,6 +91,12 @@ public class Produtos implements Serializable{
 	public void setCodCategoria(Integer codCategoria) {
 		this.codCategoria = codCategoria;
 	}
+	public static long getSerialversionuid() {
+		return serialVersionUID;
+	}
+	
+	
+	
 	
 	
 	

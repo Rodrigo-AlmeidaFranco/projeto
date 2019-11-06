@@ -1,0 +1,322 @@
+/**
+ * Drive checkbox versão 1.0
+ * 
+ * Browsers compatíveis: Firefox 10.0 Chrome 17.0.963.46 m IE9 (documento em
+ * modo Quirks) Safari 5.1.2 (7534.52.7) Opera 11.60
+ */
+
+// utilizado para criar IDs incrementais para os checkboxes.
+var g_nQtdCheckboxes = 0;
+
+checkbox = function(pr_arg) {
+  return checkbox.__constructor(pr_arg);
+}
+
+checkbox.__constructor = function(pr_arg) {
+  // Foi usado tabela para poder controlar verticalmente o conteúdo.
+  var e = document.createElement("TABLE");
+
+  e._constructor = checkbox._constructor;
+  e._constructor(pr_arg);
+
+  return e;
+}
+
+checkbox._constructor = function(pr_arg) {
+  this.tbody = document.createElement("TBODY");
+  this.tr = document.createElement("TR");
+  this.td = document.createElement("TD");
+  this.chkbox = document.createElement("INPUT");
+  this.label = document.createElement("LABEL");
+  this.bReadOnly = false;
+  this.hasFocus = false;
+  this.checked = false;
+  this.mouseUpEvent = undefined;
+
+  this.cellPadding = 0;
+  this.cellSpacing = 0;
+
+  this.className = "checkboxContainer";
+
+  this.chkbox.type = "checkbox";
+  this.chkbox._parent = this;
+  this.chkbox.className = "checkbox";
+  this.chkbox.onchange = checkbox.onchange;
+  this.chkbox.onfocus = checkbox.focus;
+  this.chkbox.onblur = checkbox.blur;
+  
+  if( pr_arg["internalName"] == "" )
+    this.chkbox.id = "chk" + g_nQtdCheckboxes++;
+  else
+    this.chkbox.id = "chk_" + pr_arg["internalName"];
+
+  this.addCssClass = checkbox.addCssClass;
+  this.getJsonValue = checkbox.getJsonValue;
+  this.getValue = checkbox.getValue;
+  this.isReadOnly = checkbox.isReadOnly;
+  this.setHAlign = checkbox.setHAlign;
+  this.setVAlign = checkbox.setVAlign;
+  this.setDisplay = checkbox.setDisplay;
+  this.setEvent = checkbox.setEvent;
+  this.setFont = checkbox.setFont;
+  this.setHeight = checkbox.setHeight;
+  this.setJsonValue = checkbox.setJsonValue;
+  this.setLabel = checkbox.setLabel;
+  this.setParent = checkbox.setParent;
+  this.setWidth = checkbox.setWidth;
+  this.setValue = checkbox.setValue;
+  this._setReadOnly = checkbox._setReadOnly;
+
+  this.onselectstart = function() {
+    return false;
+  };
+
+  var chromeNav = "Chrome/";
+  var safariNav = "Safari/"
+
+  var bChrome = isChrome();
+  var bSafari = isSafari();
+
+  if (isIE())
+    this.chkbox.onclick = checkbox.onclick;
+  else if (bChrome || bSafari) {
+    var startPos = navigator.userAgent.indexOf(bChrome ? chromeNav : safariNav) + 7;
+    var endPos = navigator.userAgent.substring(startPos).indexOf(" ");
+
+    var navVersion;
+
+    // Adicionado pois no caso do Safari a versão é no final da String, ou seja,
+    // não contém mais espaços.
+    if (endPos != -1)
+      var navVersion = parseFloat(navigator.userAgent.substring(startPos,
+          startPos + endPos).replace(/\./g, ""));
+    else
+      var navVersion = parseFloat(navigator.userAgent.substring(startPos)
+          .replace(/\./g, ""));
+
+    // O combonente checkbox não recebe foco através de clique no Chrome e
+    // Safari, por isso vou manter a simulação de foco apenas para
+    // estes, atualmente na versão 16.0.912.63 e 534.52.7, respectivamente. Caso
+    // em alguma versão sejam implementados, descomentar o bloco
+    // abaixo e informando a versão de implementação, para manter a
+    // compatibilidade com as versões antigas.
+    // if( ( bChrome && navVersion < xx.x ) || ( bSafari && navVersion < xx.x )
+    // )
+    this.chkbox.addEventListener("click", function(pr_event) {
+      this.focus();
+    });
+  }
+
+  // Padrão do conteúdo é estar alinhado no topo
+  this.setVAlign("top");
+
+  this.label.htmlFor = this.chkbox.id;
+  this.label.innerHTML = pr_arg["label"];
+
+  if (isIPad())
+    this.label.onclick = function() {
+      this.chkbox.click();
+    };
+
+  this.td.appendChild(this.chkbox);
+  this.td.appendChild(this.label);
+
+  this.tr.appendChild(this.td);
+  this.tbody.appendChild(this.tr);
+  this.appendChild(this.tbody);
+
+  pr_arg["parent"].appendChild(this);
+  this.setValue(pr_arg["value"]);
+
+  if (navigator.userAgent.indexOf("MSIE") != -1)
+    setUnselectable(this);
+}
+
+checkbox.onclick = function(pr_event) {
+  this.onchange();
+
+  if (this != document.activeElement)
+    this.focus();
+}
+
+checkbox.onchange = function(pr_event) {
+  var checkbox = this._parent;
+
+  if (checkbox.checked == this.checked)
+    return;
+
+  checkbox.setValue(this.checked);
+}
+
+checkbox.focus = function(pr_event) {
+  var checkbox = this._parent;
+
+  if (checkbox.label.innerHTML)
+    checkbox.label.style.borderColor = "#111";
+
+  if (!isIE())
+    pr_event.preventDefault();
+}
+
+checkbox.blur = function(pr_event) {
+  var checkbox = this._parent;
+
+  if (isIE6())
+    checkbox.label.style.borderColor = "tomato";
+  else
+    checkbox.label.style.borderColor = "transparent";
+
+  if (!isIE())
+    pr_event.preventDefault();
+}
+
+checkbox.getJsonValue = function(pr_bComplete) {
+  var strJson = "";
+
+  if (pr_bComplete)
+    strJson = "{ type:" + this._type + ", setup: { readOnly: "
+        + this.isReadOnly() + ", value: '" + this.getValue() + "' } }";
+  else
+    strJson = "{ type:" + this._type + ", value:" + this.getValue() + " }";
+
+  return strJson;
+}
+
+checkbox.getValue = function() {
+  return this.chkbox.checked;
+}
+
+checkbox.isReadOnly = function() {
+  return this.bReadOnly;
+}
+
+checkbox.addCssClass = function(pr_strCssClass) 
+{
+  if (pr_strCssClass)
+    this.className += " " + pr_strCssClass;
+}
+
+checkbox.setCssClass = function(pr_strCssClass) {
+  if (pr_strCssClass != null)
+    this.className = pr_strCssClass;
+}
+
+checkbox.setHAlign = function(pr_strAlign) {
+  if (pr_strAlign == "left") {
+    this.chkbox.style.margin = "0px 5px 0px 1px !important";
+    this.chkbox.style.cssFloat = "left";
+    this.chkbox.style.styleFloat = "left";
+    this.label.style.cssFloat = "left";
+    this.label.style.styleFloat = "left";
+  } else {
+    this.chkbox.style.margin = "0px 1px 0px 5px !important";
+    this.chkbox.style.cssFloat = "right";
+    this.chkbox.style.styleFloat = "right";
+    this.label.style.cssFloat = "right";
+    this.label.style.styleFloat = "right";
+  }
+}
+
+checkbox.setVAlign = function(pr_strAlign) {
+  switch (pr_strAlign) {
+  case "top":
+    this.td.vAlign = "top";
+    break;
+  case "center":
+    this.td.vAlign = "middle";
+    break;
+  case "bottom":
+    this.td.vAlign = "bottom";
+    break;
+  }
+}
+
+checkbox.setDisplay = function(pr_isShown) {
+  this.style.display = pr_isShown ? "" : "none";
+}
+
+checkbox.setEvent = function(pr_event) {
+  this.mouseUpEvent = pr_event;
+}
+
+checkbox.setFont = function(pr_font) {
+  if (pr_font.font != undefined)
+    this.label.style.fontFamily = pr_font.font;
+  if (pr_font.fontcolor != undefined)
+    this.label.style.color = pr_font.fontcolor;
+  if (pr_font.fontsize != undefined)
+    this.label.style.fontSize = pr_font.fontsize;
+
+  if (pr_font.fontstyle != undefined) {
+    if (pr_font.fontstyle.indexOf("italic") != -1)
+      this.label.style.fontStyle = "italic";
+    if (pr_font.fontstyle.indexOf("bold") != -1)
+      this.label.style.fontWeight = "bold";
+  }
+}
+
+checkbox.setHeight = function(pr_nHeight) {
+  this.style.height = pr_nHeight + "px";
+}
+
+checkbox.setJsonValue = function(pr_json) {
+  if (pr_json.setup != undefined) {
+    this.setFont(pr_json.setup);
+    if (pr_json.setup.label != undefined)
+      this.setLabel(pr_json.setup.label);
+    if (pr_json.setup.readOnly != undefined)
+      this.setReadOnly(pr_json.setup.readOnly);
+    if (pr_json.setup.value != undefined)
+      this.setValue(pr_json.setup.value, pr_json.setup.cancelBubble);
+  } else
+    this.setValue(pr_json.value);
+}
+
+checkbox.setLabel = function(pr_strLabel) {
+  this.label.innerHTML = pr_strLabel;
+}
+
+checkbox.setParent = function(pr_parent) {
+  if (pr_parent) {
+    this.parentNode.removeChild(this);
+
+    this._parent = pr_parent;
+    document.getElementById(pr_parent).appendChild(this);
+  }
+}
+
+checkbox.setWidth = function(pr_nWidth) {
+  this.style.width = pr_nWidth + "px";
+}
+
+checkbox.setValue = function(pr_value, pr_cancelBubble) {
+  if (pr_value == 'false')
+    pr_value = false;
+  else if (pr_value == 'true')
+    pr_value = true;
+  else if (pr_value == null)
+    pr_value = false;
+
+  if (this.checked == pr_value)
+    return;
+
+  this.chkbox.checked = pr_value;
+  this.checked = pr_value;
+
+  if (this.mouseUpEvent && !pr_cancelBubble)
+    this.mouseUpEvent();
+}
+
+checkbox._setReadOnly = function(pr_bReadOnly) {
+  this.bReadOnly = pr_bReadOnly;
+  this.chkbox.disabled = pr_bReadOnly;
+}
+
+function setUnselectable(pr_element) {
+  if (pr_element.nodeType == 1) {
+    pr_element.unselectable = "on";
+
+    for ( var i = 0; i < pr_element.childNodes.length; i++)
+      setUnselectable(pr_element.childNodes[i]);
+  }
+}

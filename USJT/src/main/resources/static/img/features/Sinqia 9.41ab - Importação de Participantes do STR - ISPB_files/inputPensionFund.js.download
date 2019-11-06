@@ -1,0 +1,357 @@
+inputPensionFund = function(arg){return inputPensionFund.__constructor(arg)};
+//------------------------------------------------------------------------------
+
+inputPensionFund.__constructor = function(arg)
+{
+  var e = document.createElement("SPAN");
+
+  e._constructor = inputPensionFund._constructor;
+  e._constructor( arg );
+  e.style.width = 0;
+
+  return e;
+}
+
+inputPensionFund._constructor = function(arg)
+{
+  this._parent = document.getElementById( arg["parent"] );
+
+  this._parent.appendChild( this );
+
+  this._div   = document.createElement("DIV");
+  this._divCk = document.createElement("DIV");
+  this._divEntity = document.createElement("DIV");
+  this._divOperations = document.createElement("DIV");
+
+  this._bReadOnly = false;
+  this._type = 27;
+  this._strIdSvcInputPensionFund = arg["strIdSvcInputPensionFund"];     // Id de serviços do inputAccount
+  this.bChanging = false;
+
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField, bPortugues;
+  var strValue;
+
+  cpName        = arg["cpName"];       // Nome do componente no JavaScript
+  elName        = "el_" + arg["name"]; // Nome do componente no HTML
+  strName       = arg["name"];         // Nome do componente, nome dado ao componente no java
+  strTdClass    = arg["tdClass"];      // CSS para as TD do HTML
+  strCssField   = arg["cssField"];     // CSS para campos não ReadOnly
+  strCssROField = arg["cssROField"];   // CSS para campos ReadOnly
+  bPortugues    = arg["bPortugues"];   // Indica se o sistema está rodando em português
+
+  this.internalName   = strName;
+  this._strCssField   = strCssField;
+  this._strCssROField = strCssROField;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  var jsonPensionFund, jsonPlan;
+  if( arg["strJsonCbPensionFund"].length > 0 )
+    jsonPensionFund = stringToJson( arg["strJsonCbPensionFund"] );
+  else
+    jsonPensionFund = "";
+
+  if( arg["strJsonCbPlan"].length > 0 )
+    jsonPlan = stringToJson( arg["strJsonCbPlan"] );
+  else
+    jsonPlan = "";
+
+  // Início da construção do DIV principal
+  // ----------------------------------------
+  this.appendChild( this._div );
+  this._div.innerHTML = "<table width=300 border=0 cellspacing=0 cellpadding=1>" +
+                          "<tr>" +
+                            "<td colspan=3 class='" + strTdClass + "' align='left' height=16 valign='middle'>" + (bPortugues ? "Fundação" : "PensionFund") + "</td>" +
+                          "</tr>" +
+                          "<tr>" +
+                            "<td width='30%' id='" + elName + "_cbPensionFund" + "' class='" + strTdClass + "' align='left' height=16 valign='middle'></td>" +
+                            "<td width='15%' id='" + elName + "_tdEntity" + "' class='" + strTdClass + "' align='left' height=16 valign='middle'></td>" +
+                            "<td width='15%' id='" + elName + "_tdOperations" + "' class='" + strTdClass + "' align='left' height=16 valign='middle'></td>" +
+                          "</tr>" +
+                          "<tr>" +
+                            "<td colspan=3 class='" + strTdClass + "' align='left' height=16 valign='middle'>" + (bPortugues ? "Planos" : "Plans") + "</td>" +
+                          "</tr>" +
+                          "<tr>" +
+                            "<td width='50%' colspan=2 id='" + elName + "_cbPlan" + "' class='" + strTdClass + "' align='left' height=16 valign='middle'></td>" +
+                            "<td id='" + elName + "_tdAllPlans" + "' class='" + strTdClass + "' align='left' height=16 valign='middle'></td>" +
+                          "</tr>" +
+                        "</table>";
+
+  // Cria as Combo Boxes
+  createCombobox( cpName + "_cbPlan", elName + "_cbPlan", true );
+  this._cbPlan = eval( cpName + "_cbPlan" );
+  this._cbPlan._parent = this;
+
+  finalizeCombobox.apply( this._cbPlan, [this._strIdSvcInputPensionFund, 1, 265, "", strName + "_cbPlan",
+                          [], false, false, strCssField, strCssROField, jsonPlan, "", [], strName + "_cbPensionFund" ] );
+  this._cbPlan.onchange = function( )
+                               {
+                                 this._parent._nPlan = this.getValue( );
+                                 fireEvent.apply( this, [] );
+                                 fireEvent.apply( this._parent, [] );
+                               };
+  this._cbPlan.strParentCompName = strName;                               
+
+  createCombobox( cpName + "_cbPensionFund", elName + "_cbPensionFund", true );
+  this._cbPensionFund = eval( cpName + "_cbPensionFund" );
+  this._cbPensionFund._parent = this;
+
+  finalizeCombobox.apply( this._cbPensionFund, [ this._strIdSvcInputPensionFund, 0, 200, "", strName + "_cbPensionFund",
+                          [this._cbPlan], false, false, strCssField, strCssROField, jsonPensionFund, "", [{type:1,target:cpName + "_cbPlan"}], strName + "_cbPensionFund" ] );
+  this._cbPensionFund.onchange = function( )
+                                     {
+                                       this._parent._cbPlan.clear( );
+                                       this._parent._cbPlan.externalValue = this._parent._cbPensionFund.getValue( );
+                                       this._parent._nPensionFund = this.getValue( );
+                                       fireEvent.apply( this, [] );
+                                       fireEvent.apply( this._parent, [] );
+                                     };
+  this._cbPensionFund.strParentCompName = strName;
+  
+  // Cria Div e Check de Entity
+  document.getElementById( elName + "_tdEntity" ).appendChild( this._divEntity );
+  this._divEntity.innerHTML = "<table width='100%' border=0 cellspacing=0 cellpadding=0>" +
+                                "<tr>" +
+                                  "<td id='" + elName + "_ckEntity" + "' class='" + strTdClass + "' align='left' height=16 valign='middle'></td>" +
+                                "</tr>" +
+                              "</table>";
+
+  createCheckbox(cpName + "_ckEntity", elName + "_ckEntity", bPortugues ? "Entidade" : "Entity", false );
+  finalizeCheckbox.apply(eval(cpName + "_ckEntity"), [ 65, 0, "'" + strName + "'", strCssField, "left", false, false, {}, [] ]);
+  this._ckEntity = eval(cpName + "_ckEntity");
+  this._ckEntity._parent = this;
+  this._ckEntity.setEvent( function( )
+                           {
+                             var parent = this._parent;
+                             if( !this.isReadOnly( ) && !parent.bChanging )
+                             {
+                               parent.bChanging = true;
+
+                               if( this.checked )
+                               {
+                                 parent._ckOperations.setValue( false );
+                                 parent._ckAllPlans.setValue( false );
+                                 parent._ckOperations.setReadOnly( true );
+                                 parent._ckAllPlans.setReadOnly( true );
+                                 parent._cbPlan.setReadOnly( true );
+                                 parent._cbPlan.clear( );
+                               }
+                               else
+                               {
+                                 parent._ckOperations.setReadOnly( false );
+                                 parent._ckAllPlans.setReadOnly( false );
+                                 parent._cbPlan.setReadOnly( false );
+                               }
+
+                               parent.bChanging = false;
+                               fireEvent.apply( this, [] );
+                               fireEvent.apply( this._parent, [] );
+                             }
+                           } );
+
+  // Cria Div e Check de Operações Comuns
+  document.getElementById( elName + "_tdOperations" ).appendChild( this._divOperations );
+  this._divOperations.innerHTML = "<table width='100%' border=0 cellspacing=0 cellpadding=0>" +
+                                    "<tr>" +
+                                      "<td id='" + elName + "_ckOperations" + "' class='" + strTdClass + "' align='left' height=16 valign='middle'></td>" +
+                                    "</tr>" +
+                                  "</table>";
+
+  createCheckbox(cpName + "_ckOperations", elName + "_ckOperations", bPortugues ? "Operações Comuns" : "Common Operations", false );
+  finalizeCheckbox.apply(eval(cpName + "_ckOperations"), [ 135, 0, "'" + strName + "'", strCssField, "left", false, false, {}, [] ]);
+  this._ckOperations = eval(cpName + "_ckOperations");
+  this._ckOperations._parent = this;
+  this._ckOperations.setEvent( function( )
+                               {
+                                 var parent = this._parent;
+                                 if( !this.isReadOnly( ) && !parent.bChanging )
+                                 {
+                                   parent.bChanging = true;
+
+                                   if( this.checked )
+                                   {
+                                     parent._ckAllPlans.setValue( false );
+                                     parent._ckEntity.setValue( false );
+                                     parent._ckAllPlans.setReadOnly( true );
+                                     parent._ckEntity.setReadOnly( true );
+                                     parent._cbPlan.setReadOnly( true );
+                                     parent._cbPlan.clear( );
+                                   }
+                                   else
+                                   {
+                                     parent._ckAllPlans.setReadOnly( false );
+                                     parent._ckEntity.setReadOnly( false );
+                                     parent._cbPlan.setReadOnly( false );
+                                   }
+
+                                   parent.bChanging = false;
+                                   fireEvent.apply( this, [] );
+                                   fireEvent.apply( this._parent, [] );
+                                 }
+                               } );
+
+  // Cria Div e Check de Todos Planos
+  document.getElementById( elName + "_tdAllPlans" ).appendChild( this._divCk );
+  this._divCk.innerHTML = "<table width='100%' border=0 cellspacing=0 cellpadding=0>" +
+                            "<tr>" +
+                              "<td id='" + elName + "_ckAllPlans" + "' class='" + strTdClass + "' align='left' height=16 valign='middle'></td>" +
+                            "</tr>" +
+                          "</table>";
+
+  createCheckbox(cpName + "_ckAllPlans", elName + "_ckAllPlans", bPortugues ? "Todos os Planos" : "All Plans", false );
+  finalizeCheckbox.apply(eval(cpName + "_ckAllPlans"), [ 110, 0, "'" + strName + "'", strCssField, "left", false, false, {}, [] ]);
+  this._ckAllPlans = eval(cpName + "_ckAllPlans");
+  this._ckAllPlans._parent = this;
+  this._ckAllPlans.setEvent( function( )
+                             {
+                               var parent = this._parent;
+                               if( !this.isReadOnly( ) && !parent.bChanging )
+                               {
+                                 parent.bChanging = true;
+
+                                 if( this.checked )
+                                 {
+                                   parent._ckOperations.setValue( false );
+                                   parent._ckEntity.setValue( false );
+                                   parent._ckOperations.setReadOnly( true );
+                                   parent._ckEntity.setReadOnly( true );
+                                   parent._cbPlan.setReadOnly( true );
+                                   parent._cbPlan.clear( );
+                                 }
+                                 else
+                                 {
+                                   parent._ckOperations.setReadOnly( false );
+                                   parent._ckEntity.setReadOnly( false );
+                                   parent._cbPlan.setReadOnly( false );
+                                 }
+
+                                 parent.bChanging = false;
+                                 fireEvent.apply( this, [] );
+                                 fireEvent.apply( this._parent, [] );
+                               }
+                             } );
+  // Visibilidade da opção todos os planos
+  if( !arg["bAllPlans"] )
+    this._divCk.style.display = "none";
+
+  if( !arg["bEntity"] )
+    this._divEntity.style.display = "none";
+
+  if( !arg["bOperations"] )
+    this._divOperations.style.display = "none";
+
+  this._nPensionFund = arg["nPensionFund"];
+  this._nPlan        = arg["nPlan"];
+  this._cbPlan.externalValue = arg["nPensionFund"];
+
+  // ---------------------------------------
+  // Final da construção do DIV principal
+
+  this.getJsonValue      = inputPensionFund.getJsonValue;
+  this.setJsonValue      = inputPensionFund.setJsonValue;
+  this.setReadOnly       = inputPensionFund.setReadOnly;
+  this.getReadOnly       = inputPensionFund.getReadOnly;
+}
+
+inputPensionFund.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+
+  this._cbPensionFund.setReadOnly( b );
+
+  if( b )
+  {
+    this._ckOperations.setReadOnly( b );
+    this._ckEntity.setReadOnly( b );
+    this._cbPlan.setReadOnly( b );
+    this._ckAllPlans.setReadOnly( b );
+  }
+  else if( !b && this._ckOperations.checked )
+    this._ckOperations.setReadOnly( b );
+  else if( !b && this._ckEntity.checked )
+    this._ckEntity.setReadOnly( b );
+  else if( !b && this._ckAllPlans.checked )
+    this._ckAllPlans.setReadOnly( b );
+}
+
+inputPensionFund.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputPensionFund.getJsonValue = function( bComplete )
+{
+  var str = "{type:" + this._type;
+
+  if( this._cbPensionFund.getValue( ) != "" )
+    str += ", fund:'" + this._nPensionFund + "'";
+  else
+    str += ", fund:'0'";
+
+  if( this._cbPlan.getValue( ) != "" )
+    str += ", plan:'" + this._nPlan + "'";
+  else
+    str += ", plan:'0'";
+
+  str += ( this._ckOperations.checked ? ", operations:true" : ", operations:false" );
+  str += ( this._ckEntity.checked     ? ", entity:true"     : ", entity:false"     );
+  str += ( this._ckAllPlans.checked   ? ", allPlans:true"   : ", allPlans:false"   );
+
+  str += "}";
+  return str;
+}
+
+inputPensionFund.setJsonValue = function( json )
+{
+  if( json.setup ) // Veio pelo Setup
+  {
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+  }
+  var jsonAux = ( json.setup ? json.setup : json );
+
+  if( jsonAux.fund != undefined )
+  {
+    if( !this._cbPensionFund.bFilled  )
+        this._cbPensionFund.doLoadJson( );
+
+    this._nPensionFund = jsonAux.fund;        
+    this._cbPensionFund.selectItemByValue( jsonAux.fund );
+    
+    this._cbPlan.externalValue = jsonAux.fund;    
+    this._cbPlan.clear( );
+  }
+
+  if( jsonAux.plan != undefined )
+  {
+    if( !this._cbPlan.bFilled  )
+        this._cbPlan.doLoadJson( );
+        
+    this._nPlan = jsonAux.plan;
+    this._cbPlan.selectItemByValue( jsonAux.plan );
+  }
+
+  if( jsonAux.operations != undefined )
+  {
+    if( jsonAux.operations == true )
+      this._ckOperations.setValue( true );
+    else
+      this._ckOperations.setValue( false );
+  }
+
+  if( jsonAux.entity != undefined )
+  {
+    if( jsonAux.entity == true )
+      this._ckEntity.setValue( true );
+    else
+      this._ckEntity.setValue( false );
+  }
+
+  if( jsonAux.allPlans != undefined )
+  {
+    if( jsonAux.allPlans == true )
+      this._ckAllPlans.setValue( true );
+    else
+      this._ckAllPlans.setValue( false );
+  }
+}

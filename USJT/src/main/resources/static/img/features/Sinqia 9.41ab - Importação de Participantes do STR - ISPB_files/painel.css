@@ -1,0 +1,242 @@
+/*
+ * StyleSheet para o Painel de Tarefas
+ */
+.btn-image-task-painel
+{
+  border: 0;
+  height: 16px;
+  width: 16px;
+}
+
+.block-ui
+{
+  background-color: #efefef;
+  font-family: Arial;
+  font-size: 18px;
+  color: blue;
+  text-align: center;
+  vertical-align: middle;
+}
+
+#pnl-container
+{
+  font-family: Arial;
+  color: black;
+  background-color: #efefef;
+  width:950px;
+}
+
+#pnl-title
+{
+  background-color: #2076b0;
+  text-align: center;
+  color: white;
+  font-size: 16px;
+  font-family: Arial;
+  font-weight: bold;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid white;
+}
+
+#pnl-help
+{
+  background-color: #2076b0; 
+  width: 24px;
+  height: 24px;
+  border-bottom: 2px solid white;
+  padding-left: 5px;
+  padding-right: 5px;
+  cursor: pointer;
+}
+
+#img-pnl-help
+{
+  vertical-align: middle;
+}
+
+.pnl-aviso p
+{
+  font-size: 18px;
+  font-family: Arial;
+  color: red;  
+  text-align: center;
+}
+
+.pnlFiltro
+{
+  background-color: #efefef;
+  display: none;
+  font-size: 12px;
+  font-family: Arial;
+  width: 160px;
+  border: 1px solid black;
+  padding: 2px 2px 2px 2px;
+  height: 280px;
+  overflow: auto;
+  position: absolute;
+}
+
+.pnlMenu
+{
+  background-color: #f3f3f3;
+  display: none;
+  font-size: 12px;
+  font-family: Arial;
+  width: 150px;
+  border: 1px solid black;
+  padding: 2px 2px 2px 2px;
+  position: absolute;
+}
+
+.pnlMenu,
+.pnlFiltro
+{
+  -moz-border-radius-topleft:    4px; -webkit-border-top-left-radius:    4px; -khtml-border-top-left-radius:    4px; border-top-left-radius:    4px;
+  -moz-border-radius-topright:   4px; -webkit-border-top-right-radius:   4px; -khtml-border-top-right-radius:   4px; border-top-right-radius:   4px;
+  -moz-border-radius-bottomleft: 4px; -webkit-border-bottom-left-radius: 4px; -khtml-border-bottom-left-radius: 4px; border-bottom-left-radius: 4px;
+  -moz-border-radius-bottomright:4px; -webkit-border-bottom-right-radius:4px; -khtml-border-bottom-right-radius:4px; border-bottom-right-radius:4px;
+
+  -moz-box-shadow:3px 3px 10px -2px #333;
+  -webkit-box-shadow:3px 3px 10px -2px #333;
+  box-shadow:3px 3px 10px -2px #333;
+  _filter:progid:DXImageTransform.Microsoft.Shadow(color=#777777,direction=120,strength=4), 
+          progid:DXImageTransform.Microsoft.Shadow(color=#777777,direction=135,strength=4), 
+          progid:DXImageTransform.Microsoft.Shadow(color=#777777,direction=150,strength=4);
+  background:#f9f9f9;
+  border:1px solid #999;
+  border-color:#ddd #fff #fff #ddd;
+  color:#333;
+}
+
+.pnlFiltro *,
+.pnlMenu .hand-cursor
+{
+  color: #333;
+  font-size: 12px;
+}
+
+.pnlMenu .hand-cursor
+{
+  padding: 2px;
+}
+
+.pnlMenu-image
+{
+  display: none;
+}
+
+.hand-cursor
+{
+  cursor:pointer;
+}
+
+.pnl-tasks-ck
+{
+  overflow: auto;
+  font-family: Arial;
+  font-size: 13px;
+  text-align: left;   
+}
+
+.pnl-tasks
+{
+  margin-top: 5px;
+  border-top: 1px solid white;
+}
+
+.pnl-tasks-cell
+{
+  height: 24px;
+  font-family: Arial;
+  font-size: 12px;
+  border-bottom: 1px solid white;
+  vertical-align: middle;
+  background-color: #e7e7e7;
+}
+
+.pnl-line-exigencia
+{
+  background-color: #FFAD33;
+}
+
+.pnl-line-pendencia
+{
+  background-color: #FFFF4D;
+}
+
+.pnl-tasks-cell-ie7
+{
+  height: 27px;
+}
+
+.pnl-tasks-header-cell
+{
+  height: 24px;
+  font-family: Arial;
+  font-size: 12px;
+  border-bottom: 1px solid white;
+  vertical-align: middle;
+}
+
+.pnl-navigator
+{
+  padding-left: 20px;
+}
+
+.pnl-page
+{
+  height: 24px;
+  font-family: Arial;
+  font-size: 12px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.pnl-footer
+{
+  height: 24px;
+  font-family: Arial;
+  font-size: 12px;
+  padding-right: 20px;
+}
+
+.ui-dialog
+{
+  font-family: Arial;
+  font-size: 12px;
+}
+
+.ui-dialog-titlebar
+{
+  font-family: Arial;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.ui-button-text-only
+{
+  font-family: Arial;
+  font-size: 12px;
+}
+
+input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit])
+{
+  border-color:#9a9a9a #ddd #ddd #9a9a9a;
+  border-style:solid;
+  border-width:1px;
+  border-radius:4px;
+  -moz-border-radius:4px;
+  -webkit-border-radius:4px;
+  -khtml-border-radius:4px;
+
+  color:black;
+  font-family:arial;
+  font-size:8pt;
+  font-style:normal;
+  font-weight:normal;
+  line-height:normal;
+  
+  padding: 2px;
+}

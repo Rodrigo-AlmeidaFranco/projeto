@@ -1,0 +1,4 @@
+if( isIE( ) )
+  registry.loadUnit( "inputdouble-ie" );
+else
+  registry.loadUnit( "inputdouble-x" );

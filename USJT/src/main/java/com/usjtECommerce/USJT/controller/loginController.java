@@ -1,5 +1,7 @@
 package com.usjtECommerce.USJT.controller;
 
+import java.sql.SQLException;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
@@ -16,8 +18,8 @@ import com.usjtECommerce.USJT.service.LoginService;
 public class loginController {
 	@Controller
 	public class LoginController {
-		@Autowired
-		private LoginService loginService;
+		private LoginService loginService = new LoginService();
+		
 		@GetMapping(value = { "/login" })
 		public ModelAndView login(HttpServletRequest request,Usuario usuario) {
 			HttpSession session = request.getSession();
@@ -32,9 +34,11 @@ public class loginController {
 		}
 		}
 		@PostMapping("/fazerLogin")
-		public String fazerLogin(HttpServletRequest request,Usuario usuario) {
-			if (loginService.logar(usuario)) {
-				request.getSession().setAttribute("usuarioLogado", usuario);
+		public String fazerLogin(HttpServletRequest request,Usuario usuario) throws SQLException {
+			if (loginService.verificarLogin(usuario)) {
+				Usuario user = loginService.sessao(usuario);
+				request.getSession().setAttribute("usuarioLogado", user);
+				request.getSession().setAttribute("usuario", user);
 				return "redirect:perfil";
 			} else {
 				return "login";

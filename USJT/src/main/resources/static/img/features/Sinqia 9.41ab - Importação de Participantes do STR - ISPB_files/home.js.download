@@ -1,0 +1,17 @@
+merge_i18nResources( 
+{
+  dev:     { home: { } },
+  en:      { home: { } },            
+  'en-US': { home: { 
+                       "existe-tarefas" : "There are tasks being performed.\nThose tasks must be cancelled to be possible a correct system exit.",
+                       "saida"          : "Are you sure you want to exit?",
+                       "btnFechar"      : "Close"
+	               }
+           },
+  'pt-BR': { home: {
+                       "existe-tarefas" : "Existem Tarefas sendo executadas.\nEssas Tarefas devem ser canceladas para que seja possível sair do sistema.",
+                       "saida"          : "Confirma Saída do Sistema?",
+                       "btnFechar"      : "Fechar"
+                   }
+           }
+} );

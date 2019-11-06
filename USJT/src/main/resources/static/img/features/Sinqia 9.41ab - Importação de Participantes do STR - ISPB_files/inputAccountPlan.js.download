@@ -1,0 +1,233 @@
+inputAccountPlan = function(arg){return inputAccountPlan.__constructor(arg)};
+//------------------------------------------------------------------------------
+
+inputAccountPlan.__constructor = function(arg)
+{
+  var e = document.createElement("SPAN");
+
+  e._constructor = inputAccountPlan._constructor;
+  e._constructor( arg );
+  e.style.width = 0;
+
+  return e;
+}
+
+inputAccountPlan._constructor = function(arg)
+{
+  this._parent = document.getElementById( arg["parent"] );
+
+  this._parent.appendChild( this );
+
+  this._divDig = document.createElement("DIV");
+
+  this._bReadOnly = false;
+  this._type = 24;
+  this._strIdSvcInputAccountPlan = arg["strIdSvcInputAccountPlan"]; // Id de serviços do inputAccountPlan
+  this._strIdSvcFillComboBox = arg["strIdSvcFillComboBox"];
+  this._nGetDefaultLevel = arg["nGetDefaultLevel"];
+
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField, bPortugues;
+  var strValue;
+
+  cpName        = arg["cpName"];       // Nome do componente no JavaScript
+  elName        = "el_" + arg["name"]; // Nome do componente no HTML
+  strName       = arg["name"];         // Nome do componente, nome dado ao componente no java
+  strTdClass    = arg["tdClass"];      // CSS para as TD do HTML
+  strCssField   = arg["cssField"];     // CSS para campos não ReadOnly
+  strCssROField = arg["cssROField"];   // CSS para campos ReadOnly
+  bPortugues    = arg["bPortugues"];   // Indica se o sistema está rodando em português
+
+  this.internalName   = strName;
+  this._strCssField   = strCssField;
+  this._strCssROField = strCssROField;
+  this.bOnFocus       = false;
+  this.bShowLevel     = arg["bShowLevel"];
+  this.nPlan          = arg["nPlan"];
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  if( this.bShowLevel  )
+    this.nLevel = arg["nLevel"];
+  else
+    this.nLevel = 0;
+
+  // Início da construção do DIV principal
+  // ----------------------------------------
+  this.appendChild( this._divDig );
+
+  var htmlLevelText = "";
+  var htmlLevelCbo  = "";
+
+  if( this.bShowLevel )
+  {
+    htmlLevelText = "<td class='" + strTdClass + "' align='left'>" + (bPortugues ? "Nível" : "Level") + "</td>";
+    htmlLevelCbo  = "<td id='" + elName + "_cbLevel" + "' class='" + strTdClass + "'></td>";
+  }
+
+  this._divDig.innerHTML = "<table width=325 border=0 cellspacing=1 cellpadding=0>" +
+                             "<tr>" +
+                               "<td class='" + strTdClass + "' align='left'>" + (bPortugues ? "Plano de Contas" : "Account Plan") + "</td>" +
+                               htmlLevelText +
+                             "</tr>" +
+                             "<tr>" +
+                               "<td id='" + elName + "_cbPlan"  + "' class='" + strTdClass + "'></td>" +
+                               htmlLevelCbo +
+                             "</tr>" +
+                           "</table>";
+
+  // Combo de Plano
+  createCombobox( cpName + "_cbPlan", elName + "_cbPlan", true );
+  this._divDig._cbPlan = eval( cpName + "_cbPlan" );
+  this._divDig._cbPlan._parent = this;
+
+  finalizeCombobox.apply( this._divDig._cbPlan, [ this._strIdSvcFillComboBox, arg["nFillComboPlan"], 275,
+                          "", strName + "_cbPlan", [], false, false, strCssField, strCssROField, "", "", [] ] );
+  this._divDig._cbPlan.strParentCompName = strName;
+  this._divDig._cbPlan.onchange = inputAccountPlan.onChangeCboAccountPlan;
+
+  // Combo de Nível
+  if( this.bShowLevel )
+  {
+    createCombobox( cpName + "_cbLevel", elName + "_cbLevel", true );
+    this._divDig._cbLevel = eval( cpName + "_cbLevel" );
+    this._divDig._cbLevel._parent = this;
+
+    finalizeCombobox.apply( this._divDig._cbLevel, [ this._strIdSvcFillComboBox, arg["nFillComboLevel"], 50,
+                            "", strName + "_cbLevel", [], false, false, strCssField, strCssROField, "", "", [] ] );
+    this._divDig._cbLevel.strParentCompName = strName;
+    this._divDig._cbLevel.onchange = inputAccountPlan.onChangeCboLevel;
+  }
+
+  // ---------------------------------------
+  // Final da construção do DIV principal
+
+  this.getJsonValue   = inputAccountPlan.getJsonValue;
+  this.setJsonValue   = inputAccountPlan.setJsonValue;
+  this.setReadOnly    = inputAccountPlan.setReadOnly;
+  this.getReadOnly    = inputAccountPlan.getReadOnly;
+  this.setAccountPlan = inputAccountPlan.setAccountPlan;
+  this.getAccountPlan = inputAccountPlan.getAccountPlan;
+  this.onchange       = fireEvent;
+
+  if( this.nPlan != 0 )
+  {
+    if( !this._divDig._cbPlan._bFilled  )
+        this._divDig._cbPlan.doLoadJson( );
+    this._divDig._cbPlan.selectItemByValue( this.nPlan );
+    this.setAccountPlan( this.nPlan );
+  }
+
+  if( this.bShowLevel && (this.nLevel != 0) )
+  {
+    if( !this._divDig._cbLevel._bFilled  )
+        this._divDig._cbLevel.doLoadJson( );
+    this._divDig._cbLevel.selectItemByValue( this.nLevel );
+    this.nLevel = this._divDig._cbLevel.getValue( );
+  }
+}
+
+inputAccountPlan.onChangeCboAccountPlan = function( )
+{
+  var iap = this._parent;
+  iap.setAccountPlan( this.getValue( ) );
+  if( !this.bReadOnly )
+  {
+    iap.onchange( );
+    fireEvent.apply( this, [] );
+  }
+}
+
+inputAccountPlan.onChangeCboLevel = function( )
+{
+  var iap = this._parent;
+  iap.nLevel = this.getValue( );
+  if( !this.bReadOnly )
+  {
+    iap.onchange( );
+    fireEvent.apply( this, [] );
+  }
+}
+
+inputAccountPlan.setAccountPlan = function( nPlanId )
+{
+  var oldPlan = this.nPlan;
+  this.nPlan = nPlanId;
+
+  if( this.nPlan == 0 )
+      this.nLevel = 0;
+
+  if( this.bShowLevel )
+  {
+    this._divDig._cbLevel.externalValue = nPlanId;
+    this._divDig._cbLevel.doLoadJson( );
+
+    if( this.nLevel == 0 )
+    {
+      var lvl = postContent( g_strURL, "ID1=" + this._strIdSvcInputAccountPlan + "&ID2=" + this._nGetDefaultLevel +
+                                     "&plan=" + this.nPlan + "&ParentCompName=" + this.internalName );
+      lvl = lvl.trim( );
+
+      this._divDig._cbLevel.selectItemByValue( lvl );
+      this.nLevel = this._divDig._cbLevel.getValue( );
+    }
+    else
+    {
+      if( this.nLevel > ( this._divDig._cbLevel.lstComboboxData.length - 1 ) )
+        this._divDig._cbLevel.selectItemByValue( this._divDig._cbLevel.lstComboboxData.length - 1 );
+      else
+        this._divDig._cbLevel.selectItemByValue( this.nLevel );
+
+      this.nLevel = this._divDig._cbLevel.getValue( );
+    }
+  }
+}
+
+inputAccountPlan.getAccountPlan = function( )
+{
+  return this.nPlan;
+}
+
+inputAccountPlan.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+  this._divDig._cbPlan.setReadOnly( b );
+  if( this.bShowLevel )
+    this._divDig._cbLevel.setReadOnly( b );
+}
+
+inputAccountPlan.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputAccountPlan.getJsonValue = function( bComplete )
+{
+  return "{type:" + this._type + ", plan:" + this.nPlan + ", level:" + ( this.nLevel ? this.nLevel : 0 ) + "}";
+}
+
+inputAccountPlan.setJsonValue = function( json )
+{
+  if( json.setup ) // Veio pelo Setup
+  {
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+  }
+  var jsonAux = ( json.setup ? json.setup : json );
+
+  if( jsonAux.plan != undefined )
+  {
+    if( !this._divDig._cbPlan._bFilled  )
+      this._divDig._cbPlan.doLoadJson( );
+    this._divDig._cbPlan.selectItemByValue( jsonAux.plan );
+    this.setAccountPlan( jsonAux.plan );
+  }
+
+  if( this.bShowLevel )
+    if( jsonAux.level != undefined )
+    {
+      if( !this._divDig._cbLevel._bFilled  )
+        this._divDig._cbLevel.doLoadJson( );
+      this._divDig._cbLevel.selectItemByValue( jsonAux.level );
+      this.nLevel = this._divDig._cbLevel.getValue( );
+    }
+}

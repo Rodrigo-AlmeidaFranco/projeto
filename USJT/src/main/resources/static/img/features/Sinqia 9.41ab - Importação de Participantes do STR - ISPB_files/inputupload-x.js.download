@@ -1,0 +1,782 @@
+inputupload = function( arg )
+{
+  return inputupload.__constructor( arg );
+}
+
+inputupload.__constructor = function( arg )
+{
+  var e = document.createElement( "SPAN" );
+
+  e._constructor = inputupload._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+inputupload._constructor = function( arg )
+{
+  this._parent = document.getElementById( arg["parent"] );
+  this._parent.appendChild( this );
+
+  this._type         = registry.ui.types.inputupload;
+  this.internalName  = arg["name"];
+  this.aFileTypes    = arg["aFileTypes"];
+  this.aFiles        = [];
+  this.nOnDrag       = 0;
+  this.bCompact      = arg["compact"];
+  this.bMultiple     = arg["multiple"];
+  this.className     = "upload " + ( this.bCompact ? "compact" : "full" ) + ( isFirefox( ) ? " moz" : "" );
+  this.aKnownTypes   = arg["aKnownFileTypes"];
+  this.aTypesAllowed = arg["aAllowedFileTypes"].length ? arg["aAllowedFileTypes"] : this.aKnownTypes;
+  this.idSvcValidate = arg["idSvcValidate"];
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  if( arg["size"] )
+    this._nSize = arg["size"];
+  else
+    this._nSize = 30;
+
+  this.buildFrame     = inputupload.buildFrame;
+  this.setPeer2Form   = inputupload.setPeer2Form;
+  this.setReadOnly    = inputupload.setReadOnly;
+  this.getJsonValue   = inputupload.getJsonValue;
+  this.setJsonValue   = inputupload.setJsonValue;
+  this.setServerFiles = inputupload.setServerFiles;
+  this.clear          = inputupload.clear;
+  this.adjustFileName = inputupload.adjustFileName;
+  this.validate       = inputupload.validate;
+  this.submit         = inputupload.submit;
+  
+  this.continueSubmit      = inputupload.continueSubmit;
+  this.onSubmitFinish      = inputupload.onSubmitFinish;
+  this.onFileSubmitFinish  = inputupload.onFileSubmitFinish;
+  
+  this.updateIndexes       = inputupload.updateIndexes;
+  this.buildCompactView    = inputupload.buildCompactView;
+  this.buildFullView       = inputupload.buildFullView;
+  this.buildActionsBar     = inputupload.buildActionsBar;
+  this.buildFilesArea      = inputupload.buildFilesArea;
+  this.buildNoFilesArea    = inputupload.buildNoFilesArea;
+  this.buildInputFile      = inputupload.buildInputFile;
+  this.attachHints         = inputupload.attachHints;
+  this.getImgByFileType    = inputupload.getImgByFileType;
+  this.getFileType         = inputupload.getFileType;
+  this.isAllowedFileType   = inputupload.isAllowedFileType;
+  this.isKnownFileType     = inputupload.isKnownFileType;
+  this.buildFileView       = inputupload.buildFileView;
+  this.refreshFilesArea    = inputupload.refreshFilesArea;
+  this.addFile             = inputupload.addFile;
+  this.setFile             = inputupload.setFile;
+  this.attachFileViewHints = inputupload.attachFileViewHints;
+  this.removeAll           = inputupload.removeAll;
+  this.remove              = inputupload.remove;
+
+  if( this.bCompact )
+    this.buildCompactView( );
+  else
+    this.buildFullView( );
+
+  g_aInputUpload[g_aInputUpload.length] = this;
+
+  return this;
+}
+
+inputupload.attachHints = function( )
+{
+  attachSpeechHint( ".fakeAdd", _( "Não é possível incluir dois arquivos com o mesmo nome." ) );
+}
+
+inputupload.refreshFilesArea = function( )
+{
+  if( !this.bCompact )
+  {
+    this._input.value = "";
+
+    if( this.aFiles.length && this.aFiles.length > 0 )
+    {
+      $( this.ulFiles   ).removeClass( "hidden" );
+      $( this.ulNoFiles ).addClass   ( "hidden" );
+
+      var originalHeight = this.ulFiles.scrollTop++;
+
+      if( this.ulFiles.scrollTop-- > originalHeight )
+        $( this ).addClass( "scroll" );
+      else
+        $( this ).removeClass( "scroll" );
+    }
+    else
+    {
+      $( this.ulFiles   ).addClass   ( "hidden" );
+      $( this.ulNoFiles ).removeClass( "hidden" );
+      $( this           ).removeClass( "scroll" );
+    }
+  }
+}
+
+inputupload.buildCompactView = function( )
+{
+  this.buildInputFile( );
+
+  this.divAddFiles = document.createElement( "DIV" );
+  this.divAddFiles.className = "addFilesContainer";
+  
+  this.fakeDiv           = document.createElement( "DIV" );
+  this.fakeDiv.className = "fake";
+  
+  this.fakeInput             = document.createElement( "INPUT"  );
+  this.fakeInput.readOnly    = true;
+  this.fakeInput.style.width = ( this._nSize / registry.ui.transformations.sizeToEM ) + "em";
+
+  this.fakeButton = document.createElement( "BUTTON" );
+  this.fakeButton.appendChild( this._input );
+  this.fakeButton.appendChild( document.createTextNode( "..." ) );
+  
+  this.fakeButton.labelValue = "...";
+  this.fakeButton.value      = "...";
+
+  this.fakeDiv.appendChild( this.fakeInput  );
+  this.fakeDiv.appendChild( this._input     );
+  this.fakeDiv.appendChild( this.fakeButton );
+
+  this.divAddFiles.appendChild( this.fakeDiv );
+
+  this.appendChild( this.divAddFiles  );
+}
+
+inputupload.buildInputFile = function( )
+{
+  this._input           = document.createElement( "INPUT" );
+  this._input.type      = "file";
+  this._input.className = "file";
+  this._input.multiple  = this.bMultiple;
+  this._input._parent   = this;
+  this._input.onchange  = inputupload.onchange;
+  this._input.style.width = ( (this._nSize + 4) / registry.ui.transformations.sizeToEM ) + "em";
+  
+  this._input.setAttribute( "id", this.internalName + "_file" );
+}
+
+inputupload.buildFullView = function( )
+{
+  this.buildInputFile  ( );
+  this.buildActionsBar ( );
+  this.buildFilesArea  ( );
+  this.buildNoFilesArea( );
+
+  this.appendChild( this.divActions );
+  this.appendChild( this.ulFiles    );
+  this.appendChild( this.ulNoFiles  );
+  
+  this.refreshFilesArea( );
+}
+
+inputupload.buildActionsBar = function( )
+{
+  var self = this;
+  var button;
+  var span;
+
+  this.divActions  = document.createElement( "DIV" );
+
+  this.divAddFiles = document.createElement( "DIV" );
+  this.divAddFiles.className = "addFilesContainer";
+
+  span           = document.createElement( "SPAN" );
+  span.innerHTML = self.bMultiple ? _( "Adicionar..." ) : _( "Selecionar..." );
+
+  button           = document.createElement( "BUTTON" );
+  button.className = "fakeAdd";
+  button.appendChild( span );
+
+  this.divAddFiles.appendChild( button           );
+  this.divAddFiles.appendChild( this._input      );
+  this.divActions .appendChild( this.divAddFiles );
+
+  if( self.bMultiple )
+  {
+    this.divRemoveFiles = document.createElement( "DIV" );
+    this.divRemoveFiles.className = "removeFilesContainer";
+  
+    span           = document.createElement( "SPAN" );
+    span.innerHTML = _( "Remover todos" );
+  
+    button           = document.createElement( "BUTTON" );
+    button.className = "removeSelected";
+    button.onclick   = function( ){ this._parent.removeAll( ); };
+    button._parent   = this;
+    button.appendChild( span );
+  
+    this.divRemoveFiles.appendChild( button  );
+    this.divActions.appendChild( this.divRemoveFiles );
+  }
+}
+
+inputupload.buildFilesArea = function( )
+{
+  this.ulFiles = document.createElement( "UL" );
+  this.ulFiles.className = "files";
+}
+
+inputupload.buildNoFilesArea = function( )
+{
+  this.ulNoFiles = document.createElement( "UL" );
+  this.ulNoFiles.className = "noFiles";
+
+  var li = document.createElement( "LI" );
+  var div;
+
+  div = document.createElement( "DIV" );
+  div.innerHTML = _( "Nenhum arquivo selecionado." );
+
+  li.appendChild( div );
+  this.ulNoFiles.appendChild( li );
+}
+
+inputupload.buildFileView = function( pr_file, pr_bServerFile )
+{
+  var self = this;
+
+  var container = document.createElement( "LI" );
+  var div;
+  var divNome;
+  var fileType  = self.getFileType( pr_file );
+  var imgFileType;
+  var imgRemoveFile;
+  var originalWidth;
+  var spanFileTypeNotAllowed;
+  var bAllowedFileType   = self.isAllowedFileType( fileType );
+  var srcImgFileType     = self.getImgByFileType ( fileType );
+  var srcImgFileAtServer = getImagesRoot( ) + "inputupload_images/server_ok.png";
+  var srcImgRemoveFile   = getImagesRoot( ) + "inputupload_images/delete.png";
+
+  container.className = "fileInfo";
+  
+  // Botão para remover arquivo
+  div              = document.createElement( "DIV" );
+  div.className    = "remove";
+  div.filename     = pr_file.name;
+  div.onclick      = inputupload.removeFile;
+  div.parentUpload = self;
+  
+  imgRemoveFile = document.createElement( "IMG" );
+  imgRemoveFile.src       = srcImgRemoveFile;
+  imgRemoveFile.height    = "20";
+  imgRemoveFile.width     = "20";
+  imgRemoveFile.draggable = false;  
+  
+  div.appendChild( imgRemoveFile );
+  container.appendChild( div );
+
+  // Tipo do arquivo
+  div           = document.createElement( "DIV" );
+  div.className = "fileType";
+    
+  imgFileType   = document.createElement( "IMG" );
+  imgFileType.src       = srcImgFileType;
+  imgFileType.height    = "20";
+  imgFileType.width     = "20";
+  imgFileType.draggable = false;
+
+  div      .appendChild( imgFileType );
+  container.appendChild( div         );
+
+  // Nome do Arquivo
+  div     = document.createElement( "DIV" );
+  divNome = document.createElement( "DIV" );
+  divNome.className = "name";
+  divNome.innerHTML = pr_file.name;
+
+  div      .appendChild( divNome );
+  container.appendChild( div     );
+
+  // Informa que o arquivo está no servidor.
+  div             = document.createElement( "DIV" );
+  div.className   = "fileAtServer";
+  imgFileAtServer = document.createElement( "IMG" );
+  imgFileAtServer.className = pr_bServerFile ? "" : "invisible";
+  imgFileAtServer.src       = srcImgFileAtServer;
+  imgFileAtServer.height    = "20";
+  imgFileAtServer.width     = "20";
+  imgFileAtServer.draggable = false;
+
+  div      .appendChild( imgFileAtServer );
+  container.appendChild( div             );
+
+  container.divNome         = divNome;
+  container.imgFileAtServer = imgFileAtServer;
+  container.imgFileType     = imgFileType;
+  
+  self.attachFileViewHints( container, pr_file, pr_bServerFile, fileType, bAllowedFileType );
+
+  return container;
+}
+
+inputupload.attachFileViewHints = function( pr_li, pr_file, pr_bServerFile, pr_fileType, pr_bAllowedFileType )
+{/*
+  var self = this;
+
+  if( self.bMultiple )
+    attachHint( pr_li.cmpRemoveFile, _( "Marcar para remoção" )  );
+  else
+    attachHint( pr_li.cmpRemoveFile, _( "Remover arquivo" )  );
+  
+  if( self.isKnownFileType( pr_fileType ) )
+    attachHint( pr_li.imgFileType, _( "Arquivo" ) + " " + pr_fileType );
+  else
+    attachHint( pr_li.imgFileType, _( "Arquivo desconhecido" ) );
+
+  if( pr_bServerFile )
+    attachHint( pr_li.divNome, pr_file.fullPath );
+  else
+    attachHint( pr_li.divNome, pr_file.name );
+
+  attachHint( pr_li.imgFileAtServer, _( "Este arquivo já se encontra no servidor" ) );
+  
+  if( !pr_bAllowedFileType )
+    attachHint( pr_li.spanFileTypeNotAllowed, _( "Tipo de arquivo não permitido" ) );*/
+}
+
+inputupload.isKnownFileType = function( pr_fileType )
+{
+  return this.aKnownTypes.indexOf( pr_fileType ) != -1;
+}
+
+inputupload.isAllowedFileType = function( pr_fileType )
+{
+  return true;
+  
+  // AFAZER Incluir quando existir validação a nível de componentes.
+  // return this.aTypesAllowed.indexOf( pr_fileType ) != -1;
+}
+
+inputupload.getImgByFileType = function( pr_fileType )
+{
+  if( !this.isAllowedFileType( pr_fileType ) )
+    return getImagesRoot( ) + "inputupload_images/not_allowed_file.png";
+  else if( !this.isKnownFileType( pr_fileType ) )
+    return getImagesRoot( ) + "inputupload_images/unknown_file.png";
+
+  return getImagesRoot( ) + "inputupload_images/" + pr_fileType + "_file.png";
+}
+
+inputupload.getFileType = function( file )
+{
+  return file.name.substring( file.name.lastIndexOf( "." ) + 1 ).toLowerCase( );
+}
+
+/**
+ * Chamado pelo botão de remover arquivo.
+ */
+inputupload.removeFile = function( pr_event )
+{
+  var li = this.parentNode;
+  var filename = this.filename;
+
+  /*
+  detachHint( pr_li.cmpRemoveFile   );
+  detachHint( pr_li.imgFileType     );
+  detachHint( pr_li.divNome         );
+  detachHint( pr_li.imgFileAtServer );
+  
+  if( pr_li.spanFileTypeNotAllowed )
+    detachHint( pr_li.spanFileTypeNotAllowed );  
+  */
+  $( li ).remove( );
+  
+  for( var i = 0; i < this.parentUpload.aFiles.length; i++ )
+  {
+    if( this.parentUpload.aFiles[i].name == filename )
+    {
+      this.parentUpload.aFiles.splice(i, 1);
+      break;
+    }  
+  }   
+
+  this.parentUpload.refreshFilesArea( );
+}
+
+inputupload.remove = function( pr_li, pr_pos )
+{
+  var self = this;
+
+  detachHint( pr_li.cmpRemoveFile   );
+  detachHint( pr_li.imgFileType     );
+  detachHint( pr_li.divNome         );
+  detachHint( pr_li.imgFileAtServer );
+  
+  if( pr_li.spanFileTypeNotAllowed )
+    detachHint( pr_li.spanFileTypeNotAllowed );
+
+  self.aFiles.splice( pr_pos, 1 );
+  $( pr_li ).remove( );
+}
+
+inputupload.removeAll = function( )
+{
+  var self = this;
+  var li;
+
+  // Propositalmente não excluo a primeira linha, que é o cabeçalho. 
+  for( var i = self.ulFiles.childNodes.length - 1; i >= 0; i-- )
+  {
+    li = self.ulFiles.childNodes[i];
+    self.remove( li, i - 1 );
+  }
+
+  self.refreshFilesArea( );
+}
+
+inputupload.clear = function( )
+{
+  var self = this;
+
+  if( self.bCompact )
+    self.fakeInput.value = "";
+  else
+    self.removeAll( );
+
+  self._input.value   = null;
+  self._input.files   = null;
+  self.bSubProcess    = null;
+  self.nNextStep      = null;
+  self.url            = null;
+  self.nFilesUploaded = null;
+  self.nTotalFiles    = null;
+  self.token          = null;
+  self.aFiles         = [];
+}
+
+inputupload.submit = function( pr_nIdSvc, pr_strUploadToken, pr_bSubProcess, pr_nNextStep )
+{
+  var self = this;
+
+  self.bSubProcess     = pr_bSubProcess;
+  self.nNextStep       = pr_nNextStep;
+  self.nFilesUploaded  = 0;
+  self.nTotalFiles     = self.aFiles.length;
+
+  // Este token indica que todos os arquivos enviados pertencem à este componente. Feito desta maneira para ter controle
+  // sobre cada barra de progresso.
+  self.token = pr_strUploadToken;
+
+  var formData;
+  var request;
+  var file;
+
+  self.url = g_strURL + "?ID1=" + pr_nIdSvc + "&Comp=" + this.internalName + "&token=" + self.token + "&bXHR=true";
+
+  if( self.aFiles.length )
+    self.continueSubmit( 0, self.url );
+  else
+    self.onSubmitFinish( );
+}
+
+inputupload.continueSubmit = function( pr_pos, pr_url )
+{
+  var self = this;
+  var file;
+
+  file = self.aFiles[pr_pos];
+
+  // Não faz upload de arquivos não permitidos ou de arquivos que já estão no servidor 
+  if( !self.isAllowedFileType( self.getFileType( file ) ) || !file.bClientFile )
+  {
+    self.nFilesUploaded++;
+
+    // Faz a chamada manual pois se nenhum arquivo for enviado, não terá chamada ao callback do request.
+    if( self.nFilesUploaded == self.nTotalFiles )
+      self.onSubmitFinish( );
+    else
+      self.continueSubmit( self.nFilesUploaded, pr_url );
+
+    return;
+  }
+
+  var formData = new FormData( );
+  var request  = new XMLHttpRequest( );
+
+  formData.append( file.name, file );
+
+  request.nFile = pr_pos;
+//  // UL > LI > DIV > PROGRESS
+//  if( !self.bCompact )
+//  {
+//    request.progressBar = self.ulFiles.childNodes[pr_pos + 1].childNodes[3].childNodes[0];
+//    
+//    request.onprogress = function( pr_event )
+//    {
+//      if( pr_event.lengthComputable )
+//        if( isSafari( ) )
+//          this.progressBar.setAttribute( "aria-valuenow", ( pr_event.loaded / pr_event.total ) * 100 );
+//        else
+//          this.progressBar.value = ( pr_event.loaded / pr_event.total ) * 100;
+//    }
+//  }
+
+  request.onreadystatechange = function( )
+  {
+    if( this != undefined && this.readyState == 4
+      && this.status == 200 )
+    {
+      self.onFileSubmitFinish( this );
+    }
+  };
+
+  request.open( "POST", pr_url, true );
+  request.send( formData );
+}
+
+inputupload.onFileSubmitFinish = function( pr_request )
+{
+  var self = this;
+  var response = JSON.parse( pr_request.responseText );
+
+  var uploadResult = response.data;
+
+  self.nFilesUploaded++;
+
+  if( self.nFilesUploaded == self.nTotalFiles )
+    self.onSubmitFinish( );
+  else
+    self.continueSubmit( self.nFilesUploaded, self.url );
+}
+
+inputupload.onSubmitFinish = function( )
+{
+  var self = this;
+  
+  // Deixei a ordem do if invertida pois a maioria dos uploads não são subprocessos.
+  if( !self.bSubProcess )
+    // Atualiza o PD com as infos dos arquivos e continua o processamento.
+    nextStep( self.idSvcValidate, self.nNextStep, buildQueryString( aDataCompNames, undefined, undefined, undefined, self._type, self.internalName ) + "&token=" + self.token );
+  else
+  {
+    //AFAZER Mudar o upload de subprocessos, passar a usar nextStep.
+    var strId3;
+
+    if( g_objUploadSubProcess.aSource != undefined )
+      strId3 = buildQueryString( g_objUploadSubProcess.aSource );
+
+    var cmd = 'executeDelayedprocessSubProcess( "' + strId3 + '","'
+      + g_objUploadSubProcess.ID1           + '",'
+      + g_objUploadSubProcess.ID2           + ','
+      + g_objUploadSubProcess.nSessionKey   + ','
+      + g_objUploadSubProcess.nLayoutKey    + ','
+      + g_objUploadSubProcess.bInsideWindow + ');';
+    setTimeout( cmd, 1 ); 
+  }
+
+  self.clear( );
+}
+
+inputupload.onchange = function( pr_event )
+{
+  var self = this._parent;
+
+  if( !pr_event )
+    pr_event = window.event;
+
+  var files = this.files;
+
+  if( self.bMultiple )
+    for( var i = 0; i < files.length; i++ )
+      self.addFile( files[i] );
+  else
+    self.setFile( files[0] );
+
+  self.refreshFilesArea( );
+}
+
+inputupload.setFile = function( pr_file, pr_bServerFile )
+{
+  var self = this;
+  var li;
+
+  if( !pr_file )
+    return;
+
+  if( self.bCompact )
+    self.fakeInput.value = pr_file.name;
+  else
+  {
+    if( self.aFiles.length > 0 )
+    {
+      li = self.ulFiles.childNodes[1];
+
+      detachHint( li.imgFileType     );
+      detachHint( li.divNome         );
+      detachHint( li.imgFileAtServer );
+
+      if( li.spanFileTypeNotAllowed )
+        detachHint( li.spanFileTypeNotAllowed );
+
+      $( li ).remove( );
+    }
+  }
+
+  self.aFiles.pop( );
+  self.addFile( pr_file, pr_bServerFile );
+}
+
+inputupload.addFile = function( pr_file, pr_bServerFile )
+{
+  var self = this;
+  var li;
+  
+  if( !self.validate( pr_file ) )
+    return;
+  
+  pr_file.fullPath    = pr_file.name;
+  pr_file.bClientFile = pr_bServerFile ? false : true;
+  self.aFiles.push( pr_file );
+  
+  var posAux   = pr_file.name.lastIndexOf( "\\" );
+  var posAux2  = pr_file.name.lastIndexOf( "/"  );
+  pr_file.name = pr_file.name.substring( Math.max( posAux, posAux2 ) + 1 );  
+  
+  if( self.bCompact )
+    return;
+
+  li = self.buildFileView( pr_file, pr_bServerFile );
+  self.ulFiles.appendChild( li );
+}
+
+inputupload.validate = function( pr_file )
+{
+  var self = this;
+
+  var posAux;
+  var posAux2;
+
+  for( var i = 0; i < self.aFiles.length; i++ )
+  {
+    posAux   = pr_file.name.lastIndexOf( "\\" );
+    posAux2  = pr_file.name.lastIndexOf( "/"  );
+    realName = pr_file.name.substring( Math.max( posAux, posAux2 ) + 1 );
+    
+    if( self.aFiles[i].name == realName )
+    {
+      showSpeech( ".fakeAdd" );
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+inputupload.setReadOnly = function( b )
+{
+  if( this._parent.readonly == 'true' && !b )
+    return;
+
+  this._input.disabled = b;
+
+  this._bReadOnly = b;
+}
+
+inputupload.isReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputupload.getJsonValue = function( pr_bComplete )
+{
+  var filesInfo   = [];
+  var self        = this;
+  var bHasAnyFile = false;
+
+  filesInfo.push( "[" );
+
+  for( var i = 0; i < self.aFiles.length; i++ )
+  {
+    filesInfo.push( "{ " );
+
+    filesInfo.push( "bClientFile: " );
+    filesInfo.push( self.aFiles[i].bClientFile );
+    filesInfo.push( ", " );
+    filesInfo.push( "name: '" );
+    filesInfo.push( self.adjustFileName( self.aFiles[i].name ) );
+    filesInfo.push( "', " );
+    filesInfo.push( "fullPath: '" );
+    filesInfo.push( self.adjustFileName( self.aFiles[i].fullPath ) );
+
+    filesInfo.push( "' }" );
+    filesInfo.push( ", " );
+  }
+
+  if( self.aFiles.length )
+  {
+    bHasAnyFile = true;
+    filesInfo.pop( );
+  }
+
+  filesInfo.push( "]" );
+
+  var json = "{ type:" + self._type + ", token:'" + ( self.token ? self.token : null ) + "', bHasAnyFile:" + bHasAnyFile + ", value:" + filesInfo.join( "" ) + " }";
+
+  return json;
+}
+
+inputupload.setJsonValue = function( pr_json )
+{
+  var self = this;
+  var jsonValue;
+
+  if( pr_json.setup )
+  {
+    if( pr_json.setup.readOnly != undefined )
+      self.setReadOnly( pr_json.setup.readOnly )
+    
+    jsonValue = pr_json.setup.value;
+  }
+  else
+    jsonValue = pr_json.value;
+
+  if( jsonValue )
+  {
+    self.clear( );
+    
+    if( jsonValue.length )
+      self.setServerFiles( jsonValue );
+  }
+}
+
+inputupload.setServerFiles = function( pr_files )
+{
+  var self = this;
+  var file;
+  var realFileName;
+  var posAux;
+  var posAux2;
+
+  if( self.bMultiple )
+    for( var i = 0; i < pr_files.length; i++ )
+      self.addFile( pr_files[i], true );
+  else if( pr_files.length )
+    self.setFile( pr_files[0], true );
+
+  self.refreshFilesArea( );
+}
+
+inputupload.adjustFileName = function( pr_str )
+{
+  return pr_str.replace( /\\/g, "\\\\" ).replace( new RegExp( "'", "g" ), "\\'" );
+}
+
+inputupload.setPeer2Form = function( objForm )
+{ }
+
+/*
+ * Funções externas do componente.
+ */
+
+function finalizeInputUpload( pr_strInternalName, pr_bReadOnly, pr_json )
+{
+  this.attachHints ( );
+  this.setReadOnly ( pr_bReadOnly );
+  this.setJsonValue( pr_json      );
+}
+
+function buildUploadFrame( )
+{ }

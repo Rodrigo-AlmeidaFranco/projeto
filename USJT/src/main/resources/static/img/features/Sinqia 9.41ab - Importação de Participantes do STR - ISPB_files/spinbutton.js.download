@@ -1,0 +1,330 @@
+function spinbutton( pr_arg )
+{
+  return spinbutton.__constructor( pr_arg );
+}
+//------------------------------------------------------------------------------
+
+spinbutton.__constructor = function( pr_arg )
+{
+  var e = document.createElement( "SPAN" );
+
+  e._constructor = spinbutton._constructor;
+  e._constructor( pr_arg );
+
+  e.style.width = e._nW;
+  return e;
+}
+
+spinbutton._constructor = function( arg )
+{
+  this._parent = document.getElementById( arg["parent"] );
+  this._parent.appendChild( this );
+
+  this._type = registry.ui.types.spinbutton;
+  this.className = "spinbutton";
+
+  if( arg["nWidth"] )
+    this._nW = parseInt( arg["nWidth"] );
+  else
+    this._nW = 20;
+
+  this._internalValue = 0;
+  this._inc           = 1;
+
+  this._divSpin         = document.createElement( "DIV" );
+  this._divSpin._parent = this;
+
+  var buttonHeight = 10;
+  var buttonWidth  = 17;
+
+    this._divSpin.innerHTML =
+      "<table cellpadding=0 cellspacing=0 border=0>" +
+        "<tr>" +
+          "<td id=_text" + this._parent.id + ">" +
+          "</td>" +
+          "<td id=_buttons" + this._parent.id + ">" +
+          "</td>" +
+        "</tr>" +
+      "</table>";
+
+  this.appendChild( this._divSpin );
+  this._divSpin.tdText    = document.getElementById( "_text" + this._parent.id );
+  
+  var tdUpName;  
+  var tdDownName;
+  
+    tdUpName   = "_buttons" + this._parent.id;  
+    tdDownName = "_buttons" + this._parent.id;
+
+    this._divSpin.tdButtons             = document.getElementById( tdUpName );
+    this._divSpin.tdButtons.style.width = "20px";
+
+  createButton( "buttonUp" + this._parent.id    ,
+                tdUpName                        ,
+                ""                              ,
+                "bt_up2.gif"                    ,
+                ""                              ,
+                "ui-icon-triangle-1-n "         +
+                "registry-ui-icon-triangle-1-n" );
+
+  eval( "this._buttonUp = buttonUp" + this._parent.id );
+
+  finalizeButton.apply( this._buttonUp, [buttonHeight, buttonWidth, null, false, true] );
+
+  this._buttonUp._parent = this;
+
+  this._buttonUp.style.verticalAlign = "-3px";
+
+  this._buttonUp.setEvent( spinbutton.onClick );
+  this._buttonUp.name = "buttonUp" + this._parent.id;
+
+  createButton( "buttonDown" + this._parent.id  ,
+                tdDownName                      ,
+      			    ""                              ,
+      			    "bt_down2.gif"                  ,
+                ""                              ,
+                "ui-icon-triangle-1-s "         +
+                "registry-ui-icon-triangle-1-s" );
+
+  eval( "this._buttonDown = buttonDown" + this._parent.id );
+
+  finalizeButton.apply( this._buttonDown, [buttonHeight, buttonWidth, null, false, true] );
+
+  this._buttonDown._parent = this;
+
+  this._buttonDown.setEvent( spinbutton.onClick );
+  this._buttonDown.name    = "buttonDown" + this._parent.id;
+
+  //---------------------------------------
+
+  this._bReadOnly = false;
+
+  //---------------------------------------
+
+  this.setReadOnly           = spinbutton.setReadOnly;
+  this.setWidth              = spinbutton.setWidth;
+  this.getJsonValue          = spinbutton.getJsonValue;
+  this.setJsonValue          = spinbutton.setJsonValue;
+  this.setInc                = spinbutton.setInc;
+  this.setMinimum            = spinbutton.setMinimum;
+  this.setMaximum            = spinbutton.setMaximum;
+  this.setValue              = spinbutton.setValue;
+  this.setWrap               = spinbutton.setWrap;
+  this._buttonDown.onkeydown = spinbutton.onkeydown;
+  this._buttonUp.onkeydown   = spinbutton.onkeydown;
+  this.setIntenalElement     = spinbutton.setIntenalElement;
+  this.fireChange            = spinbutton.fireChange;
+  this.fireParentEvent       = spinbutton.fireParentEvent;
+
+  return this;
+}
+
+spinbutton.fireChange = function( )
+{
+  fireEvent.apply( this );
+}
+
+spinbutton.fireParentEvent = function( )
+{
+  this.fireChange( );
+}
+
+spinbutton.onClick = function( )
+{
+  var nVal      = 0;
+  var strSignal = this._parent._input.bNegative ? "-" : "+";
+  var nInternalValue = this._parent._input.internalValue.length > 0 ? this._parent._input.internalValue : "0";
+
+  if( g_bEnglish )
+    nInternalValue = nInternalValue.replace( new RegExp( ",", "g" ), "" );
+  else
+    nInternalValue = nInternalValue.replace( new RegExp( "\\.", "g" ), "" );
+
+  if( this._parent._bReadOnly )
+    return;
+	
+  if( nInternalValue > this._parent._max )
+      nInternalValue = this._parent._max;
+
+  if( nInternalValue < this._parent._min )
+      nInternalValue = this._parent._min;
+
+  if( this.name == "buttonUp" + this._parent._parent.id )
+  {
+    if( this._parent._max == undefined || this._parent._max >= eval( strSignal + nInternalValue + " + " + this._parent._inc ) )
+      nVal = eval( strSignal + nInternalValue + " + " + this._parent._inc );
+    else 
+      if( this._parent._bWrap )
+        nVal = this._parent._min;
+      else
+        nVal = this._parent._max;
+  }
+  else
+  {
+    if( this._parent._min == undefined || this._parent._min <= eval( strSignal + nInternalValue + " - " + this._parent._inc ) )
+      nVal = eval( strSignal + nInternalValue + " - " + this._parent._inc );  
+    else
+      if( this._parent._bWrap )
+        nVal = this._parent._max;
+      else
+        nVal = this._parent._min;
+  }
+
+  this._parent._input.setJsonValue( {setup:{value:nVal}} );
+  this._parent.fireChange( );
+}
+
+spinbutton.setReadOnly = function( b )
+{
+  if( this._parent.readonly == 'true' && !b )
+    return;
+
+  this._buttonUp.setReadOnly  ( b );
+  this._buttonDown.setReadOnly( b );
+
+  this._bReadOnly = b;
+
+  if( b )
+    this._input.setJsonValue( { setup: { readOnly: true } } );
+  else
+    this._input.setJsonValue( { setup: { readOnly: false } } );
+}
+
+spinbutton.getJsonValue = function( )
+{
+  var value = (this._input.internalValue.length == 0 ? "0" :
+              (this._input.bNegative ? '-' : '') + this._input.internalValue)
+  if( g_bEnglish )
+    value = value.replace( new RegExp( ",", "g" ), "" );
+  else
+    value = value.replace( new RegExp( "\\.", "g" ), "" );
+    
+  return "{type:" + this._input._type + ",value:'" + value + "'}";
+}
+
+spinbutton.setJsonValue = function( json )
+{
+  if( json.setup )
+  {
+    if( json.setup.input )
+      this._input.setJsonValue( {setup:json.setup.input} );
+
+    if( json.setup.spinbutton.readOnly != undefined )
+      this.setReadOnly( json.setup.spinbutton.readOnly );
+
+    if( json.setup.spinbutton.minimum != undefined )
+      this.setMinimum( json.setup.spinbutton.minimum );
+
+    if( json.setup.spinbutton.maximum != undefined )
+      this.setMaximum( json.setup.spinbutton.maximum );
+
+    if( json.setup.spinbutton.increment != undefined )
+      this.setInc( json.setup.spinbutton.increment );
+
+    if( json.setup.spinbutton.wrap != undefined )
+      this.setWrap( json.setup.spinbutton.wrap );
+  }
+  else if( json.value )
+      this.setValue( json.value );
+}
+
+spinbutton.isReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+spinbutton.setMinimum = function( nMin )
+{
+  this._min = nMin;
+
+  if( this._min > this._input.value )
+    this.setValue( this._min );
+
+  if( this._min < 0 || this._min == undefined )
+    this._input.setJsonValue( {setup:{signed:true}} );
+  else
+    this._input.setJsonValue( {setup:{signed:false}} );
+}
+
+spinbutton.setMaximum = function( nMax )
+{
+  this._max = nMax;
+  if( this._max < this._input.value )
+    this.setValue( this._max );
+}
+
+spinbutton.setInc = function( nInc )
+{
+  this._inc = nInc;
+}
+
+spinbutton.setValue = function( nValor )
+{
+  if( nValor < this._min )
+    nValor = this._min;
+  if( nValor > this._max )
+    nValor = this._max;
+
+  this._internalValue = nValor;
+  this._input.setJsonValue( {setup:{value:this._internalValue}} );
+}
+
+spinbutton.setWrap = function( bWrap )
+{
+  if( this._min != undefined && this._max != undefined )
+    this._bWrap = bWrap;
+  else
+    this._bWrap = false;
+}
+
+spinbutton.setWidth = function( nWidth )
+{
+  //Diminui o tamanho do botao em 20
+  this._nW = nWidth - 20;
+  this._input.style.width = this._nW;
+}
+
+spinbutton.onkeydown = function( pr_event )
+{
+  if( this._parent._input.isReadOnly( ) )
+    return;
+
+  if( !pr_event )
+    pr_event = window.event;
+
+  var key = pr_event.which || pr_event.keyCode;
+
+  switch( key )
+  {
+    //space
+    case 32 : if( this.name == "buttonUp" + this._parent._parent.id || this.name == "buttonDown" + this._parent._parent.id )
+              {
+                this.onclick( );
+                return false;
+              }
+    break;
+    //up arrow
+    case 38 : this._parent._buttonUp.onclick( );return false;
+    //down arrow
+    case 40 : this._parent._buttonDown.onclick( );return false;
+  }
+
+  return inputinteger.onkeydown.apply( this._parent._input, [pr_event] );
+}
+
+spinbutton.onpaste = function( )
+{
+  var self = this;
+  
+  setTimeout( function( ){ self._parent._input.validaValor( ); }, 1 );
+}
+
+spinbutton.setIntenalElement = function( e )
+{
+  this._input = e;
+  this._input.setParent( this._divSpin.tdText );
+  this._input.name = "cp_i" + this._parent.id;
+  this._input._parent = this;
+  this._input.onkeydown = spinbutton.onkeydown;
+  this._input.onpaste = spinbutton.onpaste;
+}

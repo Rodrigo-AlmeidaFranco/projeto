@@ -304,7 +304,14 @@ $(document).ready(function(){
     
 
 
-
+  //------- Start Quantity Increase & Decrease Value --------//
+let count = 0;
+    $('.add_btn').on('click', function(e){
+    	e.preventDefault();
+    	count++;
+    	$('.cart').html('  '+'<b>'+count+'</b>');
+    	console.log(count)
+    });
 
   //------- Start Quantity Increase & Decrease Value --------//
 

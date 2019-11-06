@@ -1,0 +1,116 @@
+/*
+ * Variáveis definidas na ProcessoHTMLBase  
+ *
+ * var g_nStatusThreadAguardando;
+ * var g_nStatusThreadExecutando;
+ * var g_nStatusThreadTerminoErro;
+ * var g_nStatusThreadTerminoOk;
+ *
+ * var g_nID1;
+ * var g_nThreadProgressClose;
+ * var g_nPrc;
+ * var g_strUrl;
+ * var g_objKey;
+ * var g_nThreadCheckInterval;
+ * var g_strTxResultado;
+ * var g_strImgThreadProgress;
+ * var g_strImgThreadFinishOkSrc;
+ * var g_strImgThreadFinishErrorSrc;
+ *
+ */
+
+var g_handleInterval       = undefined;
+var g_threadCloseResultWin = undefined;
+var g_bThreadRunning       = undefined;
+
+// Função para tratar o status da Thread. Ao terminar, ela agenda nova execução de si mesma, caso o resultado
+// não tenha sido coletado.
+function checkThreadStatus( )
+{
+  var status;
+  var strResult;
+
+  try
+  {
+    status = stringToJson( postContent( g_strUrl, "ID1=" + g_nID1 + "&nPrc=" + g_nPrc + "&objKey=" + g_objKey ) );
+  }
+  catch( e )
+  {
+    alert( e.description );
+    
+    stopCheck( );
+    
+    if( g_threadCloseResultWin )
+    {
+      g_threadCloseResultWin.close( );
+      g_threadCloseResultWin = undefined;
+    }
+    
+    return;
+  }
+
+  var nStatusCode = status.nStatusCode;
+
+  if( nStatusCode == g_nStatusThreadTerminoErro || nStatusCode == g_nStatusThreadTerminoOk )
+  {
+    stopCheck( );
+    
+    strResult = status.strResult;
+
+    document.getElementById( g_strTxResultado ).value = strResult;
+
+    if( nStatusCode == g_nStatusThreadTerminoOk )
+      document.getElementById( g_strImgThreadProgress ).src = g_strImgThreadFinishOkSrc;
+    else
+      document.getElementById( g_strImgThreadProgress ).src = g_strImgThreadFinishErrorSrc;
+    
+    if( g_threadCloseResultWin )
+    {
+      g_threadCloseResultWin.close( );
+      g_threadCloseResultWin = undefined;
+    }
+    
+    return;
+  }
+  
+  runCheck( );
+}
+
+// Agenda a execução da checagem da thread
+function runCheck( )
+{
+  g_handleInterval = setTimeout( "checkThreadStatus( )", g_nThreadCheckInterval );
+  
+  g_bThreadRunning = true;
+}
+
+// Para Timer que dispara a checagem da thread.
+function stopCheck( )
+{
+  clearInterval( g_handleInterval );
+  
+  g_bThreadRunning = false;
+}
+
+function onThreadResultWindowPreClose( )
+{
+  if( g_bThreadRunning )
+  {
+    var nThreadProgressClose = g_nThreadProgressClose;
+
+    g_threadCloseResultWin = showDialog( nThreadProgressClose, true );
+  }
+  else
+  {
+    if( getTopWindow( ).grid )
+      getTopWindow( ).grid.atualizaGrid( null, null, null, true );
+
+    closeDialog( );
+  }
+}
+
+function onThreadResultWindowClose( )
+{
+  stopCheck( );
+  closeDialog( );
+}

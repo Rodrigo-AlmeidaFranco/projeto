@@ -1,0 +1,1350 @@
+var g_aDayTranslation = [ ['DOM','SUN'], ['SEG','MON'], ['TER','TUE'], ['QUA','WED'], ['QUI','THU'], ['SEX','FRI'], ['SÁB','SAT'] ];
+
+function InputDate( strName, strParentName, strPath, nIdSvc, bVisibleDailyBase, nAdjustPosX, nAdjustPosY  )
+{
+  createButtonSuggest( strName + "_BtShowCal"             ,
+                       "el_" + strName + "_tdShowCalendar",
+                       "", "", "bt_showCal.gif"           );
+
+  eval( "this.btShowCal = " + strName + "_BtShowCal" );
+
+  if( nIdSvc > 0 )
+  {
+    createButtonSuggest( strName + "_BtSugDate", "el_" + strName + "_tdSuggestDate", "", "", "suggest.gif" );
+
+    eval( "this.btSugDate = " + strName + "_BtSugDate" );
+  }
+
+  this.bVisibleDailyBase = bVisibleDailyBase;
+  
+  this.finalize = InputDate.finalize;
+}
+
+function InputDate_KeyPress( pr_event ) // Trata os eventos do InputDate
+{
+  var key;
+
+  if( !pr_event )
+  {
+    if( window.event.ctrlKey )
+      return true;
+    
+    key = window.event.keyCode;
+  }
+  else
+  {
+    if( pr_event.ctrlKey )
+      return true;
+    
+    key = pr_event.which;
+  }
+
+  return InputDate_TreatKeyPress.apply( this, [key] );
+}
+
+function InputDate_TreatKeyPress( pr_key, pr_isPaste )
+{
+  if( pr_key >= 35 && pr_key <= 40 || pr_key == 9 ) //setas e tab
+    return true;
+
+  if( this._parent.bReadOnly )
+    return false;
+
+  if( pr_key >= 96  && pr_key <= 105 )
+    pr_key -= 48;
+
+  var caretPos    = getSelectionStart( this );
+  var caretEndPos = getSelectionEnd  ( this );
+  var maskValue   = this.mask.substring( caretPos, caretPos + 1 );
+  var txField;
+
+  if( caretPos > caretEndPos )
+  {
+  	var aux = caretPos;
+
+  	caretPos    = caretEndPos;
+  	caretEndPos = aux;
+  }
+
+  if( ( ( ( maskValue == "_" || maskValue == "/" ) && !( pr_key >= 48 && pr_key <= 57 ) ) ||
+        (   maskValue == " "                       &&    pr_key != 32                ) ||
+        (   maskValue == "#"                       && !( pr_key >= 65 && pr_key <= 90 ) ) ) &&
+      ( !( pr_key == 46 || pr_key == 8                                                ) ) )
+    return false;
+
+  var keyValue  = String.fromCharCode( pr_key  );
+  var isBsp     = pr_key == 8;
+  var isDel     = pr_key == 46;
+      maskValue = this.mask.substring( caretPos, ( caretPos == caretEndPos ? caretPos + 1 : caretEndPos ) );
+      keyValue  = keyValue + ( maskValue.length > 1 ? maskValue.substring( 1 ) : "" );
+  
+  if( isBsp )
+  {
+    if( caretPos == caretEndPos )
+    {
+      if( caretPos == 0 )
+        return false;
+      
+      caretPos--;
+      caretEndPos--;
+      
+      if( this.mask.substring( caretPos, caretPos + 1 ) == "/" )
+      {
+        caretPos--;
+        caretEndPos--;
+      }
+    }
+    
+    maskValue = this.mask.substring( caretPos, ( caretPos == caretEndPos ? caretPos + 1 : caretEndPos ) );
+    keyValue  = maskValue;
+  }
+  else if( caretPos == this.mask.length )
+    return false;
+  else if( isDel )
+  {
+    if( this.mask.substring( caretPos, caretPos + 1 ) == "/" )
+    {
+      caretPos++;
+      caretEndPos++;
+    }
+	  
+    maskValue = this.mask.substring( caretPos, ( caretPos == caretEndPos ? caretPos + 1 : caretEndPos ) );
+    keyValue  = maskValue;
+  }
+  
+  keyValue = keyValue.replace( new RegExp( "#", "g" ), " " );
+  
+  if( this.value.substring( caretPos, caretPos + 1 ) == "/" && !isBsp )
+  {
+    if( caretPos == caretEndPos )
+      caretEndPos++;
+      
+    caretPos++;
+  }
+  
+  this.value = this.value.substring( 0, caretPos ) + keyValue + this.value.substring( ( caretPos == caretEndPos ? caretPos + 1 : caretEndPos ) );
+  txField    = this;
+  
+  if( pr_isPaste )
+    setCaretPosition( this, ( isBsp || isDel ? caretPos : ++caretPos ) );
+  else
+    setTimeout( function( ) { setCaretPosition( txField, ( isBsp || isDel ? caretPos : ++caretPos ) ); }, 1 );
+  //setTimeout( "setCaretPosition( " + this + ", " ( isBsp || isDel ? caretPos : ++caretPos ) + ");", 1 );
+  //setTimeout( 'setCaretPosition( ' + this + ', ' ( isBsp || isDel ? caretPos : ++caretPos ) + ');', 1 );
+  //}
+  
+  return false;
+}
+
+function InputDate_Paste( )
+{
+  var self = this._parent;
+
+  if( self.bReadOnly )
+    return false;
+
+  var bounds = getSelectionBounds( this );
+
+  self.oldValue         = this.value;
+  self.oldCaretStartPos = bounds.start;
+  self.oldCaretEndPos   = bounds.end;
+
+  if( self.oldCaretStartPos == self.oldCaretEndPos )
+  {
+    this.value = "";
+  }
+
+  setTimeout( function( ){ self.afterPaste( ); } );
+
+  return true;
+}
+
+InputDate.afterPaste = function( )
+{
+  var txDate = this.txDate,
+    str = txDate.value,
+    cursorPos;
+  
+  if( this.oldCaretStartPos != this.oldCaretEndPos )
+  {
+    var oldValue = this.oldValue,
+      pasteStr = str.substr( this.oldCaretStartPos, ( this.oldCaretEndPos - this.oldCaretStartPos - Math.abs( str.length - oldValue.length ) ) ),
+      pasteData;
+
+    pasteStr  = pasteStr.replace( new RegExp( "[^0-9_]", "g" ), "" );
+    pasteData = this.applyMask( pasteStr, this.oldCaretStartPos, this.oldCaretEndPos );
+
+    str       = oldValue.substring( 0, this.oldCaretStartPos ) + pasteData.text + oldValue.substring( this.oldCaretEndPos );
+    cursorPos = this.oldCaretEndPos;
+
+    pasteData = this.applyMask( str );
+    str = pasteData.text;
+
+    this.oldValue         = undefined;
+    this.oldCaretStartPos = undefined;
+    this.oldCaretEndPos   = undefined;
+  }
+  else
+  {
+    var data  = this.applyMask( str );
+    str       = data.text;
+    cursorPos = data.cursorPos;
+  }
+
+  txDate.value = str;
+  setCaretPosition( txDate, cursorPos || str.length );
+}
+
+InputDate.applyMask = function( pr_str, pr_begin, pr_end )
+{
+  var mask = this.txDate.mask,
+    str = "",
+    date,
+    day,
+    month,
+    year,
+    i,
+    j,
+    cursorPos = 0,
+    bRanged = typeof pr_begin !== "undefined" || typeof pr_end !== "undefined";
+
+  pr_begin = pr_begin || 0;
+  pr_end   = pr_end   || mask.length;
+
+  // Preciso separar o joio do trigo.
+  pr_str = pr_str.replace( new RegExp( "[^0-9_]", "g" ), "" );
+
+  for( i = pr_begin || 0, j = 0; i < Math.min( pr_end, mask.length ); i++ )
+  {
+    switch( mask.charAt( i ) )
+    {
+      case "_":
+        if( j < pr_str.length )
+        {
+          str += pr_str.charAt( j );
+          j++;
+          break;
+        }
+        else if( j == pr_str.length )
+        {
+          cursorPos = str.length;
+          j++;
+        }
+      case "/":
+        str += mask.charAt( i );
+        break;
+      // Nestes 2 casos não inclui nada na String.
+      // Não botei "default" pra explicitar os outros 2 casos.
+      // A máscara efetivamente termina no espaço, entretanto, não parei o for pois futuramente, quando juntar
+      // com o componente de data/hora, já estará preparado.
+      case " ":  
+      case "#":
+    }
+  }
+
+  // Caso seja diário e a data seja válida, incluo o dia na semana no final da máscara.
+  // Se for aplicação de máscara localizada, não coloca o dia, pois será reaplicada a máscara depois de ter a
+  // string completa.
+  if( !this.bMonthly && !bRanged )
+  {
+    date = new Date( );
+  
+    year = str.substring( 6,11 );
+    
+    if( this.bPortuguese )
+    {
+      day   = str.substring( 0,2 );
+      month = str.substring( 3,5 );
+    }
+    else
+    {
+      month = str.substring( 0,2 );
+      day   = str.substring( 3,5 );
+    }
+    // O mês é de 0 ~ 11, só que nós escrevemos de 1 ~ 12.
+    month--;
+    
+    date.setFullYear( year, month, day );
+    
+    /*
+     * As datas em javascript são lenientes, ou seja, caso eu coloque 30/13/2001 a data criada será
+     * 30/01/2002. Portanto, para verificar se a data é valida, verifico seu formato criando uma data com
+     * os dados informados, se for equivalente à NaN contém dados inválidos, se for diferente de NaN,
+     * é parcialmente válida, faltando verificar apenas se a data criada é estrita ou leniente.
+     */
+    if ( !isNaN( date )               &&
+         day   == date.getDate    ( ) &&
+         month == date.getMonth   ( ) &&
+         year  == date.getFullYear( ) )
+      str += " " + g_aDayTranslation[date.getDay( )][this.bPortuguese ? 0 : 1];
+  }
+  
+  return { text:str, cursorPos: cursorPos };
+}
+
+InputDate._showCalendar = function( e )
+{
+  InputDate.showCalendar.apply( this._parent, [e] );
+}
+
+InputDate._suggestDate = function( e )
+{
+  InputDate.suggestDate.apply( this._parent, [e] );
+}
+
+InputDate.finalize = function( strName                , strInternalName     , strParentName     , strIdSvcFillCal, strIdSvcSugDate                ,
+                               bMonthly               , aSource             , nIdSvc            , strValue       , strCssClass                    ,
+                               strCssClassRO          , bReadOnly           , bReadOnlyDailyBase, bReadOnlyDate  , bClear                         ,
+                               menuItem               , bDailyBase          , strMenuJson       , bUseMenu       , bPortuguese                    ,
+                               aEventListenerDailyBase, aEventListenerChange, aEventListener    , strCaption     , bReadOnlyWhenUncheckedDailyBase,
+                               dtFirstDate            , dtLastDate          , bIgnoreEvents )
+{
+  var inpDate = this;
+
+  inpDate.JSName                          = strName;
+  inpDate.internalName                    = strInternalName;
+  inpDate._type                           = 8;
+  inpDate.bMonthly                        = bMonthly;
+  inpDate.aSource                         = aSource;
+  inpDate.IdFillCal                       = strIdSvcFillCal;
+  inpDate.IdSugDate                       = strIdSvcSugDate;
+  inpDate.IdSvc                           = nIdSvc;
+  inpDate.menuItem                        = menuItem;
+  inpDate.bDailyBase                      = bDailyBase;
+  inpDate.bUseMenu                        = bUseMenu;
+  inpDate.strMenuJson                     = strMenuJson;
+  inpDate._cpName                         = strName;
+  inpDate._elName                         = "el_" + strName;
+  inpDate.bPortuguese                     = bPortuguese;
+  inpDate.dtValue                         = strValue;
+  inpDate.firstDate                       = "";
+  inpDate.lastDate                        = "";
+  inpDate.bReadOnlyWhenUncheckedDailyBase = bReadOnlyWhenUncheckedDailyBase != undefined ? bReadOnlyWhenUncheckedDailyBase : true;
+
+  inpDate.bIgnoreEvents = bIgnoreEvents;
+
+  inpDate.txDate = document.getElementById( "el_" + strName + "_dateField" );
+  finalizeInputText.apply( inpDate.txDate, ["cp_el_" + strName + "_dateField", 4, "el_" + strName + "_tdDateField", strCssClass, strCssClassRO, [], []] );
+
+  inpDate.txDate.onkeydown  = InputDate_KeyPress;
+  inpDate.txDate.onpaste    = InputDate_Paste;
+  inpDate.txDate._parent    = inpDate;
+  inpDate.txDate.JSName     = strName + "_txDateField";
+  inpDate.txDate.style.width = "80px";
+
+  inpDate.defaultMenuOption       = menuItem.option;
+  inpDate.aEventListenerChange    = aEventListenerChange;
+  inpDate.aEventListenerLostFocus = aEventListener;
+
+  if( bMonthly )
+  {
+    inpDate.txDate.maxLength = 7;
+    inpDate.txDate.mask      = "__/____";
+  }
+  else
+  {
+    inpDate.txDate.maxLength = 14;
+    inpDate.txDate.mask      = "__/__/____ ###";
+  }
+
+  if( aEventListener.length > 0 && !inpDate.bReadOnly )
+    inpDate.aEventListenerLostFocus = aEventListener;
+  else
+    inpDate.aEventListenerLostFocus = [];
+
+  if( aEventListenerChange.length > 0 && !inpDate.bReadOnly )
+    inpDate.aEventListenerChange = aEventListenerChange;
+  else
+    inpDate.aEventListenerChange = [];
+
+  /////////////// Montagem da Base Diária
+  if( inpDate.bVisibleDailyBase )
+  {
+    //Coleta Elementos do FieldSet
+    inpDate._fieldSet = document.getElementById( inpDate._elName + "_fs"    );
+    inpDate._fsDiv    = document.getElementById( inpDate._cpName + "_fsDiv" );
+
+    inpDate._fieldSet.style.padding = "4px";
+    // Monta o Div da Legenda
+    inpDate._fsDiv.innerHTML = "<table border=0 cellspacing=0 cellpadding=0>"      +
+                                 "<tr>"                                            +
+                                   "<td class='" + strCssClass + "'>" + strCaption + "</td>" +
+                                   "<td id='"                                      +
+                                     inpDate._elName                               +
+                                     "_ckDailyBase' class='"                       +
+                                     strCssClass                                   +
+                                     "' align='left' valign='middle'>"             +
+                                   "</td>"                                         +
+                                 "</tr>"                                           +
+                               "</table>";
+
+    // Checkbox de Base Diaria
+    createCheckbox( inpDate._cpName + "_ckDailyBase", inpDate._elName + "_ckDailyBase", inpDate.bPortuguese ? "Base Diária" : "Daily Base", inpDate.bDailyBase );
+    finalizeCheckbox.apply( eval( inpDate._cpName + "_ckDailyBase"), [78, 0, "'" + inpDate.internalName + "'", strCssClass, "left", false, false, {}, []] );
+    inpDate._fsDiv._ckDailyBase = eval( inpDate._cpName + "_ckDailyBase" );
+    inpDate._fsDiv._ckDailyBase._parent = inpDate;
+    inpDate._fsDiv._ckDailyBase.aEventListener = aEventListenerDailyBase;
+    inpDate._fsDiv._ckDailyBase.setEvent( function( )
+                                          {
+                                            this._parent.setReadOnly( !this.getValue( ) && this._parent.bReadOnlyWhenUncheckedDailyBase );
+                                            this.setReadOnly        ( false             );
+                                            
+                                            if( !this.getValue( ) && this._parent.bReadOnlyWhenUncheckedDailyBase )
+                                            {
+                                              this._parent._setValue( "" );
+                                            }
+                                              if( !inpDate.bIgnoreEvents )
+                                               {
+                                                 if( !this.isReadOnly( ) )
+                                                 {
+                                                     fireEvent.apply( this, [] ); // Evento de Mudança da Base Diaria
+                                                     // Evento de Mudança do componente
+                                                     this._parent.aEventListener = this._parent.aEventListenerChange;
+                                                     fireEvent.apply( this._parent, [] );
+                                                 }
+                                               }
+                                               else
+                                               {
+                                                 if( !g_isLoading && !this.isReadOnly( ) && !g_isClearingLayout )
+                                                 {
+                                                     fireEvent.apply( this, [] ); // Evento de Mudança da Base Diaria
+                                                     // Evento de Mudança do componente
+                                                     this._parent.aEventListener = this._parent.aEventListenerChange;
+                                                     fireEvent.apply( this._parent, [] );
+                                                 }
+                                               }
+                                          } );
+
+    inpDate._fieldSet.style.borderStyle = "";
+    inpDate._fsDiv.style.display        = "";
+  }
+
+  /////////////// Fim da Montagem da Base Diária
+  
+  inpDate.attachHint = function( )
+  {
+    var self = this;
+
+    attachHint( inpDate.btShowCal,
+                "", function( ){return self._mn.hintItemMenu( )} );
+  }
+  
+  inpDate.clearFirstDate = function( )
+  {
+    inpDate.firstDate = "";
+  }
+
+  inpDate.clearLastDate = function( )
+  {
+    inpDate.lastDate = "";
+  }
+
+  inpDate.getFirstDate = function( )
+  {
+    return inpDate.firstDate;
+  }
+
+  inpDate.getLastDate = function( )
+  {
+    return inpDate.lastDate;
+  }
+
+  inpDate.setFirstDate = function( dt )
+  {
+    inpDate.firstDate = dt;
+  }
+
+  inpDate.setLastDate = function( dt )
+  {
+    inpDate.lastDate = dt;
+  }
+
+  inpDate.dateFormatOk = function( )
+  {
+    var reDateMonthly = new RegExp( "\\d{2}\\/\\d{4}",                     "g" ); // 99/9999
+    var reDate1       = new RegExp( "\\d{2}\\/\\d{2}\\/\\d{4}\\s[a-z]{3}", "g" ); // 99/99/9999 XXX
+    var reDate2       = new RegExp( "\\d{2}\\/\\d{2}\\/\\d{4}",            "g" ); // 99/99/9999
+
+    if( inpDate.bMonthly )
+    {
+        if( reDateMonthly.test( this.txDate.value ) )
+          return true;
+        else
+          return false;
+    }
+    else
+      if( !reDate1.test( this.txDate.value ) && !reDate2.test( this.txDate.value ) )
+        return false;
+      else
+        return true;
+  }
+
+  inpDate.validaDate = function( )
+  {
+    var day     = '';
+    var month   = '';
+    var year    = '';
+    var weekDay = this.txDate.value.substring( 11, 14 );;
+
+    //Coleta um catacter a mais após o ano, para validar se foram digitados apenas 4 caracteres
+    //para o ano
+    if( inpDate.bMonthly )
+      year = this.txDate.value.substring( 3,7 );
+    else
+      year = this.txDate.value.substring( 6,11 );
+    //Acrescenta 1 espaço vazio após o ano digitado. Sem este espaço a data digita seria dd/mm/yyyy
+    //e não passaria no teste de data válida. Pois para passar no teste o 5º caracter tem que ser igual a ' '.
+    //Há esta necessidade pois quando a data é sugerida ela vem como ex: dd/mm/yyyy XXX.
+    //O 5º elemento é um ' ' e é uma data válida.
+    if( year == 0 )
+      return false;
+
+    year = year + ' ';
+
+    if( inpDate.bMonthly )
+    {
+       month = this.txDate.value.substring( 0,2 );
+
+       if( month > 12 || month == 0 )
+         return false;
+       else
+         return true;
+    }
+    else
+    {
+      if( inpDate.bPortuguese )
+      {
+        day   = this.txDate.value.substring( 0,2 );
+        month = this.txDate.value.substring( 3,5 );
+      }
+      else
+      {
+        month = this.txDate.value.substring( 0,2 );
+        day   = this.txDate.value.substring( 3,5 );
+      }
+
+      //Validando dias, meses e anos válidos. Ano só pode conter 4 digitos. O 5º digito pode ser ' ' pois caso a data seja sugerida
+      //a mesma será igual a dd/mm/yyyy SEG por exemplo. Haverá um 5º caracter porém não é um ano inválido.
+      if( ( day > 31 || day == 0 ) || ( month > 12 || month == 0 ) || year.substring( 4, 5 ) != ' ' )
+        return false;
+      //Validando meses com 30 dias.
+      else if( ( month == 4 || month == 6 || month == 9 || month == 11 ) && day > 30 )
+        return false;
+      //Validando dias de fevereiro em no bissexto.
+      else if( year % 4 != 0 && month == 2 && day > 28 )
+        return false;
+      else if( year % 4 == 0 && month == 2 && day > 29 )
+        return false;
+      else
+        return true;
+    }
+  }
+
+  inpDate.adjustDates = function( )
+  {
+    if( this.dateFormatOk( ) && this.validaDate( ) )
+    {
+      var strDt    = this.txDate.value;
+      var strMonth = "";
+      var strYear  = "";
+
+      if( inpDate.bMonthly && this.txDate.value.length > 0 &&  this.txDate.value.indexOf( "/" ) != -1 )
+      {
+        if( inpDate.bPortuguese )
+          strDt = "01/" + this.txDate.value;
+        else
+        {
+          strMonth = this.txDate.value.substring( 0, this.txDate.value.indexOf( "/" )     );
+          strYear  = this.txDate.value.substring(    this.txDate.value.indexOf( "/" ) + 1 );
+          
+          strDt = strMonth + "/01/" + strYear;
+        }
+      }
+
+      var dt      = inpDate.getDate( strDt             );
+      var dtFirst = inpDate.getDate( inpDate.firstDate );
+      var dtLast  = inpDate.getDate( inpDate.lastDate  );
+
+      if( dt != null && dtFirst != null && dt < dtFirst )
+        inpDate._setValue( inpDate.firstDate );
+
+      if( dt != null && dtLast != null && dt > dtLast )
+        inpDate._setValue( inpDate.lastDate );
+
+      if( inpDate.bMonthly )
+        return;
+
+      var date = new Date( );
+      var day;
+      var month;
+      var year = this.txDate.value.substring( 6,11 );
+
+      if( inpDate.bPortuguese )
+      {
+        day   = this.txDate.value.substring( 0,2 );
+        month = this.txDate.value.substring( 3,5 );
+      }
+      else
+      {
+        month = this.txDate.value.substring( 0,2 );
+        day   = this.txDate.value.substring( 3,5 );
+      }
+
+      date.setFullYear( year, month - 1, day );
+
+      var weekDay = g_aDayTranslation[date.getDay( )][g_bEnglish ? 1 : 0];
+
+      inpDate._setValue( this.txDate.value.substring( 0, 10 ) + " " + weekDay );
+    }
+    else
+      inpDate._setValue( "" );
+  }
+
+  inpDate.getDate = function( strDate )
+  {
+    if( strDate == "" )
+      return null;
+
+    var dd = "";
+    var mm = "";
+    var yy = "";
+
+    if( inpDate.bPortuguese )
+    {
+      dd = strDate.substring( 0,2  );
+      mm = strDate.substring( 3,5  );
+      yy = strDate.substring( 6,10 );
+    }
+    else
+    {
+      dd = strDate.substring( 3,5  );
+      mm = strDate.substring( 0,2  );
+      yy = strDate.substring( 6,10 );
+    }
+
+    return new Date( yy, mm - 1, dd );
+  }
+
+  inpDate.focus = function( )
+  {
+	//MANTIS#29805-Try/catch por causa do IE8. Ele não voa uma exception caso o componente esteja invisível ou disabled.
+	try
+	{
+      inpDate.txDate.focus( );
+	} catch(e){}
+  }
+  
+  inpDate.txDate.onfocus = function( )
+  {
+    if( ( this.value == "" || this.value.trim( ) == this.mask.replace( new RegExp( "#", "g" ), " " ).trim( ) ) && !this._parent.isReadOnly( ) )
+    {
+      this.value = this.mask.replace( new RegExp( "#", "g" ), " " );
+      setCaretPosition( this, 0 );
+    }
+  }
+
+  inpDate.txDate.onblur = function( )
+  {
+    inpDate.adjustDates( );
+
+    if( ( document.activeElement == null ||
+         document.activeElement.JSName != inpDate.txDate.strBtShowCalName ) &&
+        ( document.activeElement == null || document.activeElement.tagName != "IFRAME" ) && //Está vindo da janela de calendário
+        ( ( inpDate.aEventListenerLostFocus.length > 0 || inpDate.aEventListenerChange.length > 0 ) &&
+          !inpDate.bReadOnly ) )
+        {
+          inpDate.aEventListener = inpDate.aEventListenerLostFocus;
+          fireEvent.apply( inpDate,[] );
+
+          if( inpDate.txDate.value != inpDate.dtValue )
+          {
+            inpDate.aEventListener = inpDate.aEventListenerChange;
+            fireEvent.apply( inpDate,[] );
+            inpDate.dtValue = inpDate.txDate.value;
+          }
+        }
+  }
+
+  inpDate.executeMenuAction = function( nOption, pr_event )
+  {
+    if( inpDate.bUseMenu )
+    {
+      //O valor configurado é o valor enviado pelo Java, ou seja o código interno da opção.
+      //Preciso achar ela no array de itens para selecionar o item correto.
+      for( var i=0; i< inpDate._mn._items.length; i++ )
+        if( inpDate._mn._items[i]._IdMenu == nOption )
+          inpDate._mn.selectItem( i );
+    }
+  }
+
+  inpDate.showMenu = function( pr_event )//ajuste compatibilidade
+  {
+    if( !pr_event )
+      pr_event = window.event;
+      
+    // Fecha todos os menus abertos antes de abrir
+    for( var i = 0; i < g_aMenu.length; i++ )
+      g_aMenu[i].close( );
+
+    g_aMenu    = new Array( );
+    g_aMenu[0] = inpDate._mn;
+
+    inpDate._mn._show( pr_event );
+    pr_event.cancelBubble = true;
+  }
+
+  inpDate.configureMenu = function( json, menuItem )
+  {
+    if( json.name )
+    {
+      inpDate._mn = drivepopupmenu( json );
+
+      var items = json.items;
+
+      if( items != undefined )
+      {
+        for( var i = 0; i < items.length; i++ )
+        {
+          if( items[i].type == 102 )
+            items[i].isSeparator = true;
+          else
+            eval( "items[" + i + "].onselected = function( event ){ " + items[i].onselected + " };" );
+
+          inpDate._mn.addItem( items[i] );
+        }
+      }
+    }
+
+    if( menuItem.typeItemMenu == 101 )
+      inpDate._mn.setValor( menuItem );
+  }
+
+  inpDate.getValue = function( )
+  {
+    var date = adjustComponentValue(inpDate.txDate);
+    var strData;
+
+    try
+    {
+      var dia = g_bEnglish ? date.split( "/" )[1] : date.split( "/" )[0];
+      var mes = g_bEnglish ? date.split( "/" )[0] : date.split( "/" )[1];
+      var ano = ( date.split( "/" )[2] ).split( " ", 1 );
+
+      mes -= 1;
+
+      var data = new Date( ano, mes, dia );
+
+      strData = date.split( " " )[0] + " " + g_aDayTranslation[data.getDay( )][g_bEnglish ? 1 : 0];
+
+      return strData;
+    }
+    catch( e )
+    {
+      return date;
+    }
+  }
+
+  inpDate.getJsonValue = function( )
+  {
+    inpDate.adjustDates( ); // Ajusta a data aos limites informados
+
+    var data = this.getValue( );
+    var str;
+
+    str = "{type:" + inpDate._type + ", value:'" + data + "', firstDate:'" + inpDate.getFirstDate( ) + "', lastDate:'" + inpDate.getLastDate( ) + "'";
+
+    if( inpDate.bVisibleDailyBase )
+      str += ", daily:" + inpDate._fsDiv._ckDailyBase.checked;
+    
+    if( inpDate.bUseMenu )
+    {
+    	var mi = inpDate._mn.getSelectedItem( );
+        str += ", option:" + mi._IdMenu + ",typeItemMenu:" + mi._TypeItemMenu + ", nValor:" + 
+               (mi._TypeItemMenu == 101 ? (mi._InputInteger.getValue( ) != "" ? mi._InputInteger.getValue( ) : 0 ) : 0 );
+    }
+
+    str += "}";
+
+    return str;
+  }
+
+  inpDate.setJsonValue = function( json )
+  {
+    var bClear = false;
+
+    if( json.setup ) // Veio pelo Setup
+    {
+      var bChangeFirstLastDate = false;
+
+      if( json.setup.readOnly != undefined )
+        this.setReadOnly( json.setup.readOnly );
+
+      if( json.setup.bMonthly != undefined )
+      {
+        inpDate.bMonthly = json.setup.bMonthly;
+
+        if( inpDate.bMonthly )
+          inpDate.txDate.maxLength = 7;
+        else
+          inpDate.txDate.maxLength = 14;
+
+        if( json.setup.jsonMenu )
+        {
+          inpDate.configureMenu    ( json.setup.jsonMenu       );
+          inpDate.executeMenuAction( inpDate.defaultMenuOption );
+        }
+      }
+
+      if( json.setup.clear != undefined )
+        bClear = json.setup.clear;
+
+      if( json.setup.clearFirstDate != undefined )
+        inpDate.clearFirstDate( );
+      else if( json.setup.firstDate != undefined )
+      {
+        inpDate.setFirstDate( json.setup.firstDate );
+        bChangeFirstLastDate = true;
+      }
+
+      if( json.setup.clearLastDate != undefined )
+        inpDate.clearLastDate( );
+      else if( json.setup.lastDate != undefined )
+      {
+        inpDate.setLastDate( json.setup.lastDate );
+        bChangeFirstLastDate = true;
+      }
+
+      if( inpDate.bVisibleDailyBase && json.setup.roDailyBase != undefined )
+          inpDate._fsDiv._ckDailyBase.setReadOnly( json.setup.roDailyBase );
+
+      if( json.setup.roDate != undefined )
+        inpDate.setReadOnlyDate( json.setup.roDate );
+
+      inpDate.adjustDates( );
+
+      if( bChangeFirstLastDate && inpDate.txDate.value != inpDate.dtValue )
+      {
+        inpDate.aEventListener = inpDate.aEventListenerChange;
+        fireEvent.apply( inpDate, [] );
+        inpDate.dtValue = inpDate.txDate.value;
+      }
+    }
+
+    var jsonAux = ( json.setup ? json.setup : json );
+
+    if( !bClear )
+    {
+      if( jsonAux.option != undefined )
+        inpDate.executeMenuAction( jsonAux.option );
+
+      if( jsonAux.value != undefined )
+        inpDate._setValue( jsonAux.value );
+
+      if( inpDate.bVisibleDailyBase && jsonAux.daily != undefined )
+        inpDate._fsDiv._ckDailyBase.setValue( jsonAux.daily );
+    }
+    else
+    {
+      inpDate.executeMenuAction( inpDate.defaultMenuOption );
+      inpDate._setValue( "" );
+      
+      if( inpDate.bVisibleDailyBase )
+        inpDate._fsDiv._ckDailyBase.setValue( false );
+    }
+  }
+
+  inpDate.isEnglishDate = function( value )
+  {
+    var day = value.substring( 11 );
+    if( day == 'DOM' || day == 'SEG' || day == 'TER' ||
+        day == 'QUA' || day == 'QUI' || day == 'SEX' || day == 'SÁB' )
+      return false;
+    else
+      return true;
+  }
+
+  inpDate.translateDay = function( day )
+  {
+    var posTranslation = 0;
+    var posNoum        = 0;
+
+    if( inpDate.bPortuguese )
+    {
+      posTranslation = 0;
+      posNoum        = 1;
+    }
+    else
+    {
+      posTranslation = 1;
+      posNoum        = 0;
+    }
+
+    for( var i = 0; i < g_aDayTranslation.length; i++ )
+      if( g_aDayTranslation[i][posNoum] == day )
+        return g_aDayTranslation[i][posTranslation];
+    
+    return 'XXX';
+  }
+
+  inpDate.convertDate = function( value )
+  {
+    value = value.trim( );
+    if( value.trim( ) == "" )
+    {
+      if( document.activeElement == this.txDate && !this.isReadOnly( ) )
+        return this.txDate.mask.replace( new RegExp( "#", "g" ), " " );
+      else
+        return "";
+    }
+    
+    if( value.length <= 7 )
+      return value;
+
+    if( inpDate.isEnglishDate( value ) == !inpDate.bPortuguese )
+      return value;
+    else
+    {
+      var dd, mm, yy, day;
+
+      if( !inpDate.isEnglishDate( value ) )
+      {
+        dd  = value.substring( 0,2  );
+        mm  = value.substring( 3,5  );
+        yy  = value.substring( 6,10 );
+        day = inpDate.translateDay( value.substring( 11 ) );
+      }
+      else
+      {
+        dd  = value.substring( 3,5  );
+        mm  = value.substring( 0,2  );
+        yy  = value.substring( 6,10 );
+        day = inpDate.translateDay( value.substring( 11 ) );
+      }
+
+      if( inpDate.bPortuguese )
+        return dd + '/' + mm + '/' + yy + ' ' + day;
+      else
+        return mm + '/' + dd + '/' + yy + ' ' + day;
+    }
+  }
+
+  inpDate._setValue = function( value )
+  {
+    value = inpDate.convertDate( value );
+
+    if( inpDate.bMonthly == false )
+      inpDate.txDate.value = value;
+    else
+    {
+      if( inpDate.bPortuguese )
+      {
+        if( value.length > 7 )
+          inpDate.txDate.value = value.substring( 3, 10 );
+        else
+          inpDate.txDate.value = value;
+      }
+      else  // Datas em Inglês
+      {
+        if( value.length > 7 )
+          inpDate.txDate.value = value.substring( 0, 2 ) + value.substring( 5, 10 );
+        else
+          inpDate.txDate.value = value;
+      }
+    }
+
+    if( inpDate.txDate.value.trim( ) == inpDate.txDate.mask.replace( new RegExp( "#", "g" ), " " ).trim( ) )
+      setCaretPosition( inpDate.txDate, 0 );
+  }
+
+  inpDate.txDate.oncontextmenu = function( pr_event ){ if( !pr_event ) pr_event = window.event; pr_event.cancelBubble = true; return false; };
+  
+  inpDate.txDate.onmousedown = function( pr_event )
+  {
+    if( !pr_event )
+      pr_event = window.event;
+
+    if( g_inpDateDraggingValue || pr_event.button != 2 )
+      return;
+
+    var position = getMouseXY( pr_event );
+
+    g_inpDateDraggingValue           = document.createElement( "DIV" );
+    g_inpDateDraggingValue.innerHTML = this.value;
+    g_inpDateDraggingValue.bMonthly  = this._parent.bMonthly;
+
+    g_inpDateDraggingValue.style.cursor   = "default";
+    g_inpDateDraggingValue.style.font     = "10px arial";
+    g_inpDateDraggingValue.style.position = "absolute";
+    g_inpDateDraggingValue.style.left     = ( position[0] +  1 ) + "px";
+    g_inpDateDraggingValue.style.top      = ( position[1] - 10 ) + "px";
+    g_inpDateDraggingValue.style.zIndex   = 1000;
+
+    if( isIE( ) )
+      g_inpDateDraggingValue.style.filter  = "alpha(opacity=60)";
+    else
+      g_inpDateDraggingValue.style.opacity = "0.6";
+
+    document.body.appendChild( g_inpDateDraggingValue );
+    document.body.focus( );
+
+    document.oncontextmenu = function( ) { return false; };
+    addEvent( document     , "mousemove", inputDateOnValueDrag      , false );
+    addEvent( document     , "mouseup"  , removeInputDateOnValueDrag, false );
+    addEvent( document.body, "blur"     , removeInputDateOnValueDrag, false );
+      
+    try
+    {
+      if( window != window.parent )
+        addEvent( window.parent.document, "mouseover", windowOut, false );
+    }
+    catch( e ){}
+  }
+
+  inpDate.txDate.onmouseup = function( pr_event )
+  {
+    if( this.disabled || this.readOnly )
+      return;
+
+    if( !pr_event )
+      pr_event = window.event;
+
+    if( pr_event.button == 2 && g_inpDateDraggingValue )
+    {
+      if( this._parent.bMonthly )
+        this.value = g_inpDateDraggingValue.bMonthly ? g_inpDateDraggingValue.innerHTML : g_inpDateDraggingValue.innerHTML.substring( 3, 10 );
+      else
+        this.value = g_inpDateDraggingValue.bMonthly ? "__/" + g_inpDateDraggingValue.innerHTML : g_inpDateDraggingValue.innerHTML;
+
+      this.focus( );
+    }
+  }
+
+  $( inpDate.txDate ).addClass( strCssClass );
+  inpDate.btShowCal.tabIndex    = -1;
+  inpDate.btShowCal._parent     = inpDate;
+  inpDate.btShowCal.JSName      = strName + "_BtShowCal";
+  inpDate.btShowCal.bFirstClick = false;
+  
+  finalizeButtonSuggestEx.apply( inpDate.btShowCal, [ "", "", bReadOnly, true, 16, 20, [], "" ] );
+
+  inpDate.txDate.strBtShowCalName = inpDate.btShowCal.JSName;
+  inpDate.btShowCal.setAttribute( 'JSName', inpDate.btShowCal.JSName );
+
+  if( nIdSvc > 0 )
+  {
+    inpDate.btSugDate._parent  = inpDate;
+    inpDate.btSugDate.JSName   = strName + "_BtSugDate";
+    inpDate.btSugDate.tabIndex = -1;
+
+    finalizeButtonSuggestEx.apply( inpDate.btSugDate, 
+                                 [
+                                   ""  , "", bReadOnly,
+                                   true, 16, 20,
+                                   []  , ""
+                                 ]
+                               );
+
+    inpDate.btSugDate.setEvent( InputDate._suggestDate );    
+    inpDate.btSugDate.setAttribute( 'JSName', inpDate.btSugDate.JSName );
+  }
+
+  inpDate.setReadOnlyDate = function( bReadOnly )
+  {
+    if( inpDate.btShowCal.parentNode.readonly == 'true' && !bReadOnly )
+      return;
+
+    inpDate.bReadOnly = bReadOnly;
+    inpDate.btShowCal.setReadOnly( bReadOnly );
+    inpDate.txDate   .setReadOnly( bReadOnly );
+
+    if( !inpDate.bUseMenu )
+      inpDate.btShowCal.setEvent( InputDate._showCalendar );
+    else
+      inpDate.btShowCal.setEvent( inpDate.showMenu );
+
+    if( nIdSvc > 0 )
+      inpDate.btSugDate.setReadOnly( bReadOnly );
+    
+    if( bReadOnly && inpDate._mn != undefined )
+    {
+    	inpDate.menuItem.option = 1;
+    	inpDate._mn.selectItem( inpDate.menuItem.option = 1 );
+    }
+
+  }
+
+  inpDate.setReadOnly = function( bReadOnly )
+  {
+    inpDate.setReadOnlyDate( bReadOnly );
+    if( inpDate.bVisibleDailyBase )
+      inpDate._fsDiv._ckDailyBase.setReadOnly( bReadOnly );
+  }
+
+  inpDate.isReadOnly = function( )
+  {
+    return inpDate.bReadOnly;
+  }
+
+  inpDate.afterPaste = InputDate.afterPaste;
+  inpDate.applyMask  = InputDate.applyMask;
+
+  if( !bClear )
+    inpDate._setValue( strValue );
+
+  if( bReadOnly )
+  {
+    inpDate.setReadOnlyDate( true );
+    if( inpDate.bVisibleDailyBase )
+      inpDate._fsDiv._ckDailyBase.setReadOnly( true );
+  }
+  else
+  {
+    if( inpDate.bVisibleDailyBase )
+      inpDate._fsDiv._ckDailyBase.setReadOnly( false );
+    
+    if( inpDate.bVisibleDailyBase && bReadOnlyWhenUncheckedDailyBase )
+      inpDate.setReadOnlyDate( !inpDate._fsDiv._ckDailyBase.getValue( ) );
+    else  
+      inpDate.setReadOnlyDate( false );
+  }
+
+  if( inpDate.bUseMenu )
+  {
+    inpDate.configureMenu    ( strMenuJson, menuItem );
+    inpDate.executeMenuAction( menuItem.option       );
+  }
+
+  g_aInpDate[g_aInpDate.length] = inpDate;
+
+  inpDate.closeCalWin = function( )
+  {
+    if( inpDate.calWin && inpDate.bShow )
+    {
+      inpDate.calWin.hide( );
+      inpDate.bShow = false;
+    }
+  }
+
+  if( !g_bInpDateDocumentEventAdded )
+  {
+    addEvent( document, "click", closeInpDates );
+    g_bInpDateDocumentEventAdded = true;
+  }
+
+  if( dtFirstDate != undefined )
+    inpDate.setFirstDate( dtFirstDate ); 
+
+  if( dtLastDate != undefined )
+    inpDate.setLastDate( dtLastDate );
+
+  g_aInpDate[g_aInpDate.length] = inpDate;
+
+  if( inpDate.bUseMenu )
+    inpDate.attachHint( );
+}
+
+InputDate.showCalendar = function( )
+{
+  if( this.bShow )
+  {
+    this.closeCalWin( );
+    this.txDate.focus( );
+
+    return;
+  }
+
+  var self = this;
+
+  var nW = this.bMonthly ? 204 : 204;
+  var nH = this.bMonthly ? 105 : 176;
+
+  var nX = 0;
+  var nY = 0;
+
+  var nWc = this.btShowCal.getW( ) + 90 + ( this.IdSvc > 0 ? this.btSugDate.getW( ) : 0 );
+  var nHc = this.btShowCal.getH( );
+
+  var position = calcOffset( this.txDate );
+  var nXc      = position[0];
+  var nYc      = position[1];
+  var nAjuste  = calcAjuste( this.txDate );
+
+  var nTotH = nYc + nHc + nH;
+  var nTotW = nXc + nW;
+
+  nY = nTotH <= document.body.clientHeight ? nYc + nHc : nYc - nH;
+
+  if( nTotH <= document.body.clientHeight )
+  {
+    nX = nTotW <= document.body.clientWidth ? nXc : ( nXc + nWc - nW );
+    nY = nYc + nHc;
+  }
+  else if( nH <= nYc )
+  {
+    nX = nTotW <= document.body.clientWidth ? nXc : ( nXc + nWc - nW );
+    nY = nYc - nH;
+  }
+  else if( nTotW <= document.body.clientWidth )
+  {
+    nX = nXc;
+    nY = nYc + nHc;
+  }
+  else if( nTotW + nWc - nW <= nXc + nWc )
+  {
+    nX = nXc + nWc - nW;
+    nY = nYc + nHc;
+  }
+  else
+  {
+    nX = nXc;
+    nY = nYc + nHc;
+  }
+
+  this.adjustDates( );
+
+  var strID2    = '';
+  var strID5    = '';
+  var strLimits = '';
+  this.txDate.focus( );
+
+  if( this.txDate.value )
+  {
+    strID2 = '&ID2=' + ( this.bMonthly && this.txDate.value.length > 0 ? '01/' : '' ) + this.txDate.value;
+    strID5 = '&ID5=' + ( this.bMonthly && this.txDate.value.length > 0 ? '01/' : '' ) + this.txDate.value;
+  }
+
+  if( this.firstDate != "" )
+    strLimits += '&FirstDate=' + this.firstDate;
+
+  if( this.lastDate != "" )
+    strLimits += '&LastDate=' + this.lastDate;
+
+  var strUrl = g_strURL + '?ID1=' + this.IdFillCal + strID2 + '&ID3=' + this.bMonthly + '&ID4=' + this.JSName + strID5 + strLimits;
+  var html   = postContent( strUrl, '' ); // Post para verificar a queda da sessão
+
+  if( !isTopWindow( ) )
+  {
+    this.calWin        = window.parent.document.createElement( "DIV"    );
+    this.calWin.iFrame = window.parent.document.createElement( "IFRAME" );
+
+    window.parent.document.body.appendChild( this.calWin );
+    window.parent.g_openedCalendar = this.calWin;
+
+    nX += getDialog( ).getX( );
+    nY += getDialog( ).getY( ) + 26; // Barra de título da tela modal
+  }
+  else
+  {
+    this.calWin        = document.createElement( "DIV"    );
+    this.calWin.iFrame = document.createElement( "IFRAME" );
+    g_openedCalendar   = this.calWin;
+
+    document.body.appendChild( this.calWin );
+  }
+
+  nX += nAjuste[0];
+  nY += nAjuste[1];
+
+  this.calWin.style.position = "absolute";
+  this.calWin.style.left     = nX + "px";
+  this.calWin.style.top      = nY + "px";
+  this.calWin.style.height   = nH + "px";
+  this.calWin.style.width    = nW + "px";
+  this.calWin.style.zIndex   = 9999;
+
+  this.calWin.inpDate = this;
+  this.calWin.appendChild( this.calWin.iFrame );
+  this.calWin.iFrame.style.border      = "1px solid";
+  this.calWin.iFrame.style.borderColor = "#777 #bbb #bbb #777";
+  this.calWin.iFrame.src    = strUrl;
+  this.calWin.iFrame.width  = nW + "px";
+  this.calWin.iFrame.height = nH + "px";
+
+  this.calWin.hide = function( )
+  {
+    this.inpDate.bShow = false;
+    this.style.display = "none";
+    this.iFrame.src    = "";
+    this.iFrame.parentNode.removeChild( this.iFrame );
+    this.parentNode.removeChild( this );
+    
+    if( parent.g_openedCalendar == this )
+      parent.g_openedCalendar = undefined;
+  }
+
+  this.bShow = true;
+}
+
+InputDate.suggestDate = function( )
+{
+  this._setValue( postContent( g_strURL, 'ID1=' + this.IdSugDate + '&ID2=' + this.IdSvc + '&ID3=' + buildQueryString( this.aSource ) + '&ID4=' + this.bMonthly ) );
+  this.txDate.focus( );
+}
+
+function closeInpDates( pr_event )
+{
+  if( !pr_event )
+    pr_event = window.event;
+
+  var src = isIE( ) ? pr_event.srcElement : pr_event.target;
+
+  for( var i = 0; i < g_aInpDate.length; i++ )
+    if( ( src._parent && src._parent != g_aInpDate[i] ) ||
+        ( !src._parent && src.name != g_aInpDate[i].btShowCal.getImageUrl( ) ) )
+      g_aInpDate[i].closeCalWin( );
+}
+
+function inputDateOnValueDrag( pr_event )
+{
+    if( !g_inpDateDraggingValue )
+       return false;
+
+    if( !pr_event )
+        pr_event = window.event;
+
+    var position = getMouseXY( pr_event );
+    var nX = nY = 0;
+
+    position[0] +=  1;
+    position[1] -=  10;
+
+    g_inpDateDraggingValue.style.left = position[0] + "px";
+    g_inpDateDraggingValue.style.top  = position[1] + "px";
+}
+
+//Usado para retirar o valor do inputDate que está sendo arrastado, caso o aconteça para fora da janela. 
+function windowOut( )
+{
+  removeInputDateOnValueDrag( );
+}
+
+function removeInputDateOnValueDrag( pr_event )
+{
+  var currentWindow = window;
+  
+  if( !pr_event )
+      pr_event = window.event;
+  
+  if( !g_inpDateDraggingValue )
+  {
+	currentWindow          = getTopWindow( );
+	g_inpDateDraggingValue = currentWindow.g_inpDateDraggingValue;
+	
+    if( !g_inpDateDraggingValue )
+     return false;
+  }
+  
+  removeEvent( currentWindow.document,      "mousemove", inputDateOnValueDrag      , false );
+  removeEvent( currentWindow.document,      "mouseup"  , removeInputDateOnValueDrag, false );
+  removeEvent( currentWindow.document.body, "blur"     , removeInputDateOnValueDrag, false );
+
+  try
+  {
+    if( window != window.parent )
+      removeEvent( window.parent.document, "mouseover", windowOut, false );
+  }
+  catch( e ){}
+  
+  currentWindow.document.body.removeChild( g_inpDateDraggingValue );
+  g_inpDateDraggingValue   = undefined;
+}

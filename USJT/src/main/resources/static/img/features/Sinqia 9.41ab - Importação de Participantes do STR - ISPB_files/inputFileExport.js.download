@@ -1,0 +1,275 @@
+inputFileExport = function(arg){return inputFileExport.__constructor(arg)};
+//------------------------------------------------------------------------------
+
+inputFileExport.__constructor = function(arg)
+{
+  var e = document.createElement("SPAN");
+
+  e._constructor = inputFileExport._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+inputFileExport._constructor = function(arg)
+{
+  this._parent = document.getElementById( arg["parent"] );
+
+  this._parent.appendChild( this );
+
+  this._div = document.createElement("DIV");
+
+  this._bReadOnly = false;
+  this._type = 15;
+  this._exportFileChange = false;
+  this._createFromCNPJChange = false;
+  this._fileNameChange = false;
+  this._isRefreshing = false;
+  this._ShowCreateFromCNPJ = arg["bCreateFromCNPJ"];
+  this._ShowFileNameInput  = arg["bFileInput"];
+
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField, bPortugues, strIdSvcinputFileExport;
+  cpName        = arg["cpName"];       // Nome do componente no JavaScript
+  elName        = "el_" + arg["name"]; // Nome do componente no HTML
+  strName       = arg["name"];         // Nome do componente, nome dado ao componente no java
+  strTdClass    = arg["tdClass"];      // CSS para as TD do HTML
+  strCssField   = arg["cssField"];     // CSS para campos não ReadOnly
+  strCssROField = arg["cssROField"];   // CSS para campos ReadOnly
+  bPortugues    = arg["bPortugues"];   // Indica se o sistema está rodando em português
+
+  // Guarda parametros que serão usados em outros métodos
+  this._bPortugues      = arg["bPortugues"];
+  this._exportFileLabel = arg["strExportLabel"];
+  this.internalName     = strName;
+  this._strCssROField   = arg["cssROField"];
+  this._strCssField     = arg["cssField"];
+  this._cpName          = cpName;
+  this._elName          = elName;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  // Início da construção do DIV Principal
+  // ----------------------------------------
+  this.appendChild( this._div );
+
+  this._div.innerHTML = "<fieldset class='" + strTdClass + "'>" +
+                          "<legend>" + ( bPortugues ? "Arquivo Texto" : "Text File" ) + "</legend>" +
+                          "<table width='100%' border=0 cellspacing=0 cellpadding=0>" +
+                             "<tr>" +
+                               "<td class='" + strTdClass + "'>" +
+                                 "<table width='100%' border=0 cellspacing=0 cellpadding=0>" +
+                                   "<tr>" +
+                                     "<td id='" + elName + "_ckExportFile" + "' class='" + strTdClass + "' align='left' height=16 valign='middle'></td>" +
+                                   "</tr>" +
+                                   "<tr>" +
+                                     "<td id='" + elName + "_ckCreateFromCNPJ" + "' class='" + strTdClass + "' align='left' height=0 valign='middle'></td>" +
+                                   "</tr>" +
+                                 "</table>" +
+                               "</td>" +
+                               "<td width='150' class='" + strTdClass + "'>" +
+                                 "<table width='100%' border=0 cellspacing=0 cellpadding=0>" +
+                                   "<tr>" +
+                                     "<td id='" + elName + "_lbFileName" + "' class='" + strTdClass + "' align='left' height=16 valign='top'>" + ( bPortugues ? "Nome do Arquivo" : "File Name" ) + "</td>" +
+                                   "</tr>" +
+                                   "<tr>" +
+                                     "<td class='" + strTdClass + "'>" +
+                                       "<input type=text id='" + elName + "_txFileName' class='" + strCssField + "'>" +
+                                     "</td>" +
+                                   "</tr>" +
+                                 "</table>" +
+                               "</td>" +
+                             "</tr>" +
+                          "</table>" +
+                        "</fieldset>";
+
+  // Cria CheckBox de Exportação
+  createCheckbox(cpName + "_ckExportFile", elName + "_ckExportFile", this._exportFileLabel, arg["bExportFileCheck"] );
+  finalizeCheckbox.apply(eval(cpName + "_ckExportFile"), [ 0, 15, "'" + strName + "'", strCssField, "left", false, false, {}, [] ]);
+  this._div._ckExportFile = eval(cpName + "_ckExportFile");
+  this._div._ckExportFile._parent = this;
+  this._div._ckExportFile.setEvent( function( )
+                                   {
+                                     if( !this.isReadOnly( ) )
+                                     {
+                                       if( this._parent._exportFileChange == false )
+                                       {
+                                         this._parent._exportFileChange = true;
+                                         this._parent._div._ckExportFile.setValue( this.getValue( ) );
+                                         fireEvent.apply( this, [] );
+                                         fireEvent.apply( this._parent, [] );
+                                         this._parent._exportFileChange = false;
+                                         inputFileExport.configureControls.apply( this._parent );
+                                       }
+                                     }
+                                   } );
+
+  // Cria CheckBox de CNPJ
+  createCheckbox(cpName + "_ckCreateFromCNPJ", elName + "_ckCreateFromCNPJ", ( bPortugues ? "Gera Nome do Arquivo usando CNPJ" : "Create File Name using CNPJ" ) , arg["bCreateFromCNPJCheck"] );
+  finalizeCheckbox.apply(eval(cpName + "_ckCreateFromCNPJ"), [ 215 , 15, "'" + strName + "'", strCssField, "left", false, false, {}, [] ]);
+  this._div._ckCreateFromCNPJ = eval(cpName + "_ckCreateFromCNPJ");
+  this._div._ckCreateFromCNPJ._parent = this;
+  this._div._ckCreateFromCNPJ.style.display = "";
+  this._div._ckCreateFromCNPJ.setEvent( function( )
+	                                    {
+	                                      if( !this.isReadOnly( ) )
+	                                      {
+	                                        if( this._parent._createFromCNPJChange == false )
+	                                        {
+	                                          this._parent._createFromCNPJChange = true;
+	                                          this._parent._div._ckCreateFromCNPJ.setValue( this.getValue( ) );
+	                                          fireEvent.apply( this, [] );
+	                                          fireEvent.apply( this._parent, [] );
+	                                          this._parent._createFromCNPJChange = false;
+	                                        }
+	                                      }
+	                                    } );
+  // Label de Arquivo
+  this._div._lbFileName = document.getElementById( elName + "_lbFileName" );
+  this._div._lbFileName._parent = this;
+  this._div._lbFileName.style.display = "";
+
+  // Text Edit do nome de arquivo
+  this._div._txFileName = document.getElementById(elName + "_txFileName");
+  this._div._txFileName._type = 4;
+  this._div._txFileName._parent = this;
+  this._div._txFileName.setJsonValue=function( json ){this.value=json.value;};
+  this._div._txFileName.getJsonValue=function( ){return '{type:' + this._type + ',value:\"' + this.value + '\"}'};
+  this._div._txFileName.internalName=strName + "_txFileName";
+  this._div._txFileName.value = arg["strFileName"];
+  this._div._txFileName.onpaste = Input_Paste;
+  this._div._txFileName.style.display = "";
+  this._div._txFileName.width = '150';
+  this._div._txFileName.onkeypress = Input_KeyPress;
+
+  // Ajusta a visibilidade dos componentes
+  inputFileExport.configureControlsVisibility.apply( this );
+
+  // Configura a lógica dos checkBoxes na tela
+  inputFileExport.configureControls.apply( this );
+
+  // ---------------------------------------
+  // Final da construção do DIV Principal
+
+  this.setReadOnly  = inputFileExport.setReadOnly;
+  this.getReadOnly  = inputFileExport.getReadOnly;
+  this.getJsonValue = inputFileExport.getJsonValue;
+  this.setJsonValue = inputFileExport.setJsonValue;
+}
+
+inputFileExport.configureControlsVisibility = function( )
+{
+  if( this._ShowFileNameInput == true )
+  {
+    this._div._txFileName.style.display = "";
+    this._div._lbFileName.style.display = "";
+  }
+  else
+  {
+    this._div._txFileName.style.display = "none";
+    this._div._lbFileName.style.display = "none";
+  }
+
+  if( this._ShowCreateFromCNPJ == true )
+    this._div._ckCreateFromCNPJ.style.display = "";
+  else
+    this._div._ckCreateFromCNPJ.style.display = "none";
+}
+
+inputFileExport.configureControls = function( )
+{
+  if( this._bReadOnly != true )
+  {
+    if( !this._div._ckExportFile.checked )
+    {
+      this._div._ckCreateFromCNPJ.setReadOnly(true);
+      if( this._ShowCreateFromCNPJ )
+        this._div._ckCreateFromCNPJ.setValue( false );
+    }
+    else
+    {
+      this._div._ckCreateFromCNPJ.setReadOnly(false);
+    }
+  }
+}
+
+inputFileExport.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+
+  if( b )
+    this._div._txFileName.className = this._strCssROField;
+  else
+    this._div._txFileName.className = this._strCssField;
+
+  this._div._txFileName.readOnly = b;
+  this._div._ckExportFile.setReadOnly( b );
+  this._div._ckCreateFromCNPJ.setReadOnly( b );
+
+  // Configura Controles se está saindo de read only
+  inputFileExport.configureControls.apply( this );
+}
+
+inputFileExport.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputFileExport.getJsonValue = function( bComplete )
+{
+  var str = "{type:" + this._type;
+
+  str += ( this._div._ckExportFile.checked ? ", exportfile: true" : ", exportfile: false" );
+  str += ( this._div._ckCreateFromCNPJ.checked ? ", cnpj: true" : ", cnpj: false" );
+  str += ", filename: \"" + this._div._txFileName.value + "\"";
+
+  str += "}";
+
+  return str;
+}
+
+inputFileExport.setJsonValue = function( json )
+{
+  if( json.setup ) // Veio pelo Setup
+  {
+    if( this.getReadOnly( ) != json.setup.readOnly )
+      this.setReadOnly( json.setup.readOnly );
+
+    if( json.setup.showFileNameInput != undefined )
+      this._ShowFileNameInput = json.setup.showFileNameInput;
+
+    if( json.setup.showCreateUsingCNPJ != undefined )
+      this._ShowCreateFromCNPJ = json.setup.showCreateUsingCNPJ;
+
+    if( json.setup.exportLabel != undefined )
+      this._exportFileLabel = json.setup.exportLabel;
+
+    inputFileExport.configureControlsVisibility.apply( this );
+  }
+  var jsonAux = ( json.setup ? json.setup : json );
+
+  if( jsonAux.exportfile != undefined )
+  {
+    if( jsonAux.exportfile == true )
+      this._div._ckExportFile.setValue( true );
+    else
+      this._div._ckExportFile.setValue( false );
+  }
+
+  if( jsonAux.cnpj != undefined )
+  {
+    if( jsonAux.cnpj == true )
+      this._div._ckCreateFromCNPJ.setValue( true );
+    else
+      this._div._ckCreateFromCNPJ.setValue( false );
+  }
+
+  if( jsonAux.filename != undefined )
+  {
+    this._div._txFileName.value = jsonAux.filename;
+  }
+}
+
+inputFileExport.validateEvent = function( )
+{
+  return true;
+}

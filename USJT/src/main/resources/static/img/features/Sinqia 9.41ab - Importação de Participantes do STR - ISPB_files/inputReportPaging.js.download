@@ -1,0 +1,351 @@
+inputReportPaging = function(arg){return inputReportPaging.__constructor(arg)};
+//------------------------------------------------------------------------------
+
+inputReportPaging.__constructor = function(arg)
+{
+  var e = document.createElement("SPAN");
+
+  e._constructor = inputReportPaging._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+inputReportPaging._constructor = function(arg)
+{
+  this._parent = document.getElementById( arg["parent"] );
+
+  this._parent.appendChild( this );
+
+  this._div           = document.createElement("DIV");
+  this._div.className = "reportPaging";
+
+  this._bReadOnly      = false;
+  this._type           = 19;
+  this._isRefreshing   = false;
+  this._accountChange  = false;
+  this._savepageChange = false;
+
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField, bPortugues;
+  cpName        = arg["cpName"];       // Nome do componente no JavaScript
+  elName        = "el_" + arg["name"]; // Nome do componente no HTML
+  strName       = arg["name"];         // Nome do componente, nome dado ao componente no java
+  strTdClass    = arg["tdClass"];      // CSS para as TD do HTML
+  strCssField   = arg["cssField"];     // CSS para campos não ReadOnly
+  strCssROField = arg["cssROField"];   // CSS para campos ReadOnly
+
+  // Guarda parametros que serão usados em outros métodos
+  this._bPortugues       = arg["bPortugues"];  // Indica se o sistema está rodando em português
+  this.internalName      = strName;
+  this._strCssROField    = arg["cssROField"];
+  this._strCssField      = arg["cssField"];
+  this._cpName           = cpName;
+  this._elName           = elName;
+  this._showAccountPrint = arg["bAccountPrint"];
+  this._showSavePage     = arg["bSavePage"];
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  // Início da construção do DIV Principal
+  // ----------------------------------------
+  this.appendChild( this._div );
+
+  this._div.innerHTML = "<table width='100%' border=0 cellspacing=0 cellpadding=0>" +
+                          "<tr>" +
+                            "<td class='" + strTdClass + "'>" +
+                              "<fieldset class='" + strTdClass + "'>" +
+                                "<legend>" + ( this._bPortugues ? "Paginação" : "Paging" ) + "</legend>" +
+                                "<table border=0 width='100%' border=0 cellspacing=0 cellpadding=0>" +
+                                  "<tr><td colspan='2'>"  +
+                                    "<div id='" + elName + "_divAccount'></div>" +
+                                  "</td></tr>" +
+                                  "<tr><td colspan='2'>"  +
+                                    "<div id='" + elName + "_divSavePage'></div>" +
+                                  "</td></tr>" +
+                                  "<tr>" +
+                                    "<td>" +
+                                      "<table border=0 cellspacing=0 cellpadding=0>" +
+                                        "<tr>"  +
+                                          "<td id='" + elName + "_rbOption_0" + "' class='" + strTdClass + "' style='height:14px;vertical-align:middle;'>" +
+                                        "</tr>" +
+                                        "<tr>"  +
+                                          "<td id='" + elName + "_rbOption_1" + "' class='" + strTdClass + "' style='height:14px;vertical-align:middle;'>" +
+                                        "</tr>" +
+                                      "</table>" +
+                                    "</td>" +
+                                    "<td width='75%'>" +
+                                      "<table width='100%' border=0 cellspacing=0 cellpadding=0>" +
+                                        "<tr>" +
+                                          "<td id='" + elName + "_lbPage" + "'class='" + strTdClass + "' style='height:16px;text-align:left;vertical-align:top;white-space:nowrap;'>&nbsp&nbsp" + ( this._bPortugues ? "Página Inicial" : "Initial Page" ) + "</td>"+
+                                        "</tr>" +
+                                        "<tr>" +
+                                          "<td id='" + elName + "_iiPage" + "' class='" + strTdClass + "' style='height:16px;text-align:left;'>&nbsp&nbsp</td>" +
+                                        "</tr>" +
+                                      "</table>" +
+                                    "</td>" +
+                                  "</tr>" +
+                                "</table>" +
+                              "</fieldset>" +
+                            "</td>" +
+                          "</tr>" +
+                        "</table>";
+
+  this._divAccount  = document.getElementById( elName + "_divAccount"  );
+  this._divSavePage = document.getElementById( elName + "_divSavePage" );
+
+  this._divAccount.innerHTML = "<table width='100%' border=0 cellspacing=0 cellpadding=0>" +
+                                 "<tr>" +
+                                   "<td colspan='2' id='" + elName + "_ck1" + "' class='" + strTdClass + "' style='height:16px;vertical-align:middle;'></td>" +
+                                 "</tr>" +
+                               "</table>";
+
+  this._divSavePage.innerHTML = "<table width='100%' border=0 cellspacing=0 cellpadding=0>" +
+                                  "<tr>" +
+                                    "<td colspan='2' id='" + elName + "_ck2" + "' class='" + strTdClass + "' style='height:16px;vertical-align:middle;'></td>" +
+                                  "</tr>" +
+                                "</table>";
+
+  // Cria Checkbox de Livro Contábil
+  createCheckbox(cpName + "_ckAccountPrint", elName + "_ck1", this._bPortugues ? "Impressão Livro Contábil" : "Account Book Print" , arg["bAccountPrintCheck"] );
+  finalizeCheckbox.apply(eval(cpName + "_ckAccountPrint"), [ 145 , 17, "'" + strName + "'", strCssField, "left", false, false, {}, [] ]);
+  this._div._ckAccountPrint = eval(cpName + "_ckAccountPrint");
+  this._div._ckAccountPrint._parent = this;
+  this._div._ckAccountPrint.style.display = "";
+  this._div._ckAccountPrint.setEvent( function( )
+	                                  {
+	                                    if( !this.isReadOnly( ) )
+	                                    {
+	                                      fireEvent.apply( this, [] );
+	                                      fireEvent.apply( this._parent, [] );
+	                                      this._parent.configureControls( this.checked );
+	                                    }
+	                                  } );
+
+  // Cria Checkbox de Gravação de Página
+  createCheckbox(cpName + "_ckSavePage", elName + "_ck2", this._bPortugues ? "Grava Página" : "Save Page" , arg["bSavePageCheck"] );
+  finalizeCheckbox.apply(eval(cpName + "_ckSavePage"), [ 145 , 17, "'" + strName + "'", strCssField, "left", false, false, {}, [] ]);
+  this._div._ckSavePage = eval(cpName + "_ckSavePage");
+  this._div._ckSavePage._parent = this;
+  this._div._ckSavePage.style.display = "";
+  this._div._ckSavePage.aEventListener = [];
+  this._div._ckSavePage.setEvent( function( )
+                                  {
+                                    if( !this.isReadOnly( ) )
+                                    {
+                                      fireEvent.apply( this, [] );
+                                      fireEvent.apply( this._parent, [] );
+                                    }
+                                  } );
+
+  // Cria RadioButton de Cabeçalho
+  eval( cpName + "_rbHeader = undefined;" );
+  createRadiobutton( cpName + "_rbgPosition", cpName + "_rbHeader", elName + "_rbOption_0", "_rbgPosition", this._bPortugues ? "Cabeçalho" : "Header" );
+  finalizeRadiobutton.apply(eval(cpName + "_rbHeader"), [ this._bReadOnly, true ] );
+  this._div._rbHeader = eval(cpName + "_rbHeader");
+  this._div._rbHeader._parent = this;
+  this._div._rbHeader.style.display = "";
+
+  // Cria RadioButton de Rodapé
+  eval( cpName + "_rbFooter = undefined;" );
+  createRadiobutton( cpName + "_rbgPosition", cpName + "_rbFooter", elName + "_rbOption_1", "_rbgPosition", this._bPortugues ? "Rodapé" : "Footer" );
+  this._div._rbFooter = eval(cpName + "_rbFooter");
+  this._div._rbFooter._parent = this;
+  this._div._rbFooter.style.display = "";
+
+  // Preenche a Lista de Eventos do Grupo
+  this._div._rbgPosition = eval(cpName + "_rbgPosition");
+  this._div._rbgPosition._parent = this;
+
+  // Página Inicial - InputInteger
+  var obj = {jsName:cpName + "_iiPage",parentName:elName + "_iiPage"};
+  createInputInteger( obj );
+
+  this._div._iiPage = eval(cpName + "_iiPage");
+  obj = {
+          jsValue:{value:arg['nInitialPage']},
+          strInternalName:strName + "_iiPage",
+          nMaxLen:5,
+          nWidth:60,
+          bSigned:false,
+          strCssClassRO:strCssROField,
+          strCssClassRW:strCssField,
+          bReadOnly:false,
+          aEventListener:[]
+        }
+  finalizeInputInteger.apply( this._div._iiPage, [obj] );
+
+  this._div._iiPage._parent = this;
+  this._div._iiPage.isComponenteChild = true;
+
+  // Preenche de acordo com a opção marcada.
+  if( arg["nPosition"] == 1 )
+    finalizeRadiobutton.apply(eval(cpName + "_rbFooter"), [ this._bReadOnly, true ] );
+  else
+    finalizeRadiobutton.apply(eval(cpName + "_rbHeader"), [ this._bReadOnly, true ] );
+
+  // Configura Divs
+  if( arg["bAccountPrint"] )
+    this._divAccount.style.display = "";
+  else
+    this._divAccount.style.display = "none";
+
+  if( arg["bSavePage"] )
+    this._divSavePage.style.display = "";
+  else
+    this._divSavePage.style.display = "none";
+
+
+  // ---------------------------------------
+  // Final da construção do DIV Principal
+
+  this.setReadOnly       = inputReportPaging.setReadOnly;
+  this.getReadOnly       = inputReportPaging.getReadOnly;
+  this.getJsonValue      = inputReportPaging.getJsonValue;
+  this.setJsonValue      = inputReportPaging.setJsonValue;
+  this.fireParentEvent   = inputReportPaging.fireParentEvent;
+  this.configureControls = inputReportPaging.configureControls;
+}
+
+inputReportPaging.configureControls = function( b )
+{
+  if( !this._bReadOnly )
+  {
+    if( !this.bReadOnlySavePage ) // Senão é pra ficar sempre readOnly
+    {
+      this._div._ckSavePage.setReadOnly( b );
+      this._div._ckSavePage.setValue( false );
+    }
+  
+    if( !this.bReadOnlyInitialPage ) // Senão é pra ficar sempre readOnly
+    {
+      this._div._iiPage.setReadOnly( b );
+      this._div._iiPage.setJsonValue( {value:1} );
+    }
+  }
+}
+
+inputReportPaging.fireParentEvent = function( cp )
+{
+  if( this.aEventListener.length > 0 )
+    fireEvent.apply( this, [] );
+}
+
+inputReportPaging.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+
+  if( this._showAccountPrint && !this.bReadOnlyAccountPrint )
+    this._div._ckAccountPrint.setReadOnly ( b );
+
+  if( this._showSavePage && !this.bReadOnlySavePage )
+      this._div._ckSavePage.setReadOnly( b );
+
+  if( !this.bReadOnlyPosition )
+  {
+    this._div._rbHeader.setReadOnly( b );
+    this._div._rbFooter.setReadOnly( b );
+  }
+
+  if( !this.bReadOnlyInitialPage )
+    this._div._iiPage.setReadOnly  ( b );
+}
+
+inputReportPaging.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputReportPaging.getJsonValue = function( bComplete )
+{
+  var strJson = "{type:" + this._type;
+
+  if( this._showAccountPrint )
+    strJson = strJson + ",account:"  + this._div._ckAccountPrint.checked;
+
+  if( this._showSavePage )
+    strJson = strJson + ",savepage:" + this._div._ckSavePage.checked;
+
+  strJson = strJson + ",initpage:" + (this._div._iiPage.internalValue == "" ? 0 : this._div._iiPage.internalValue);
+  strJson = strJson + ",position:" + this._div._rbgPosition._nSelected;
+
+  strJson = strJson + "}";
+
+  return strJson;
+}
+
+inputReportPaging.setJsonValue = function( json )
+{
+  if( json.setup ) // Veio pelo Setup
+  {
+    if( json.setup.readOnly != undefined )
+      if( this.getReadOnly( ) != json.setup.readOnly )
+        this.setReadOnly( json.setup.readOnly );
+
+    if( json.setup.roAccountPrint != undefined )
+    {
+      this.bReadOnlyAccountPrint = json.setup.roAccountPrint;
+      
+      this._div._ckAccountPrint.setReadOnly( json.setup.roAccountPrint );
+    }
+
+    if( json.setup.showAccountPrint != undefined )
+      if( json.setup.showAccountPrint == true )
+        this._divAccount.style.display = "";
+      else
+        this._divAccount.style.display = "none";
+
+    if( json.setup.roSavePage != undefined )
+    {
+      this.bReadOnlySavePage = json.setup.roSavePage;
+      
+      this._div._ckSavePage.setReadOnly( json.setup.roSavePage );
+    }
+
+    if( json.setup.showSavePage != undefined )
+      if( json.setup.showSavePage == true )
+        this._divSavePage.style.display = "";
+      else
+        this._divSavePage.style.display = "none";
+
+    if( json.setup.roInitPage != undefined )
+    {
+      this.bReadOnlyInitialPage = json.setup.roInitPage;
+      
+      this._div._iiPage.setReadOnly( json.setup.roInitPage );
+    }
+
+    if( json.setup.roPosition != undefined )
+    {
+      this.bReadOnlyPosition = json.setup.roPosition;
+      
+      this._div._rbFooter.setReadOnly( json.setup.roPosition );
+      this._div._rbHeader.setReadOnly( json.setup.roPosition );
+    }
+  }
+  
+  json = ( json.setup ? json.setup : json );
+
+  if( this._showAccountPrint )
+    if( json.account != undefined )
+    {
+      if( json.account == true )
+        this._div._ckAccountPrint.setValue( true );
+      else
+        this._div._ckAccountPrint.setValue( false );
+      
+      this.configureControls( json.account );
+    }
+
+  if( this._showSavePage )
+    if( json.savepage != undefined )
+      if( json.savepage == true )
+        this._div._ckSavePage.setValue( true );
+      else
+        this._div._ckSavePage.setValue( false );
+
+  if( json.initpage != undefined )
+    this._div._iiPage.setJsonValue( {value:json.initpage} );
+
+  if( json.position != undefined )
+    this._div._rbgPosition.setJsonValue( {value:json.position} );
+}

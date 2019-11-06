@@ -1,0 +1,84 @@
+areaswitch = function(arg){return areaswitch.__constructor(arg)};
+//------------------------------------------------------------------------------
+
+areaswitch.__constructor = function(arg)
+{
+  var e = document.getElementById( arg["htmlname"] );
+
+  e._constructor = areaswitch._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+areaswitch._constructor = function(arg)
+{
+  if( arg["name"] )
+  {
+    this.internalName = arg["name"];
+    this.setAttribute( "internalName", this.internalName );
+  }
+
+  this._size = arg["size"];
+
+  this._aPages = [];
+
+  for( var i = 0; i < this._size; i++ )
+  {
+    this._aPages[i] = document.getElementById( arg["htmlname"] + "_Page" + i );
+    this._aPages[i].style.display = "none";
+  }
+
+  this._nSelectedPage = 0;
+  this.bVisualJson    = true;
+  this._bReadOnly     = false;
+
+  this.internalValue='';
+
+  this.setJsonValue = areaswitch.setJsonValue;
+  this.getJsonValue = areaswitch.getJsonValue;
+  this.showPage     = areaswitch.showPage;
+
+  this.showPage( arg["index"] );
+
+  return this;
+}
+
+areaswitch.setJsonValue = function( json )
+{
+  if( json.setup != undefined )
+  {
+    if( json.setup.index != undefined )
+    {
+      this.showPage( json.setup.index );
+      g_bNeedResize = true;
+    }
+/*
+    if( json.setup.display != undefined )
+    {
+      this.style.display = json.setup.display;
+      g_bNeedResize = true;
+    }
+*/
+  }
+}
+
+areaswitch.getJsonValue = function( bComplete )
+{
+  var strJson = "";
+  
+  if( bComplete )
+    strJson = "{ type: " + this._type + ", setup: { index:" + this._nSelectedPage + " } }";
+  
+  return strJson;
+}
+
+areaswitch.showPage = function( i )
+{
+  if( i >= 0 && i < this._size )
+  {
+    this._aPages[this._nSelectedPage].style.display = "none";
+    this._aPages[i].style.display = "";
+    this._nSelectedPage = i;
+  }
+}

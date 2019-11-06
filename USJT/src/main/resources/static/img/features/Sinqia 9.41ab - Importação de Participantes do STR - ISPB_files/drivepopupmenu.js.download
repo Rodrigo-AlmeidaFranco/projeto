@@ -1,0 +1,706 @@
+drivepopupmenu = function(arg){return drivepopupmenu.__constructor(arg)};
+//------------------------------------------------------------------------------
+
+drivepopupmenu.__constructor = function(arg)
+{
+  var e = document.createElement("SPAN");
+
+  e._constructor = drivepopupmenu._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+drivepopupmenu._constructor = function(arg)
+{
+  this._parent = document.body;
+  document.body.appendChild( this );
+
+  this.className      = "spanMenu";
+  this.style.position = "absolute";
+  this.style.top      = 0;
+  this.style.left     = 0;
+  this.style.display  = "none";
+
+  this._selectedItem = 0;
+  this._opened       = false;
+
+  // Para compatibilizar com as chamadas que não passam parâmetros para o menu.
+  if( arg )
+  {
+    this.drvPmID     = arg.name;
+    this._useImages  = arg.doImages;
+    this._level      = arg.level;
+    this._checkState = arg.checkState;
+  }
+  else
+  {
+    this.drvPmID     = "Menu";
+    this._useImages  = false;
+    this._level      = 0;
+    this._checkState = false;
+  }
+
+  if( g_nScrollBarWidth == undefined )
+    g_nScrollBarWidth = getScrollBarWidth( );
+
+  this._scrollUpDisabledBtn   = getContextURL( ) + "Obj/scrollupdisab.gif";
+  this._scrollUpEnabledBtn    = getContextURL( ) + "Obj/scrollupenab.gif";
+  this._scrollDownDisabledBtn = getContextURL( ) + "Obj/scrolldowndisab.gif";
+  this._scrollDownEnabledBtn  = getContextURL( ) + "Obj/scrolldownenab.gif";
+
+  this._checkedBtn      = getContextURL( ) + "Obj/menucheck.png";
+
+  this._arrowMenu    = getContextURL( ) + "Obj/subMenu.png";
+  this._arrowMenuSel = getContextURL( ) + "Obj/subMenuSel.png";
+  this._arrowMenuRO  = getContextURL( ) + "Obj/subMenuRO.png";
+
+  this._divMenu                = document.createElement("DIV");
+  this._divMenu.style.overflow = "hidden";
+  this._divMenu._parent        = this;
+  this._divMenu.innerHTML      =
+    "<table cellpadding=0 cellspacing=0>" +
+    "<tr><td drvType='pmScrollButton' onClick='this._parent.doClickUp( )' onSelectStart='return false;' align=center valign=middle></td></tr>" +
+    "<tr><td valign=middle></td></tr>" +
+    "<tr><td drvType='pmScrollButton' onClick='this._parent.doClickDown( )' onSelectStart='return false;' align=center valign=middle></td></tr>" +
+    "</table>";
+  
+  this._divMenu.align = "left";
+  this.appendChild( this._divMenu );
+  this._divMenu.tdScrollUp = this._divMenu.childNodes[0].rows[0].cells[0];
+  this._divMenu.tdScrollUp._parent = this;
+  this._divMenu.tdItems      = this._divMenu.childNodes[0].rows[1].cells[0];
+  this._divMenu.tdScrollDown = this._divMenu.childNodes[0].rows[2].cells[0];
+  this._divMenu.tdScrollDown._parent = this;
+  this._divMenu.className = "menuContainer";
+
+  this._divScrollUp = document.createElement("DIV");
+  this._divScrollUp.style.overflow = "hidden";
+  this._divScrollUp.innerHTML = "<img drvType='pmScrollButton' src='" + this._scrollUpEnabledBtn + "'>";
+  this._divScrollUp._parent = this;
+  this._divScrollUp.drvType = "pmScrollButton";
+  this._divScrollUp.style.padding = "5px";
+  this._divMenu.tdScrollUp.appendChild( this._divScrollUp );
+  this._divScrollUp.btScrollUp = this._divScrollUp.childNodes[0]
+  this._divScrollUp.style.display = "none";
+  
+  this._divItems = document.createElement("DIV");
+  this._divItems.style.overflow = "hidden";
+  this._divItems.innerHTML =
+    "<table cellpadding=0 cellspacing=0>" +
+    "<tr><td width='100%' valign=middle></td></tr>" +
+    "</table>";
+  this._divItems._parent = this;
+  this._divItems._parentDiv = this._divMenu;
+  this._divMenu.tdItems.appendChild( this._divItems );
+  this._divItems.tdItems           = this._divItems.childNodes[0].rows[0].cells[0];
+  this._divItems.tdItems.className = "menu";
+  this._items = [];
+
+  this._divScrollDown = document.createElement("DIV");
+  this._divScrollDown.style.overflow = "hidden";
+  this._divScrollDown.style.padding = "5px";
+  this._divScrollDown.innerHTML = "<img drvType='pmScrollButton' src='" + this._scrollDownEnabledBtn + "'>";
+  this._divScrollDown._parent = this;
+  this._divScrollDown.style.zindex = 100;
+  this._divScrollDown.drvType = "pmScrollButton";
+  this._divMenu.tdScrollDown.appendChild( this._divScrollDown );
+  this._divScrollDown.btScrollDown = this._divScrollDown.childNodes[0];
+  this._divScrollDown.style.display = "none";
+
+  addEvent( document, "click", drivepopupmenu.documentClick, false );
+
+  this._bReadOnly = false;
+
+  this.attach                = drivepopupmenu.attach;
+  this._show                 = drivepopupmenu._show;
+  this._move                 = drivepopupmenu._move;
+  this._moveXY               = drivepopupmenu._moveXY;
+  this.documentClick         = drivepopupmenu.documentClick;
+  this.close                 = drivepopupmenu.close;
+  this.doClickUp             = drivepopupmenu.doClickUp;
+  this.doClickDown           = drivepopupmenu.doClickDown;
+  this.doClickItem           = drivepopupmenu.doClickItem;
+  this.keyPress              = drivepopupmenu.keyPress;
+  this.getSelectedItem       = drivepopupmenu.getSelectedItem;
+  this.getJsonValue          = drivepopupmenu.getJsonValue;
+  this.setValor              = drivepopupmenu.setValor;
+  this.hintItemMenu          = drivepopupmenu.hintItemMenu;
+  this.scrollUp              = drivepopupmenu.scrollUp;
+  this.scrollDown            = drivepopupmenu.scrollDown;
+  this.addItem               = drivepopupmenu.addItem;
+  this.doMoverItem           = drivepopupmenu.doMoverItem;
+  this.doMoutItem            = drivepopupmenu.doMoutItem;
+  this.validateScrollButtons = drivepopupmenu.validateScrollButtons;
+  this.adjustPopupHeight     = drivepopupmenu.adjustPopupHeight;
+  this.adjustPopupWidth      = drivepopupmenu.adjustPopupWidth;
+  this.clear                 = drivepopupmenu.clear;
+  this.setNoSelection        = drivepopupmenu.setNoSelection;
+  this.unselectItem          = drivepopupmenu.unselectItem;
+  this.selectItem            = drivepopupmenu.selectItem;
+  this.isOpened              = drivepopupmenu.isOpened;
+  this.prepare               = drivepopupmenu.prepare;
+  this.open                  = drivepopupmenu.open;
+
+  return this;
+}
+
+/**
+ * Prepara as variáveis que serão utilizadas na configuração feita antes
+ * da abertura do menu.
+ */
+drivepopupmenu.prepare = function( )
+{
+  if( g_aMenu )
+    for( var i = 0; i < g_aMenu.length; i++ )
+      g_aMenu[i].close( );
+
+   if( this._listviewParent )
+  {
+    g_aMenu = new Array( );
+    g_aMenu[0] = this._listviewParent._mn;
+  }
+}
+
+drivepopupmenu.open = function( pr_event )
+{
+  this.prepare( );
+  this._show( pr_event );
+
+  return false;
+}
+
+drivepopupmenu.attach = function( e )
+{
+  var m = this;
+  e.popupmenu = this;
+  e.oncontextmenu = function( pr_event )
+  {
+    return false;
+  }
+}
+
+drivepopupmenu._show = function( pr_event )
+{
+  // Reposiciona nas coordenadas de início. Isso previne um bug em que o menu não é redimensionado corretamente em sua largura.
+  this.style.top  = 0;
+  this.style.left = 0;
+
+  this.style.display          = "";
+  this._divItems.style.height = "";
+
+  if( this._divItems.tdItems.childNodes[0].offsetHeight * this._divItems.tdItems.childNodes.length +
+      this._divScrollDown.offsetHeight + this._divScrollUp.offsetHeight >
+      document.body.offsetHeight - 7 )
+  {
+    this._divItems.scrollTop = 0;
+    this.adjustPopupHeight( );
+  }
+
+  if( this._divMenu.offsetWidth > 200 )
+    this.adjustPopupWidth( 200 );
+
+  this.validateScrollButtons( );
+  this.adjustPopupHeight( );
+
+  this._move( pr_event );
+
+  this.style.display = "";
+
+  this._opened = true;
+
+  if( this._listviewParent )
+    this._listviewParent.configureMenuEnabled( );
+
+  return false;
+}
+
+drivepopupmenu.adjustPopupHeight = function( )
+{
+  var nItemHeight = this._divItems.tdItems.childNodes[0].offsetHeight;
+  var nItems      = this._divItems.tdItems.childNodes.length;
+  var nSeparators = 0;
+
+  for( i = 0; i < this._divItems.tdItems.childNodes.length; i++ )
+    if( this._divItems.tdItems.childNodes[i]._isSeparator )
+      nSeparators++ ;
+  
+  var nH = document.body.offsetHeight       - g_nScrollBarWidth -
+           this._divScrollDown.offsetHeight - this._divScrollUp.offsetHeight;
+
+  var nHeight = Math.min( nItemHeight * parseInt( nH / nItemHeight ), (nItemHeight * nItems)-(nSeparators * 14));
+}
+
+drivepopupmenu.adjustPopupWidth = function( nW )
+{
+  this._divMenu.style.width = nW;
+  for( var i = 0; i < this._divMenu.tdItems.childNodes.length; i++ )
+  {
+  	this._divMenu.tdItems.childNodes[i].style.width = nW - 2;
+	
+  	for( var j = 0; j < this._items.length; j++ )
+	{
+	  this._items[j].style.width = nW + "px";
+	  
+	  if( !this._items[j]._isSeparator )
+	  {
+        this._items[j]._LabelTD.style.width = ( nW - 20 ) + "px";
+		
+        if( this._items[j].isSubMenu )
+          this._items[j]._ImgTableTD.style.width = "20px";
+	  }
+	}
+  }
+}
+
+drivepopupmenu.close = function( )
+{
+  this.style.display = "none";
+  this._opened       = false;
+
+  return false;
+}
+
+drivepopupmenu._moveXY = function( x, y )
+{
+  var nX = x;
+  var nY = y;
+
+  if( nX + this._divMenu.offsetWidth > document.body.offsetWidth - g_nScrollBarWidth )
+  {
+    if( nX - this._divMenu.offsetWidth - 7 >= 0 )
+    {
+      nX = nX - this._divMenu.offsetWidth - 7;
+    }
+    else if( nX > document.body.offsetWidth - nX - g_nScrollBarWidth )
+    {
+      if( nX > 30 )
+      {
+        this.adjustPopupWidth( nX - 7 );
+        nX = 0;
+      }
+    }
+    else if( document.body.offsetWidth - nX - g_nScrollBarWidth - 10 > 30 )
+      this.adjustPopupWidth( document.body.offsetWidth - nX - g_nScrollBarWidth - 10 );
+  }
+
+  if( nY + this._divMenu.offsetHeight > document.body.offsetHeight - 7 )
+    nY = document.body.offsetHeight - this._divMenu.offsetHeight - g_nScrollBarWidth;
+  if( nY < 0 )
+    nY = 0;
+  if( document.body.scrollTop > 0 )
+    nY += document.body.scrollTop;
+
+  this.style.top  = nY + "px";
+  this.style.left = nX + "px";
+}
+
+drivepopupmenu._move = function( pr_event )
+{
+  if( !pr_event )
+    pr_event = window.event;
+
+  this._moveXY( pr_event.clientX + document.body.scrollLeft, pr_event.clientY );
+}
+
+drivepopupmenu.documentClick = function( pr_event )
+{
+  if( !pr_event.srcElement )
+    pr_event.srcElement = pr_event.target;
+  
+  var drvType;
+  
+  if( pr_event.srcElement.getAttribute ) //MANTIS#29722 
+	  drvType = pr_event.srcElement.getAttribute( "drvType" ) || pr_event.srcElement.drvType;
+  else
+	  drvType = pr_event.srcElement.drvType;
+  
+  if( drvType == "pmScrollButton" ||
+      drvType == "subMenu"        ||
+      drvType == "inputinteger"   )
+    return;
+
+  this._opened = false;
+
+  for( var i = 0; i < g_aMenu.length; i++ )
+    g_aMenu[i].close( );
+}
+
+drivepopupmenu.doClickUp = function( )
+{
+  this.scrollUp( );
+}
+
+drivepopupmenu.doClickDown = function( )
+{
+  this.scrollDown( );
+}
+
+drivepopupmenu.scrollUp = function( )
+{
+  this._divItems.scrollTop = this._divItems.scrollTop - 20;
+  this.validateScrollButtons( );
+  this.adjustPopupHeight( );
+}
+
+drivepopupmenu.scrollDown = function( )
+{
+  this._divItems.scrollTop = this._divItems.scrollTop + 20;
+  this.validateScrollButtons( );
+  this.adjustPopupHeight( );
+}
+
+drivepopupmenu.validateScrollButtons = function( )
+{
+  if( this._divItems.scrollHeight > this._divMenu.offsetHeight )
+  {
+    this._divScrollUp.style.display   = "";
+    this._divScrollDown.style.display = "";
+  }
+  else
+  {
+    this._divScrollUp.style.display   = "none";
+    this._divScrollDown.style.display = "none";
+  }
+
+  if( this._divItems.scrollTop == 0 )
+    this._divScrollUp.btScrollUp.src = this._scrollUpDisabledBtn;
+  else if( this._divScrollUp.style.display != "none" )
+    this._divScrollUp.btScrollUp.src = this._scrollUpEnabledBtn;
+
+  if( this._divItems.scrollHeight - this._divItems.scrollTop <=
+      this._divMenu.offsetHeight - this._divScrollUp.offsetHeight - this._divScrollDown.offsetHeight )
+    this._divScrollDown.btScrollDown.src = this._scrollDownDisabledBtn;
+  else if( this._divScrollDown.style.display != "none" )
+    this._divScrollDown.btScrollDown.src = this._scrollDownEnabledBtn;
+}
+
+drivepopupmenu.addItem = function( args )
+{
+  var divItem = document.createElement( "DIV" );
+
+  divItem.style.overflow = "hidden";
+  divItem.style.cursor   = "default";
+  divItem._parent        = this;
+  divItem.isSubMenu      = args.isSubMenu;
+
+  if( args.isSeparator )
+    args.readOnly = true;
+
+  var strImages = "";
+  if( this._useImages )
+    strImages = "<td width='1%'><img unselectable='on' drvType='pmScrollButton' src='" + this._checkedBtn + "' style='visibility:hidden;'></td>";
+
+  var strSubMenu = "";
+  if( args.isSubMenu )
+  {
+    if( args.readOnly )
+      strSubMenu = "<td align='right'><img unselectable='on' drvType='subMenu' src='" + this._arrowMenuRO + "'></td>";
+    else
+      strSubMenu = "<td align='right'><img unselectable='on' drvType='subMenu' src='" + this._arrowMenu + "'></td>";
+  }
+
+  if( args.isSeparator )
+  {
+    divItem.innerHTML =
+      "<div class='pmItemSeparator'>" +
+      "</div>";
+  }
+  else
+  {
+    var drvType  = "";
+    var idTDItem = this.drvPmID + '_itemMenu_' + this._items.length;
+    
+    if( args.isSubMenu )
+      drvType = " drvType='subMenu'";
+
+    divItem.innerHTML =
+      "<div " + drvType + " class='pmUnselItemDiv'" +
+      ( args.readOnly ? " onClick='window.event.cancelBubble = true;'"
+                      : " onClick='this.parentNode._parent.doClickItem( this, event );' " ) +
+      " onMouseOver='this.parentNode._parent.doMoverItem( this, event );' " +
+      " onMouseOut='this.parentNode._parent.doMoutItem( this );'" +
+      " onKeyPress='this.parentNode._parent.keyPress( this, event );'" +
+      "><table" + drvType + " width='100%' cellspacing=0 cellpading=0 class='pmUnselItemDiv'><tr>" + strImages +
+      "<td id='" + idTDItem + "' align='left'" + drvType + "><label style='white-space:nowrap;' " + drvType + ( args.readOnly ? " disabled>" : ">" ) +
+      args.text + "</label></td>" + strSubMenu + "</tr></div>";
+
+    divItem._Table   = divItem.childNodes[0].childNodes[0];
+    divItem._LabelTD = divItem._Table.rows[0].cells[( this._useImages ? 1 : 0 )];
+    divItem._Label   = divItem._LabelTD.childNodes[0];
+    
+    if( args.type == 101 )
+    {
+      this._divItems.tdItems.appendChild( divItem );
+      
+      var obj  = { jsName: "ii_" + idTDItem, parentName: idTDItem };
+      var obj2 = { nMaxLen: 3, strInternalName: "ii_" + idTDItem, nWidth: 25 };
+      
+      createInputInteger( obj );
+      finalizeInputInteger.apply( window["ii_" + idTDItem], [obj2] );
+      
+      divItem._InputInteger = window["ii_" + idTDItem];
+      divItem._InputInteger.drvType = "inputinteger";
+    }
+
+    divItem._TypeItemMenu = args.type;
+    divItem._IdMenu       = args.id;
+    
+    if( this._useImages )
+      divItem._Img        = divItem._Table.rows[0].cells[0].childNodes[0];
+
+    if( args.isSubMenu )
+    {
+      divItem._ImgTableTD = divItem._Table.rows[0].cells[( this._useImages ? 2 : 1 )];
+      divItem._ImgTable   = divItem._ImgTableTD.childNodes[0];
+    }
+  }
+  
+  if( args.type != 101 )
+    this._divItems.tdItems.appendChild( divItem );
+  
+  divItem._position = this._items.length;
+  this._items[ divItem._position ] = divItem;
+
+  divItem.className                 = ".pmUnselItemDiv";
+  divItem._enabledWhenNoSelection   = args.enabledWhenNoSelection;
+  divItem._enabledWhenMultiSelected = args.enabledWhenMultiSelected;
+  divItem._isSeparator              = args.isSeparator;
+  divItem._text                     = args.text;
+
+  if( args.workAsProperties != undefined )
+    divItem._workAsProperties = args.workAsProperties;
+  else
+    divItem._workAsProperties = false;
+
+  if( divItem._isSeparator == undefined ||
+      !divItem._isSeparator && $(divItem).find( "label" ).textWidth( ) > 200 )
+      attachHint( divItem, divItem._text );
+
+  /* Id de serviço ( novo, alterar, ... ) usado para quando a listview estiver readonly poder desabilitar todos os
+     menus, menos o de Novo. Método setNoSelection */
+  divItem._svc = args.svc;
+
+  if( args.readOnly )
+  {
+    divItem._bReadOnly = true;
+    divItem._bEnabled  = false;
+    
+    if( args.isSeparator )
+      $( divItem._Label ).addClass( "readonly" );
+  }
+  else
+  {
+    divItem._bReadOnly = false;
+    divItem._bEnabled  = true;
+    divItem.onClick = args.onselected;
+  }
+  
+  divItem.setReadOnly = function( b )
+  {
+    this._bReadOnly = b;
+    this._Label.disabled = b;
+
+    if( b )
+      $( this._Label ).addClass( "readonly" );
+    else
+      $( this._Label ).removeClass( "readonly" );
+    
+    if( this.isSubMenu )
+      if( b )
+        this._ImgTable.src = this._parent._arrowMenuRO;
+      else
+        this._ImgTable.src = this._parent._arrowMenu;
+  }
+  
+  divItem.isReadOnly = function( )
+  {
+    return this._bReadOnly;
+  }
+  
+  return divItem;
+}
+
+drivepopupmenu.doClickItem = function( obj, pr_event )
+{
+  var div = obj.parentNode;
+  
+  if( div._bReadOnly )
+  {
+    if( window.event )
+      window.event.cancelBubble = true;
+    else if( pr_event )
+      pr_event.cancelBubble = true;
+
+    return false;
+  }
+
+  if( this._useImages )
+    this.selectItem( div._position );
+
+  this._opened = false;
+
+  div.onClick( pr_event );
+}
+
+drivepopupmenu.keyPress = function( obj, pr_event )
+{
+  var div = obj.parentNode;
+  
+  if(!pr_event)
+    pr_event = window.event;
+  
+  if(pr_event.keyCode == 13)
+  {
+    div.onClick( pr_event )
+    this.close();
+  }
+}
+
+drivepopupmenu.getJsonValue = function( )
+{
+  var item;
+
+  item = this._items[this._selectedItem];
+  
+  var str = " option:" + this._selectedItem ;
+  
+  if( item._TypeItemMenu != null)
+    str += ", typeItemMenu:" + item._TypeItemMenu;
+  if( item._TypeItemMenu == 101)
+    str += ", nValor:" + item._InputInteger.getValue( );
+  
+  return str;
+}
+
+drivepopupmenu.getSelectedItem = function( )
+{
+  return this._items[this._selectedItem];
+}
+
+drivepopupmenu.setValor = function( arg )
+{
+  var item;
+
+  //O valor configurado é o valor enviado pelo Java, ou seja o código interno da opção.
+  //Preciso achar ela no array de itens para selecionar o item correto.
+  for( var i=0; i< this._items.length; i++ )
+    if( this._items[i]._IdMenu == arg.option )
+    {
+      item = this._items[i];
+      break;
+    }
+      
+  if( item != undefined && item._InputInteger != undefined )
+    item._InputInteger.setJsonValue( stringToJson( "{value:" + arg.nValor + "}" ) );
+}
+
+drivepopupmenu.hintItemMenu = function( )
+{
+  var item = this._items[this._selectedItem];
+  
+  if( item._TypeItemMenu == 101 )
+    return item._Label.innerHTML + "" + item._InputInteger.getValue() + "";
+  else if ( !this.getSelectedItem()._isSeparator )
+    return item._Label.innerHTML;
+  else
+    return "";
+}
+
+drivepopupmenu.doMoverItem = function( obj, pr_event )
+{
+  var div = obj.parentNode;
+
+  // fechamento automático do Menu
+  if( !div.isSubMenu && ( g_aMenu.length > ( this._level + 1 ) ) )
+    g_aMenu[this._level + 1].close( );
+
+  if( div._bReadOnly )
+    $( obj ).addClass( "highlightRO" );
+  else
+    $( obj ).addClass( "highlight" );
+
+  if( div._bReadOnly )
+  {
+    if( div.isSubMenu )
+      div._ImgTable.src = this._arrowMenuRO;
+  }
+  else
+  {
+    if( div.isSubMenu )
+      div.onClick( pr_event );
+  }
+}
+
+drivepopupmenu.doMoutItem = function( obj )
+{
+  var div = obj.parentNode;
+
+  if( div._bReadOnly )
+    $( obj ).removeClass( "highlightRO" );
+  else
+    $( obj ).removeClass( "highlight" );
+
+  if( div.isSubMenu )
+    if( div._bReadOnly )
+      div._ImgTable.src = this._arrowMenuRO;
+    else
+      div._ImgTable.src = this._arrowMenu;
+}
+
+drivepopupmenu.clear = function( )
+{
+  this._divItems.tdItems.innerHTML = "";
+  this._divItems.style.width = "";
+  this._items = [];
+}
+
+drivepopupmenu.unselectItem = function( nPosition )
+{
+  if( this._useImages && ( nPosition > -1 ) )
+  {
+    var item = this._items[nPosition];
+    
+    item._Img.style.visibility = "hidden";
+    
+    if( item._TypeItemMenu == 101 )
+      this.setValor( stringToJson( "{option:" + item._IdMenu + ", nValor:0}" ) );
+  }
+}
+
+drivepopupmenu.selectItem = function( nPosition )
+{
+  this.unselectItem( this._selectedItem );
+  this._selectedItem = nPosition;
+
+  // Item -1 é para desmarcar o menu
+  if( this._useImages && ( nPosition > -1 ) )
+    this._items[nPosition]._Img.style.visibility = "visible";
+}
+
+drivepopupmenu.isOpened = function( )
+{
+  return this._opened;
+}
+
+function showSubMenu( menuItem, nMenuId, pr_event )
+{
+  eval( 'var mn = g_aCacheMenu.' + nMenuId + ';' );
+
+  for( var i = 0; i < g_aMenu.length; i++ )
+  {
+    if( g_aMenu[i]._level >= mn._level )
+      g_aMenu[i].close( );
+  }
+
+  g_aMenu = g_aMenu.slice( 0, mn._level );
+
+  g_aMenu[g_aMenu.length] = mn;
+  // Diz para o Menu qual é a opção que foi selecionada para exibir o subMenu
+  g_aMenu[g_aMenu.length-1]._clickedSubMenuOption = menuItem._position;
+
+  mn._show( pr_event );
+
+  // Posiciona o Menu
+  mn._moveXY( menuItem._parent.offsetLeft + ( menuItem.offsetWidth >= 200 ? 206 : menuItem.offsetWidth ) - 2, menuItem._parent.offsetTop + menuItem.offsetTop - document.body.scrollTop );
+}

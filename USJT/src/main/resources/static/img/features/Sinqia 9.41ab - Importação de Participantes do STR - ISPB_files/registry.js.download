@@ -1,0 +1,201 @@
+(function( window, undefined ) {
+
+  // Use the correct document accordingly with window argument (sandbox)
+  var document  = window.document,
+      navigator = window.navigator,
+      location  = window.location;
+
+  var registry = (function( )
+  {
+    var registry = 
+    {
+      // new Date( ).getTime( ) utilizado como fallback caso a variável não esteja definida, pois preciso garantir arquivos
+      // atualizados independente de cache.
+      version: window.g_nRegistryVersion || new Date( ).getTime( ),
+
+      // Tipo de processo corrente, utilizado para adicionar ao body uma classe para cada tipo, caso seja a janela principal.
+      processType: window.g_strProcessType || undefined,
+
+      ui:
+      {
+        dynamicCssId: "registry_css",
+        types:
+        {
+          spinbutton: 2,
+          inputdouble: 3,
+          combobox: 6,
+          inputupload: 11,
+          listview: 13,
+          foreignLayoutArea: 16,
+          inputAccountSelection: 23,
+          inputAgencySelection: 25,
+          inputInvestorSelection: 26
+        },
+        transformations:
+        {
+          sizeToEM: 2.098360655737705
+        },
+        component: function( )
+        {
+          
+        },
+        listview:
+        {
+          loadShieldId: "listviewLoad",
+          syncDataHintRowsLimit: 5000,
+          asyncAttachDataHintCycle: 100,
+          asyncAttachDataHintWaitTime: 80
+        },
+        window:
+        {
+          // Deixo o zIndex das janelas sem foco bem abaixo pois ainda existe uma hierarquia entre essas janelas.
+          // O iframeFix do jQuery (overlay que utiliza para corrigir drag and drop quando existem iFrames) utiliza
+          // zIndex 1000.
+          blurredZIndex: 700,
+          overlayZIndex: 800,
+          focusedZIndex: 999,
+          
+          overlayOpacity: .3,
+          // Nome da variável global que guarda a referência da janela, caso seja uma janela... rs
+          dialogVar: "g_window_dialog"
+        }
+      },
+
+      getContext: function( )
+      {
+        return this.context;
+      },
+
+      loadUnit: function( pr_script )
+      {
+        document.write( unescape( "%3Cscript type='text/javascript' src='" + this.getContext( ) + pr_script + ".js?" + this.version + "'%3E%3C/script%3E" ) );
+      },
+
+      /**
+       * Carrega um arquivo css.
+       * @param pr_file arquivo à ser carregado.
+       * @param pr_bUseAppend indica se o arquivo deve ser carregado criando um elemento link ou simplesmente escrevendo com document.write.
+       */
+      loadCSS: function( pr_file, pr_bUseAppend )
+      {
+        if( !this.isCSSLoaded( pr_file ) )
+        {
+          var url = this.getContext( ) + "../" + pr_file + ".css?" + this.version;
+          
+          if ( document.createStyleSheet )
+          {
+              document.createStyleSheet( url );
+          }
+          else if( pr_bUseAppend )
+          {
+            $( "<link />", {
+              rel: "stylesheet",
+              href: url
+            } ).appendTo( $( "head" ) );
+          }
+          else
+          {
+            document.write( unescape( "%3Clink rel='stylesheet' href='" + url + "' /%3E" ) );
+          }
+        }
+      },
+
+      isCSSLoaded: function( pr_file )
+      {
+        var links = $( "head" ).find( "link" );
+        
+        for( var i = 0; i < links.length; i++ )
+        {
+          if( links[i].href.indexOf( "/" + pr_file + ".css" ) > -1 )
+          {
+            return true;
+          }
+        }
+        
+        return false;
+      },
+
+      onload: function( )
+      {
+        var strBodyClass = "";
+
+        if     ( isIEQuirks( ) ) strBodyClass = "";
+        else if( isIE      ( ) ) strBodyClass = " ie-standarts";
+        else if( isFirefox ( ) ) strBodyClass = " firefox";
+        else if( isOpera   ( ) ) strBodyClass = " opera";
+
+        // Caso não tenha a função da janela, carrego o script dinamicamente e sigo.
+        if( !window.isTopWindow )
+        {
+          this.loadUnit( "window" );
+        }
+          
+        if( this.processType && window.isTopWindow( ) )
+        {
+          strBodyClass = " " + this.processType;
+        }
+
+        document.body.className += strBodyClass;
+        
+        if( typeof window.g_strTxArgBusca === "undefined" )
+        {
+          window.g_strTxArgBusca = "txArgBusca";
+        }
+
+        // Configurações do shield da blockUI (Só configurado caso o blockUI esteja disponível =P).
+        if( window.$ && window.$.blockUI )
+          $.blockUI.defaults.fadeOut = 200;
+      }
+    };
+    
+    registry.ui.component.prototype.hide = function( pr_target )
+    {
+      
+    }
+
+    registry.ui.subscribe = function( pr_name, pr_widget )
+    {
+      registry.ui[pr_name] = pr_widget
+    }
+    
+    registry.showMessage = function( pr_message )
+    {
+//      $.blockUI({ 
+//        theme: true,
+//        draggable: false,
+//        css: {
+//        },
+//        title:   strAtencao,
+//        message: "<p style='font-size:14px;text-align:justify;'>" + pr_message + "</a></p><br />" +
+//                 "<p style='font-size:14px;'><button onclick='unblock( )' style='display:inline-block;float:right;'>Ok</button><input type='checkbox' id='chk' " + checkEnabled + "/><label id='lblChk' for='chk'>" + strNaoVerMaisMensagem + "</label></p>"
+//      }
+    }
+
+    // No momento de carga deste script, este é o último carregado.
+    var scripts = document.getElementsByTagName( "SCRIPT" );
+    var script  = scripts[scripts.length - 1];
+    
+    registry.context = script.src.substring( 0, script.src.indexOf( "registry.js" ) );
+
+    return registry;
+  })();
+
+  window._ = function( s )
+  {
+    if( typeof( i18n ) != "undefined" && i18n[s] )
+      return i18n[s];
+
+    return s;
+  }
+
+  window.hideComp = function( pr_comp )
+  {
+    if( window.$ )
+      $( pr_comp ).addClass( "hidden" );
+  }
+
+  addEvent( window, "load", registry.onload );
+
+  window.registry = registry;
+  window.r        = registry;
+})( window );

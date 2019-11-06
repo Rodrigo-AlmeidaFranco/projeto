@@ -1,0 +1,5161 @@
+// Variáveis podem ter sido declaradas no Java.
+
+if( typeof g_nSvcSaveObjecID === 'undefined' )
+  window['g_nSvcSaveObjecID'] = undefined;
+if( typeof g_IdSvcAlive === 'undefined' )
+  window['g_IdSvcAlive'] = undefined;
+if( typeof g_bEnglish === 'undefined' )
+  window['g_bEnglish'] = false;
+if( typeof g_strURLContext === 'undefined' )
+  window['g_strURLContext'] = undefined;
+if( typeof g_bIsProcess === 'undefined' )
+  window['g_bIsProcess'] = undefined;
+if( typeof g_nSvcPrgID === 'undefined' )
+  window['g_nSvcPrgID'] = undefined;
+
+var g_strOldFilterQueryString = '';
+var g_bDeleteLog = true;
+var g_nWGrid = -1;
+var g_nHGrid = -1;
+var g_win; //Usada para o fechamento da dialog de erro
+var g_winProgress; //Usada para o fechamento da dialog de erro
+var g_winPreProcess; //Usada para armazenar a tela de processo criada após o pre-processamento
+var g_winCallForeignProcess; //Usada para armazenar a tela de processo para o Call Foreign Process.
+var g_aInpDate = [];
+var g_bInpDateDocumentEventAdded = false;
+var g_strFilterBtnName = '';
+var g_bSettingJasonValue = false;
+var g_strHelpFile;
+var g_bWellDone = false;
+var g_bSubRegistryContext = false;
+var g_strLastFiredButtonFilterName = '';
+var g_KeySel;
+var g_nScrollBarWidth;
+var g_aCombo = new Array( );
+var g_aInputUpload = new Array( );
+var g_aMenu = new Array( );      // Lista do Menu atual aberto.
+var g_aCacheMenu = new Array( ); // Cache de Menus criados. Utilizado para SubMenus.
+var g_strIdProcess;  // Id do Processo e do Relatório
+var g_bCancelProcess = false;
+var g_bExecuteBack = true;
+var g_nHistoryPos;
+var g_buttonSubmit; // Referência para o botão de submissão do formulário, tanto para cadastro como para processo e modalformbutton
+var g_SuperCompName; // Nome do componente que foi responsável pela abertura da tela
+var g_iFrameForm;
+var g_nLayoutId; // Identifica o layout para que o processo possa validar o PropertiesData desse layout
+var g_InputSecurity; // Referência ao InputSecurity que está com a tela de busca de títulos aberta
+var g_InputSeries;   // Referência ao InputSeries que está com a tela de busca de séries aberta
+var g_InputPaper;    // Referência ao InputPaper que está com a tela de busca de papéis aberta
+var g_InputAccount;  // Referência ao InputAccount que está com a tela de busca de papéis aberta
+var g_InputInvestor; // Referência ao InputInvestor que está com a tela de busca de clientes aberta
+var g_InputSecurityBalance; // Referência ao InputSecurityBalance que está com a tela de busca de títulos com saldo aberta
+var g_InputSecurityIssuers; // Referência ao InputSecurityIssuers que está com a tela de busca de emissores de títulos aberta
+var g_bNeedResize = false; //Indica se precisa alterar o tamanho do Dialog
+var g_bHasUpdatedHistory; //Indica se o método beforeUnload já atualizou o History.
+var g_bUseQueryStringOnDoProcess = false;
+var g_bIsSubmit = false; //Indica que o usuário clicou em "OK" em uma tela de confirmação de processos customizável. Serve para não atualizar o History.
+var g_aDataForeignCompNames = {};  //Nome de componentes estrangeiros ao Layout do cadastro.
+var g_nSvcHelpID;
+var g_isLoading = false;
+var g_isClearingLayout = false;
+var g_nCurrPage = 0;
+var g_strCurrOrder = "";
+var g_bSubProcessType = 0; // 0 = Listview; 1 = Botão
+var g_Listview;
+var g_divShield = undefined;
+var g_bRegistry = true;
+var g_errorLine; //Usada no tratamento de erros
+var g_errorMsg;  //Usada no tratamento de erros
+var g_nSufixo = 0;
+var g_inpDateDraggingValue     = undefined; //div do inputDate que é arrastada com o valor
+var g_inpDateTimeDraggingValue = undefined; //div do inputDateTime que é arrastada com o valor
+var g_openedCalendar           = undefined;
+var g_ErrorDialog;
+var g_strOldClipboardData;
+var g_strMfbHelpName         = undefined;
+var g_strRegistryTbPrincipal = "el_registryTbPrincipal";
+var g_handleThreadInterval   = undefined;
+var g_bSubRegistryReturn     = undefined;
+var g_processResultWin       = undefined;
+var g_nFLACount              = 0;
+var g_customRegistryClassSufix = 0;
+
+/**
+ * Contém todas as janelas que são abertas, para
+ * que eu possa corretamente fechá-las quando ocorrem cliques no shield da janela.
+ * Este comportamento só está disponível em dispositivos touchscreen.
+ * RIP g_forms :)
+ */
+var g_aWin = new Array( );
+
+/**
+ * Utilizado para identificar os casos que o atalho de saída da janela (ESC)
+ * pode ser acionado. Utilizado para não cancelar processamentos, progressos,
+ * etc.
+ * Definido junto com a definição de variáveis globais no Java.
+ *
+ * var g_bAcceptESCShortcut;
+ */
+if( document.addEventListener )
+{
+  document.addEventListener( "contextmenu", contextmenu, false );
+  document.addEventListener( "keydown", documentOnKeyDown, false );
+  document.addEventListener( "drop", handleDrop, false );
+  document.addEventListener( "dragenter", handleDragEnter, true );
+  document.addEventListener( "dragover", handleDragOver, true );
+  document.addEventListener( "dragleave", handleDragLeave, true );
+}
+else
+{
+  document.attachEvent( "oncontextmenu", contextmenu );
+  document.attachEvent( "onkeydown", documentOnKeyDown );
+  document.attachEvent( "ondrop", handleDrop );
+  document.attachEvent( "ondragenter", handleDragEnter );
+  document.attachEvent( "ondragover", handleDragOver );
+  document.attachEvent( "ondragleave", handleDragLeave );
+}
+
+function handleDragOver( pr_event )
+{
+  if( !pr_event )
+    pr_event = window.event;
+  
+  pr_event.preventDefault( );
+  pr_event.stopPropagation( );
+}
+
+function handleDragEnter( pr_event )
+{
+  if( !pr_event )
+    pr_event = window.event;
+  
+  if( g_aInputUpload.length )
+    for( var i = 0; i < g_aInputUpload.length; i++ )
+      g_aInputUpload[i].handleDragEnter( pr_event );
+}
+
+function handleDragLeave( pr_event )
+{
+  if( !pr_event )
+    pr_event = window.event;
+  
+  if( g_aInputUpload.length )
+    for( var i = 0; i < g_aInputUpload.length; i++ )
+      g_aInputUpload[i].handleDragLeave( pr_event );
+}
+
+function handleDrop( pr_event )
+{
+  if( !pr_event )
+    pr_event = window.event;
+  
+  if( g_aInputUpload.length )
+    for( var i = 0; i < g_aInputUpload.length; i++ )
+      g_aInputUpload[i].handleDrop( pr_event );
+}
+
+function cancelPropagation( pr_event )
+{
+  if( pr_event.stopPropagation ) pr_event.stopPropagation( );
+  if( pr_event.preventDefault  ) pr_event.preventDefault ( );
+  pr_event.cancelBubble = true;
+  pr_event.returnValue  = false;
+}
+
+// Trata os atalhos do sistema.
+function documentOnKeyDown( pr_event )
+{
+  // Evento disparado antes da tela estar completamente carregada.
+  if( !window.$ || !$.ui )
+    return;
+
+  pr_event = pr_event || window.event;
+
+  var keyCode   = pr_event.which || pr_event.keyCode;
+  var topWindow = getTopWindow( );
+
+  switch( keyCode )
+  {
+    case $.ui.keyCode.ESCAPE:
+        topWindow.handleWindowCloseByShortcut( );
+      break;
+    case $.ui.keyCode.SPACE:
+      if( pr_event.ctrlKey )
+        topWindow.focusPrcSearch( pr_event );
+      break;
+    case $.ui.keyCode.BACKSPACE:
+      cancelBackspace( pr_event );
+      break;
+  }
+}
+
+// Função de fechamento da janela corrente por atalho (esc), só é executada no frame mais alto do sistema.
+function handleWindowCloseByShortcut( )
+{
+  if( canCloseFocusWindowByShortcut( ) )
+    closeFocusWindow( );
+}
+
+// Verifica se pode fechar a janela por atalho, apenas janelas de consulta podem ser fechadas.
+function canCloseFocusWindowByShortcut( )
+{
+  var win;
+
+  for( var i = 0; i < g_aWin.length; i++ )
+  {
+    win = g_aWin[i];
+
+    if( win.isOpen && getFrameWindow( win ).g_bAcceptESCShortcut )
+      return true;
+  }
+
+  return false;
+}
+
+// Função de foco no campo de busca de processo. Só é executado no frame mais alto do sistema.
+function focusPrcSearch( pr_event )
+{
+  if( !areThereAnyWindowsOpened( ) )
+  {
+    document.getElementById( 'txArgBusca' ).focus( );
+    cancelPropagation( pr_event )
+  }
+}
+
+// Ao pressionar o backspace, não pode executar o back do browser.
+function cancelBackspace( pr_event )
+{
+  var e = document.activeElement;
+
+  if( !e )
+    return;
+
+  if( ( compareNoCase( e.tagName, 'td'     ) == 0 ||
+        compareNoCase( e.tagName, 'tr'     ) == 0 ||
+        compareNoCase( e.tagName, 'body'   ) == 0 ||
+        compareNoCase( e.tagName, 'center' ) == 0 ||
+        compareNoCase( e.tagName, 'div'    ) == 0 ||
+        compareNoCase( e.tagName, 'span'   ) == 0 ||
+        compareNoCase( e.tagName, 'tbody'  ) == 0 ) &&
+        keyCode == 8 )
+  {
+    pr_event.cancelBubble = true;
+
+    return false;
+  }
+}
+
+// Desabilita o menu de contexto
+function contextmenu( pr_event )
+{
+  var e = document.activeElement;
+  var target;
+
+  pr_event = pr_event || window.event;
+  target   = pr_event.target || pr_event.srcElement;
+
+  if( !( e == target && ( compareNoCase( e.tagName, 'textarea' ) == 0 || ( compareNoCase( e.tagName, 'input' ) == 0 && compareNoCase( e.type, 'text' ) == 0 ) ) ) )
+  {
+    if( pr_event.preventDefault )
+      pr_event.preventDefault( );
+
+    return false;
+  }
+
+  return true;
+}
+
+function addForeignCompNames( strKey, aDataForeignCompNames )
+{
+  g_aDataForeignCompNames[strKey] = aDataForeignCompNames;
+}
+
+function removeForeignCompNames( strKey )
+{
+  unloadComps( strKey );
+  g_aDataForeignCompNames[strKey] = undefined;
+}
+
+function unloadComps( strKey )
+{
+  var comps = g_aDataForeignCompNames[strKey];
+  var comp;
+  
+  if( !comps )
+    return;
+  
+  for( var i = 0; i < comps.length; i++ )
+  {
+    comp = eval( comps[i] );
+    
+    if( comp.unload )//log(comp.unload)
+      comp.unload( );
+  }
+}
+
+function getDataForeignCompNames( strKey )
+{
+  if( strKey )
+    return g_aDataForeignCompNames[strKey];
+
+  var aAllDataForeignCompNames = [];
+
+  for( var strForeignLayoutName in g_aDataForeignCompNames )
+    if( strForeignLayoutName != "asString" )
+      aAllDataForeignCompNames = aAllDataForeignCompNames.concat( g_aDataForeignCompNames[strForeignLayoutName] );
+
+  return aAllDataForeignCompNames;
+}
+
+function getWindowHeight( )
+{
+  return $( window ).height( );
+}
+
+function getWindowWidth( )
+{
+  if( document.all )
+    return document.body.offsetWidth;
+  else
+    return window.innerWidth;
+}
+
+function treatError( msg, url, line )
+{
+  if( msg != "ERRO_CONF_REGISTRY" )
+  {
+    return false;
+
+    hideShield( );
+
+    g_win = showGenericWindow( g_bEnglish ? "Alert" : "Aviso", 480, 310, getContextURL( ) + 'Obj/error.html', true, false, true );
+
+    g_errorMsg  = msg;
+    g_errorLine = line;
+  }
+
+  return true;
+}
+
+window.onerror = treatError;
+
+function treatKey( key )
+{
+  if( key == 13 )
+    fireEvent.apply( this );
+}
+
+function fireEvent( aEvents )
+{
+    if( g_bSettingJasonValue )
+      return;
+
+    var a = ( aEvents != undefined ? aEvents : this.aEventListener ),
+      eventListener;
+
+    for( var i = 0; i < a.length; i++ )
+    {
+      eventListener = a[i];
+
+      if( eventListener['type'] )
+        switch( eventListener['type'] )
+        {
+          case 1 : loadJson.apply( this, [eventListener] );break;
+          case 2 : closeDialog( );break;
+          case 3 : submitForm.apply( this, [eventListener] );break;
+          case 4 : makeReadOnly.apply( this, [eventListener] );break;
+          case 5 : setPropertiesData.apply( this, [eventListener] );break;
+          case 6 : showHelp( eventListener['HelpFile'] );break;
+          case 7 : process.apply( this, [] );break;
+          case 8 : confirmAddFavorite.apply( this, [this.ID2] );break;
+          case 9 : cancelProgress.apply( this, [] );break;
+          case 10: confirmDeleteFavorite.apply( this, [this.ID2] );break;
+          case 11: confirmUpdateFavorite.apply( this, [this.ID2] );break;
+          case 12: inputPortfolioEvents.apply( this._parent, [this] );break;
+          case 13: inputsecuritySelect.apply( this, [] );break;
+          case 14: modalformbuttonEvents.apply( this, [] );break;
+          case 15: submitFormListview.apply( this, [] );break;
+          case 16: inputseriesSelect.apply( this, [] );break;
+          case 17: customConfirmProcess( g_strURL, this.Id1, this.aSource );break; //serviço de fechamento da tela de confirmação de processos.
+          case 18: preProcess.apply( this, [] );break;
+          case 19: report.apply( this, [] );break;
+          case 20: inputSecurityIssuersSelect.apply( this, [] );break;
+          case 21: inputPaperSelect.apply( this, [] );break;
+          case 22: processSubProcess.apply( this, [this.ID2,true] );break;
+          case 23: inputAccountSelect.apply( this, [] );break;
+          case 24: updateRowsPerPage.apply( this, [] );break;
+          case 25: inputInvestorSelect.apply( this, [] );break;
+          case 26: callSubProcess.apply( this, [] );break;
+          case 27: inputSecurityBalanceSelect.apply( this, [] );break;
+          case 28: remoteReport.apply( this, [] );break;
+          case 29: processGenericSearch.apply( this, [] );break;
+          case 30: setAccountPlan.apply( this, [eventListener] );break;
+        }
+    }
+}
+
+function openBrowserWindow( url, width, height, title )
+{
+  var w = ( width  == undefined ? 750 : width  );
+  var h = ( height == undefined ? 500 : height );
+
+  var left = ( screen.width  - w ) / 2;
+  var top  = ( screen.height - h ) / 2;
+  return window.open( url, title, 'resizable=yes,scrollbars=yes,menubar=no,toolbar=no,top=' + top + ',left=' + left + ',width=' + w + ',height=' + h );
+}
+
+function showWindowProcessResult( url, width, height, aResultWindowButtons )
+{
+  var w = ( width  == undefined ? 700 : width  );
+  var h = ( height == undefined ? 480 : height );
+  var bNeedClose = aResultWindowButtons.length == 0;
+  
+  var win = showGenericWindow( g_bEnglish ? "Process Result" : "Resultado do Processo", w    , h    , url                  ,
+                               bNeedClose                                             , false, false, aResultWindowButtons );
+
+  g_processResultWin = win;
+}
+
+function showHelp( strHelpFile )
+{
+  window.open( strHelpFile );
+}
+
+function setPropertiesData( a )
+{
+  var aSources = a['sources'];
+  var strSourceName = "";
+
+  if( a["sourceName"] != undefined )
+    strSourceName = '&SourceName=' + a["sourceName"];
+
+  var param = 'ID1=' + a['Id1'] + '&ID2=' + a['IdSvc'] + '&ID3=' + buildQueryString( a['sources'] ) + strSourceName
+
+  //MANTIS#32305: Marcado como true para não alterar o focus dos componentes.
+  showShield( true );
+  var cmd = 'executeSetPropertiesData( "' + param + '" );';
+  setTimeout( cmd, 1 );
+}
+
+function executeSetPropertiesData( param )
+{
+  var strPost = postContent( g_strURL, param );
+  var aResp   = stringToJson( strPost );
+
+  for( var i in aResp )
+  {
+    try
+    {
+      eval( "cp_" + i ).setJsonValue( aResp[i] );
+    }
+    catch( e ){ }
+  }
+
+  if( g_bNeedResize )
+  {
+    // Permite a todos os componentes que implementem o evento onResize
+    // de tratarem seu tamanho na tela
+    for( var i in aResp )
+    {
+      try
+      {
+        eval( "cp_" + i ).onResize( );
+      }
+      catch( e ){ }
+    }
+    g_bNeedResize = false;
+    resizeDialog( );
+  }
+
+  if( aResp._svc != undefined )
+  {
+    showDialog( aResp._svc.idMsg, true );
+  }
+
+  hideShield( );
+}
+
+function makeReadOnly( a )
+{
+  var bChecked = stringToJson( this.getJsonValue( ) ).value;
+  eval( a['target'] ).setReadOnly( a['negate'] ? !bChecked : bChecked );
+}
+
+function setAccountPlan( a )
+{
+  eval( a['target'] ).setAccountPlan( this.getAccountPlan( ) );
+}
+
+function loadJson( a )
+{
+  try
+  {
+    var strQueryString;
+    var target = eval( a['target'] );
+
+    if( target.handleDelayedFill )
+      target.handleDelayedFill( );
+    else
+      strQueryString = doLoadJson( target.Id1, "", target.aSource, target, a['bFilter'] );
+
+    if( a['bFilter'] )
+    {
+      g_strLastFiredButtonFilterName = this.cpName;
+      g_strOldFilterQueryString      = strQueryString;
+    }
+  }
+  catch( e ){ };
+}
+
+function doLoadJson( Id1, Id2, aSource, target, bFilter, strSourceName )
+{
+  var strQueryString = buildQueryString( aSource, bFilter );
+  var strPrm = 'ID1=' + Id1 + '&ID2=' + Id2 + '&ID3=' + strQueryString;
+  var strAuxSourceName = "";
+
+  if( strSourceName != undefined )
+    strAuxSourceName = '&SourceName=' + strSourceName;
+
+  if( target.strParentCompName ) // Nome do inputPortfolio pai do controle que disparou o evento
+    strAuxSourceName += '&ParentCompName=' + target.strParentCompName;
+
+  if( target.loadData )
+  {
+    target.resetSortOrder( );
+    if( target.showShield )
+      target.showShield( );
+
+    if( target.setURL )
+      target.setURL( g_strURL );
+
+    if( target.setPrm )
+      target.setPrm( strPrm + strAuxSourceName );
+
+    if( g_nCurrPage )
+    {
+      if( g_bSubRegistryReturn )
+        g_bSubRegistryReturn = undefined;
+      else if( g_strOldFilterQueryString != strQueryString )
+        g_nCurrPage = 0;
+
+      strPrm = strPrm + "&pag=" + g_nCurrPage;
+    }
+
+    if( g_strCurrOrder )
+      strPrm = strPrm + "&order=" + g_strCurrOrder;
+
+    if( target.getSelectedRow( ) != -1 )
+    {
+      if( g_strOldFilterQueryString == strQueryString )
+        target.setOldKey( target.getRealKey( ) );
+      else
+        target.setOldKey( "" );
+    }
+
+    g_target = target;
+    loadData( g_strURL, strPrm + strAuxSourceName, false );
+  }
+  else
+    target.loadFromJson( stringToJson( postContent( g_strURL, strPrm ) ) );
+
+  return strQueryString;
+}
+
+function loadData( pr_strURL, pr_strPrm, pr_bSorting )
+{
+  showShield( );
+  var request = postContentAsync( pr_strURL, pr_strPrm, callback_loadData, null, [pr_bSorting], true );
+}
+
+function callback_loadData( pr_data, pr_bSorting )
+{
+  if( pr_data.errorSvcID != undefined )
+    showDialog( pr_data.errorSvcID, true );
+
+  if( pr_data.pd != undefined )
+  {
+    var json = stringToJson( pr_data.pd );
+    document.updateFilterData( json );
+  }
+
+  // Configura o array de efeitos da listview
+  if( pr_data.effects != undefined )
+    g_target._aEffects = pr_data.effects;
+
+  if( pr_data.menuState != undefined )
+    g_target._menuState = pr_data.menuState;
+
+  if( !pr_bSorting && pr_data.header != undefined )
+  {
+    g_target._nLastSortCol = undefined;
+    g_target.loadHeaderFromJson( pr_data.header );
+  }
+
+  if( pr_data.bMultiSelect != undefined )
+    g_target.setMultiSelect( pr_data.bMultiSelect );
+
+  if( g_strCurrOrder )
+  {
+    g_target.rebuildSortOrder( g_strCurrOrder );
+    g_strCurrOrder = "";
+  }
+
+  g_target.loadData( pr_data.data, true );
+  
+  hideShield( );
+}
+
+function submitForm( )
+{
+  g_buttonSubmit = this;
+
+  var aResp;
+  var strId5 = this._isConfirmed == true ? "&ID5=true" : "";
+
+  aResp = stringToJson(
+    postContent( g_strURL, 'ID1=' + this.Id1 +
+                 '&ID3=' + buildQueryStringEx( this.aSource, getDataForeignCompNames( ) ) +
+                 '&ID4=' + (parent.grid.getTotRows( ) == 0) +
+                 strId5 ) );
+
+  // Reseta a confirmação, caso haja erro no processamento.
+  this._isConfirmed = false;
+
+  // Configurando o serviço NACEP que deve ser executado pela Listview. Ajuste
+  // implementado para SubCadastros
+  if( aResp.nSvcListview != undefined )
+    nSvc = aResp.nSvcListview;
+
+  if( aResp.bRefreshFilter )
+  {
+    var aJson = stringToJson( postContent( g_strURL,
+      'ID1=' + aResp.bRefreshFilterID ) );
+
+    parent.document.updateFilterData( aJson );
+  }
+
+  if( aResp.bRefreshListview )
+  {
+    g_bDeleteLog = false;
+    parent.grid.atualizaGrid( null, null, null, true );
+
+    if( aResp.Status == 2 && aResp.bRegistrySuccessMessage )
+      showDialog( aResp.SvcID, true );
+    else
+      closeDialog( );
+  }
+  else
+  {
+    if( aResp.Status == 0 || aResp.bRegistrySuccessMessage )
+    {
+      g_bDeleteLog = false;
+      if( ( nSvc != 10 && nSvc != 40 )
+        || ( ( nSvc == 10 || nSvc == 40 ) && aResp.Rows ) )
+      {
+        if( aResp.RowsEffects )
+          aResp.Rows.effects = aResp.RowsEffects;
+        if( aResp.RowsMenuState )
+          aResp.Rows.menuState = aResp.RowsMenuState;
+
+        if( aResp.newRowsEffects )
+          aResp.newRows.effects = aResp.newRowsEffects;
+        if( aResp.newRowsMenuState )
+          aResp.newRows.menuState = aResp.newRowsMenuState;
+
+        if( nSvc == 600 )
+          parent.grid.atualizaGrid( aResp.Rows, 600, false, aResp.bRefreshListview, aResp.newRows, aResp.deletedRows );
+        else
+          parent.grid.atualizaGrid( aResp.Rows, nSvc, aResp.bDeleteRow );
+      }
+
+      if( aResp.bRegistrySuccessMessage )
+        showDialog( aResp.SvcID, true );
+      else
+        closeDialog( );
+
+      // Somente preenchido se estiver em um Processo e for clicado em processar
+      if( aResp.lvd )
+      {
+        l.clear( );
+        if( aResp.lvd.Effects )
+          l._aEffects = aResp.lvd.Effects;
+        if( aResp.menuState != undefined )
+          l._menuState = aResp.lvd.menuState;
+
+        l.loadData( aResp.lvd.Data.data );
+      }
+    }
+    else
+    {
+      g_bDeleteLog = true;
+      showDialog( aResp.SvcID, true );
+    }
+  }
+}
+
+document.updateFilterData = function( json )
+{
+  document.updateObjects( window.frames, json );
+}
+
+document.updateObjects = function( f, json )
+{
+  for( var i in json )
+  {
+    var bOk = false;
+    var a;
+    var c;
+    var j = 0;
+    try
+    {
+      for( var j = 0; f != undefined && c == undefined && j < f.length; j++ )
+        c = eval( "f[" + j + "].cp_" + i );
+
+      c.setJsonValue( json[i] );
+      bOk = true;
+    }
+    catch( e )
+    {
+      c = eval( "window.frames.cp_" + i );
+
+      if( c == undefined )
+        for( var j = 0; j < window.frames.length && c == undefined; j++ )
+          c = eval( "window.frames[" + j + "].cp_" + i );
+    }
+
+    if( c != undefined && bOk == false )
+      c.setJsonValue( json[i] );
+
+    c = undefined;
+  }
+
+  if( g_bNeedResize )
+  {
+    g_bNeedResize = false;
+    resizeDialog( );
+  }
+}
+
+// AFAZER Alterar nome da função e implementar nos componentes as validações
+// dinâmicas, "real time validation"
+function validate( aComps )
+{
+  var comp;
+  var bValidation = true;
+
+  for( var i = 0; i < aComps.length; i++ )
+  {
+    comp = aComps[i];
+
+    if( comp.validate && !comp.validate( ) )
+      bValidation = false;
+  }
+  
+  return bValidation;
+}
+
+function process( aResp )
+{
+  g_strIdProcess = this.Id1;
+
+  if ( !validate( this.aSource ) )
+    return;
+
+  var strQueryString = buildQueryString( this.aSource );
+
+  g_buttonSubmit = this;
+  nextStep( this.IdValidate, 0, strQueryString );
+}
+
+function report( aResp )
+{
+  g_strIdProcess = this.Id1;
+
+  if ( !validate( this.aSource ) )
+    return;
+
+  var strQueryString = buildQueryString( this.aSource );
+
+  g_buttonSubmit = this;
+  nextStep( this.IdValidate, 0, strQueryString );
+}
+
+document.closeProcess = function( )
+{
+  if( g_winCallForeignProcess )
+  {
+    g_winCallForeignProcess.close( );
+    g_winCallForeignProcess = null;
+  }
+  else if( g_winPreProcess )
+  {
+    g_winPreProcess.close( );
+    g_winPreProcess = null;
+  }
+  else
+    closeDialog( );
+}
+
+function preProcess( aResp )
+{
+  g_strIdProcess = this.Id1;
+
+  var strQueryString = buildQueryString( this.aSource );
+
+  g_buttonSubmit = this;
+
+  var strParam = 'ID1=' + g_strIdProcess;
+  if( strQueryString )
+    strParam += '&ID3=' + strQueryString;
+
+  eval( postContent( g_strURL, strParam ) );
+}
+
+function nextStep( strIDNextStep, nNextStep, strQueryString )
+{
+  g_bCancelProcess = false; // Inicializa a variável para controlar o
+                            // cancelamento do processo
+
+  var strParam = 'ID1=' + strIDNextStep;
+
+  if( strQueryString )
+    strParam += '&ID3=' + strQueryString;
+
+  strParam += '&ID4=' + nNextStep;
+
+  var strId5 = g_buttonSubmit && g_buttonSubmit._isConfirmed == true ? "&ID5=true" : "";
+
+  if( g_nFLACount > 0 )
+    strParam += '&bInsideFLA=true';
+
+  eval( postContent( g_strURL, strParam + strId5 ) );
+}
+
+function processMenuRemoteReport( pr_nIdValidateReport, pr_nSvcID1, pr_nIdSvc, pr_nProc )
+{
+  var obj =
+  {
+    IdValidate :pr_nIdValidateReport,
+    Id1 :pr_nSvcID1,
+    nIdSvc :pr_nIdSvc,
+    bMenuReport :true,
+    nKey :g_Listview.getRealKey( ),
+    aSource :g_Listview.getSource( ),
+    nProc :pr_nProc
+  };
+
+  remoteReport.apply( obj, [] );
+}
+
+function remoteReport( )
+{
+  g_strIdProcess = this.Id1;
+  g_buttonSubmit = this;
+
+  var strQueryString = buildQueryString  ( this.aSource )   +
+                       "&bRemoteReport=" + true             +
+                       "&bMenuReport="   + this.bMenuReport +
+                       "&nKey="          + this.nKey        +
+                       "&nIdSvc="        + this.nIdSvc      +
+                       "&nProc="         + this.nProc;
+
+  nextStep( this.IdValidate, 0, strQueryString );
+}
+
+function doConfirmProcess( strIdSvc )
+{
+  document.write( postContent( g_strURL, 'ID1=' + strIdSvc + '&ID4=1' ) );
+}
+
+function doProcess( pr_svc )
+{
+  showShield( );
+
+  var strInsideFLA = "";
+
+  if( g_nFLACount > 0 )
+    strInsideFLA += '&bInsideFLA=true';
+  
+  var svc = g_strIdProcess;
+  if( pr_svc )
+    svc = pr_svc;
+
+  // Este if serve para evitar que o post seja feito com buildQueryString pela
+  // segunda vez, o que causa erro na listview, porém é
+  // necessário para o inputUpload. Este tratamento ainda dá erro caso tenha uma
+  // tela com inputUpload e ListView.
+  // AFAZER rever o if, com a mudança no inputUpload, caso haja o funcionamento deste,
+  // ele mesmo faz uma requisição ao servidor para atualizar os dados, não sendo
+  // mas necessário este primeiro bloco.
+  if( g_bUseQueryStringOnDoProcess )
+  {
+    g_bUseQueryStringOnDoProcess = false;
+
+    postContentAsync( g_strURL, 'ID1=' + svc + strInsideFLA
+      + '&ID3=' + buildQueryString( aDataCompNames, undefined, undefined, undefined, registry.ui.types.inputupload ), doProcessFinalize );
+  }
+  else
+    postContentAsync( g_strURL, 'ID1=' + svc + strInsideFLA,
+      doProcessFinalize );
+}
+
+function doPreProcess( svcId )
+{
+  showShield( );
+
+  // Este if serve para evitar que o post seja feito com buildQueryString pela
+  // segunda vez, o que causa erro na listview, porém é
+  // necessário para o inputUpload. Este tratamento ainda dá erro caso tenha uma
+  // tela com inputUpload e ListView.
+  if( g_bUseQueryStringOnDoProcess )
+  {
+    g_bUseQueryStringOnDoProcess = false;
+
+    postContentAsync( g_strURL, 'ID1=' + svcId + '&ID3='
+      + buildQueryString( aDataCompNames, undefined, undefined, undefined, registry.ui.types.inputupload ), doProcessFinalize );
+  }
+  else
+    postContentAsync( g_strURL, 'ID1=' + svcId, doProcessFinalize );
+}
+
+function asyncProcess( response )
+{
+  var strParams = "ID1=" + response.ID1 + "&key=" + response.key;
+
+  if( g_nFLACount > 0 )
+    strParams += '&bInsideFLA=true';
+
+  setTimeout( function( ) {
+    postContentAsync( g_strURL, strParams, doProcessFinalize );
+  }, 1000 );
+}
+
+// Motivo dos parents e blocos de proteção: Execução de scripts tanto para
+// pré-processamento como processo normal
+// No caso de processos normais, o parent é ele mesmo e não dá nenhum problema,
+// dada a estrutura do próprio JS
+// Quando está dentro de um frame, ele dá erro de acesso, e portanto, sabemos
+// que deve ser usado o próprio document
+// No caso do pré-processamento, sempre funciona
+function doProcessFinalize( response )
+{
+  var aResp = stringToJson( decodeEntities( response ) );
+  var win   = null;
+  var f     = window.frames;
+
+  // Processamentos longos que utilizam uma thread de processamento e verificam se o processamento já concluiu.
+  if( aResp.bProcessing )
+  {
+    asyncProcess( aResp );
+    return;
+  }
+
+  if( aResp.Status != 0 )
+  {
+    win = showDialog( aResp.SvcID, true );
+  }
+
+  if( aResp.JsonClear )
+  {
+    g_isClearingLayout = true;
+
+    getTopWindow( ).document.updateObjects( f, aResp.JsonClear );
+    
+    g_isClearingLayout = false;
+  }
+
+  if( aResp.pd )
+  {
+    var json = stringToJson( aResp.pd );
+    
+    getTopWindow( ).document.updateObjects( f, json );
+  }
+
+  // Ajusta os Keys da listview pois podem ter sido alterados por exclusões
+  doAdjustListviewKeys( );
+
+  if( aResp.HTMLResultID )
+  {
+    if( aResp.bShowJSWindow )
+      showWindowProcessResult( g_strURL + '?ID1=' + aResp.HTMLResultID, undefined, undefined, aResp.aResultWindowButtons );
+    else
+      openBrowserWindow( g_strURL + '?ID1=' + aResp.HTMLResultID );
+  }
+
+  if( aResp.JSResult )
+    eval( aResp.JSResult );
+
+  if( g_buttonSubmit != undefined )
+  {
+    var button = eval( g_buttonSubmit );
+
+    if( g_buttonSubmit.aProcessEventListener )
+      fireEvent.apply( g_buttonSubmit, [g_buttonSubmit.aProcessEventListener] );
+  }
+
+  // Só acontece em Pré-Processamento e Foreign Process.
+  if( aResp.bCloseWindow )
+    document.closeProcess( );
+
+  hideShield( );
+}
+
+function doAdjustListviewKeys( )
+{
+  for( var i = 0; i < aDataCompNames.length; i++ )
+  {
+    try
+    {
+      cp = eval( aDataCompNames[i] );
+
+      if( cp._type == 13 )
+        cp.adjustKeys( );
+    }
+    catch( e ){ }
+  }
+}
+
+//Essa função é usada para tratar o caso em que houve um pedido de confirmação do Subprocesso
+//e este foi confirmado.
+function showReportError( pr_aResp )
+{
+  if( pr_aResp.Status != 1 )
+    g_bDeleteLog = true;
+
+  showDialog( pr_aResp.SvcID, true );
+
+  hideShield( );
+}
+
+function doReport( nIdSvc )
+{
+  window.open( g_strURL + '?ID1=' + nIdSvc,'','toolbar,scrollbars,resizable,status,dependent,width=700,height=500' );
+}
+
+//AFAZER Verificar se ainda é usado, basicamente não rs :P
+function doReportValidation( nIdSvc )
+{
+  postContent( g_strURL, 'ID1=' + g_nSvcSaveObjecID + '&ID3=' + buildQueryString( aDataCompNames ) );
+}
+
+function reportResponse( aResp )
+{
+  var f = window.frames;
+
+  if( aResp.JsonClear )
+  {
+    g_isClearingLayout = true;
+    
+    getTopWindow( ).document.updateObjects( f, aResp.JsonClear );
+
+    g_isClearingLayout = false;
+  }
+
+  if( aResp.pd )
+  {
+    var json = stringToJson( aResp.pd );
+
+    getTopWindow( ).document.updateObjects( f, aResp.JsonClear );
+  }
+}
+
+function buildQueryStringEx( a, b, bComplete )
+{
+  var c = a.concat( b );
+  return buildQueryString( c, bComplete );
+}
+
+/**
+ * Monta um JSON com dados de componentes.
+ * 
+ * @param a array dos componentes que terão seus dados coletados.
+ * @param bComplete se deve enviar dados completos dos componentes (?).
+ * @param bFavorites se os dados coletados serão para favoritos.
+ * @param nProcess número do processo, caso seja necessário tal informação no JSON de dados.
+ * @param nType se enviado, apenas os componentes deste tipo terão seus dados coletados.
+ */
+function buildQueryString( a, bComplete, bFavorite, nProcess, nType, sInternalName )
+{
+  var cp;
+  var str = '';
+  
+  var bVisualJson;
+  var bValidType;
+  var bIgnoreFavorites;
+  
+  if( a != undefined && a.length > 0 )
+  {
+    try
+    {
+      cp = eval( a[0] );
+
+	  bInvalidName     = sInternalName !== undefined && sInternalName !== cp.internalName;
+      bVisualComp      = cp.isVisualJson && cp.isVisualJson( );
+      bInvalidType     = cp._type == undefined || ( nType && ( cp._type != nType && cp._type != registry.ui.types.foreignLayoutArea ) );
+      bIgnoreFavorites = bFavorite && cp.isIgnoreFavorites && cp.isIgnoreFavorites( );
+	  
+      // Previne componentes que não são de dados de entrar no propertiesData
+      // No caso de ser coleta para favoritos, não inclui componentes
+      // configurados para estar fora do mesmo.
+      if( !( ( !bComplete && ( bVisualComp || bInvalidType ) ) || bIgnoreFavorites || bInvalidName ) )
+      {
+        str += ',' + cp.internalName + ':' + escape( cp.getJsonValue( bComplete ) );
+        str = str.replace( new RegExp( "\\+", "g" ), "%2B" );
+      }
+    }
+    catch( e ) { }
+
+    //Houve a repetição do código para retirar um if da repetição, que é um caso que ocorre apenas do segundo item em diante,
+    //que é a inserção do separador ','.
+    for( var i = 1; i < a.length; i++ )
+    {
+      try
+      {
+        cp = eval( a[i] );
+
+		bInvalidName     = sInternalName !== undefined && sInternalName !== cp.internalName;
+        bVisualComp      = cp.isVisualJson && cp.isVisualJson( );
+        bInvalidType     = cp._type == undefined || ( nType && ( cp._type != nType && cp._type != registry.ui.types.foreignLayoutArea ) );
+        bIgnoreFavorites = bFavorite && cp.isIgnoreFavorites && cp.isIgnoreFavorites( );
+
+        // Previne componentes que não são de dados de entrar no propertiesData
+        // No caso de ser coleta para favoritos, não inclui componentes
+        // configurados para estar fora do mesmo.
+        if( ( !bComplete && ( bVisualComp || bInvalidType ) ) || bIgnoreFavorites || bInvalidName )
+          continue;
+
+        str += ',' + cp.internalName + ':' + escape( cp.getJsonValue( bComplete ) );
+        str = str.replace( new RegExp( "\\+", "g" ), "%2B" );
+
+      }
+      catch( e ) { }
+    }
+
+    str = str.substring( 1 );
+  }
+
+  if( bComplete )
+  {
+    if( nProcess != undefined )
+      str += ( a != undefined && a.length > 0 ? ',' : '' ) + '_process: {type:2,value:\'' + nProcess + '\'}';
+
+    if( g_KeySel != undefined )
+    {
+      str += ( str.length > 0 ? ',' : '' ) + '_KeySel: {type:5,value:\'' + g_KeySel + '\'}';
+
+      g_KeySel = null;
+    }
+  }
+
+  str = '{' + str + '}';
+
+  return str;
+}
+
+function confirmIsRegistry( strURL, windowCurrent )
+{
+  // Tratamento para ambientes comuns
+  if( windowCurrent.parent.g_bRegistry && windowCurrent.parent == self )
+  {
+    window.location = strURL + "?ID1=tratamentoSessao";
+    return false;
+  }
+  else if( windowCurrent.parent.g_bRegistry && windowCurrent.parent != self )
+    return windowCurrent.parent.confirmIsRegistry( strURL, windowCurrent.parent );
+  // Tratamento para ambiente em clientes específicos
+  else if( !windowCurrent.parent.g_bRegistry )
+  {
+    window.location = strURL + "?ID1=tratamentoSessao";
+    return false;
+  }
+
+  return true;
+}
+
+//Atribui o novo valor na label de tentativas e configura o estilos.
+function configTries( nTries )
+{
+  if( isIE( ) )
+    document.getElementById('tries').innerText = nTries;// aqui atualiza as tentativas na tela de bloqueio.
+  else
+    document.getElementById('tries').textContent = nTries;// aqui atualiza as tentativas na tela de bloqueio.
+  
+  document.getElementById('tries').style.color = "blue";
+  document.getElementById('tries').style.fontWeight = "bold";
+}
+
+//Configura a tela de bloqueio caso o registro esteja sendo usado por uma 
+//sessão ou configura a tela de propriedades caso o registro seja liberado.
+function callLockTry ( strURL, strURLBlock, nCycles, nTries )
+{
+  var result = stringToJson( postContent( strURLBlock, "" ) );
+  
+  if( result.isLock == true )// registro bloqueado
+  {
+    configTries( ++nTries );// aqui atualiza as tentativas na tela de bloqueio.
+
+    //atribui a variavel "window.timeout" criada na ProcessBase o setTimeout corrente.
+    window.timeout = setTimeout( function(){ callLockTry ( strURL, strURLBlock, nCycles, nTries ) }, nCycles );
+  }
+  else// registro desbloqueado
+    redirectTo( strURL );
+}
+
+function postContent( pr_strURL, pr_strQueryString )
+{
+  if( g_SuperCompName )
+	  pr_strQueryString += "&CompName=" + g_SuperCompName;
+  
+  var response = executePostContent( pr_strURL, pr_strQueryString, 
+		  { fnCallback: function( req )
+	          {
+			     var strHeaderResp = req.getResponseHeader( "Generator" );
+			     var resp          = decodeEntities( req.responseText );
+
+			     // true caso a sessão seja inválida
+			     if( ( strHeaderResp == null || strHeaderResp == '') )
+			     {
+			        if( !confirmIsRegistry( pr_strURL, window ) )
+			          throw new Error( "ERRO_CONF_REGISTRY" );
+			     }
+			     
+			     return resp;
+	          }
+	      } );
+
+  return response;
+}
+
+function postContentAsync( pr_strURL, pr_strQueryString, pr_func, pr_object, pr_callbackParams, pr_bParseResponse, pr_bDontCheckTimeout )
+{
+    if( g_SuperCompName )
+        pr_strQueryString += "&CompName=" + g_SuperCompName;
+
+	executePostContentAsync( pr_strURL, pr_strQueryString, 
+			function( request, data )
+			{
+              var strHeaderResp = request.getResponseHeader( "Generator" );        	
+              var response      = decodeEntities( request.responseText );
+
+              //true caso a sessão seja inválida
+              if( !pr_bDontCheckTimeout && (strHeaderResp == null || strHeaderResp == '') )
+              {
+                if( !confirmIsRegistry( pr_strURL, window ) )
+          	      throw new Error( "ERRO_CONF_REGISTRY" );
+              }
+
+              if( pr_bParseResponse )
+                response = stringToJson( response );
+
+              if( pr_callbackParams )
+                pr_callbackParams.splice( 0, 0, response );
+              else
+                pr_callbackParams = [ response ];
+
+              if( pr_object )
+                pr_func.apply( pr_object, pr_callbackParams );
+              else
+                pr_func.apply( window, pr_callbackParams );
+			} );
+}
+
+//MANTIS#30600: Agora a janela do topo sempre tem a referência do progresso.
+function closeProgressWindow( )
+{
+  var topWindow = getTopWindow( );
+
+  if( topWindow.g_winProgress != undefined )
+  {
+   	topWindow.g_winProgress.close( );
+  	topWindow.g_winProgress = undefined;
+  }	
+}
+
+function showGenericWindow( strTitle,
+                            nWidth,
+                            nHeight,
+                            strUrl,
+                            bNeedClose,
+                            bNeedHelp,
+                            bDontCheckAlive,
+                            aResultWindowButtons,
+                            x,
+                            y,
+                            bDraggable )
+{
+  if( !isTopWindow( ) )
+  {
+    return getTopWindow( ).showGenericWindow( strTitle,
+      nWidth,
+      nHeight,
+      strUrl,
+      bNeedClose,
+      bNeedHelp,
+      bDontCheckAlive,
+      aResultWindowButtons,
+      x,
+      y );
+  }
+
+  var button,
+    customCloseFn,
+    bCenter = typeof x === "undefined" && typeof y === "undefined";
+
+  bDraggable = typeof bDraggable === "undefined" ? true : bDraggable;
+
+  if( !bDontCheckAlive )
+  {
+    var resp = stringToJson( postContent( g_strURL, 'ID1=' + g_IdSvcAlive ) );
+    if( resp.Ok != true )
+      throw new Error( "ERRO_CONF_REGISTRY" );
+  }
+
+  if( aResultWindowButtons && aResultWindowButtons.length > 0 )
+  {
+    for( var j = 0; j < aResultWindowButtons.length; j++ )
+    {
+      button = aResultWindowButtons[j];
+
+      if( button.customButtonType == "CUSTOM_CLOSE" )
+      {
+        if( typeof customCloseFn !== "undefined" )
+        {
+          throw new Error( "Foi definida mais de uma função customizada pra fechar a janela." );
+        }
+
+        customCloseFn = button.customButtonClkFn;
+      }
+    }
+  }
+
+  var win = addWindow( strUrl, {
+    closeOnShieldClick: isTouchDevice( ),
+    closeButton: bNeedClose,
+    closeFn: customCloseFn,
+    center: bCenter,
+    draggable: bDraggable,
+    helpUrl: bNeedHelp ? g_strHelpFile : undefined,
+    width: nWidth,
+    height: nHeight,
+    title: strTitle,
+    x: x,
+    y: y
+  } );
+  
+  win.show( );
+
+  return win;
+}
+
+function showDialog( strID1, bShowCloseButton, strParam )
+{
+  if( !isTopWindow( ) )
+  {
+    return getTopWindow( ).showDialog( strID1, bShowCloseButton, strParam );
+  }
+
+  var resp = stringToJson( postContent( g_strURL, "ID1=" + g_IdSvcAlive ) );
+
+  if( resp.Ok != true )
+  {
+    throw new Error( "ERRO_CONF_REGISTRY" );
+  }
+
+  //Isso estava aqui pois, em alguns casos a janela de progresso não fechava, mesmo que fosse mandado que fechasse.
+  //A janela de progresso pode não fechar ou que o usuário fique esperando que a janela feche. 
+  //Esse código estava aqui para fechar a janela, pois eu sei que o progresso acabou nesse ponto.
+  //O MANTIS 30600 removeu essa linha. Se for necessário voltar, avaliar o MANTIS novamente.
+  //closeProgressWindow( );
+
+  var strUrl = g_strURL + "?ID1=" + strID1;
+
+  if( strParam != undefined )
+    strUrl += "&Param=" + strParam;
+
+  var win = addWindow( strUrl, {
+    closeOnShieldClick: isTouchDevice( ),
+    closeButton: bShowCloseButton
+  } );
+
+  return win;
+}
+
+function showForm( strUrl, strIDSvc, strQueryString, strMfbHelpName, bHideCloseButton )
+{
+  if( !isTopWindow( ) )
+  {
+    return getTopWindow( ).showForm( strUrl, strIDSvc, strQueryString, strMfbHelpName, bHideCloseButton );
+  }
+
+  var resp = stringToJson( postContent( g_strURL, 'ID1=' + g_IdSvcAlive ) );
+
+  if( resp.Ok != true )
+    throw new Error( "ERRO_CONF_REGISTRY" );
+
+  var strUrl = strUrl + ( strUrl.indexOf( "?" ) < 0 ? "?" : "&" ) + 'ID1=' + strIDSvc;
+
+  if( strQueryString != undefined )
+    strUrl = strUrl + strQueryString;
+
+  if( !g_bIsProcess && grid.getTotRows( ) > 0 )
+    strUrl = strUrl + '&_Key=' + grid.getKey( );
+
+  var win = addWindow( strUrl, {
+    closeOnShieldClick: isTouchDevice( ),
+    closeButton: bHideCloseButton ? false : true,
+    helpUrl: strMfbHelpName || g_strHelpFile
+  } );
+
+  win.isWindow = true;
+  
+  return win;
+}
+
+// Chamada de Subprocesso via Botão
+function callSubProcess( )
+{
+  g_buttonSubmit = this;
+  g_bSubProcessType = 1;
+  showSubProcess( g_strURL, this.strIDSvc, this.strSubProcID, false, this.strValidateSubProcID, this.aSource, false );
+}
+
+function processFRD( strURL, strIDSvc, nIDPrcDestino )
+{
+  var key = "";
+
+  if( grid.getKey( ) != undefined )
+    key = grid.getKey( );
+
+  postContent( strURL, 'ID1=' + strIDSvc + '&ID2=' + nIDPrcDestino + '&ID3=' + key );
+}
+
+// Exibição da tela de coleta de dados de um SubProcesso, caso seja necessário
+function showSubProcess( strURL, strIDSvc, strSubProcID, bLayoutReadOnly, strValidateSubProcID, aSource, strHelpFile, bHideCloseButton )
+{
+  // Salva as chaves da LV, se veio de uma ListView
+  var strIdSavedObj  = 0,
+    strCompName      = "",
+    isListSubProcess = false,
+    win;
+
+  if( g_bSubProcessType == 0 )
+  {
+    strIdSavedObj = postContent( strURL, 'ID1=' + g_nSvcSaveObjecID + '&ID3=' + g_Listview.getKeys( ) );
+
+    if( g_Listview && g_Listview.internalName )
+    {
+      strCompName = g_Listview.internalName;
+      aSource     = g_Listview.aSource;
+    }
+    else
+      isListSubProcess = true;
+  }
+
+  //Valida subProc
+  var aResp = stringToJson( postContent( strURL, 'ID1=' + strValidateSubProcID + '&ID2=' + strSubProcID + '&ID3=' + strIdSavedObj + '&CompName=' + strCompName ) );
+
+  if( aResp && aResp.Status != 0 )
+  {
+    g_bDeleteLog = true;
+    getTopWindow( ).g_ErrorDialog = showDialog( aResp.SvcID, true );
+
+    return;
+  }
+
+  var strSessionKey = '&sessionKey=' + aResp.sessionKey;
+
+  // Abre form
+  if( aResp.UseLayout )
+  {
+    var strId3 = "";
+    if( aSource != undefined )
+      strId3 = '&ID3=' + encodeURIComponent( buildQueryString( aSource ) );
+
+    win = showForm( strURL,
+                    strIDSvc,
+                    '&ID2=' + strSubProcID + strId3 + strSessionKey + '&layoutReadOnly=' + bLayoutReadOnly + '&isListSubProcess=' + isListSubProcess,
+                    ( strHelpFile ? strHelpFile : g_strMfbHelpName ), bHideCloseButton );
+
+    //Informa a janela do subprocesso que ela foi aberta por uma listview.
+    win._bSubProcessType = g_bSubProcessType;
+    win._Listview        = g_Listview;
+  }
+  else
+  {
+	win = getLastWindow( );
+	
+	if( win && g_Listview )
+    {
+	  win._bSubProcessType = g_bSubProcessType; 
+	  win._Listview        = g_Listview;		
+    }
+	
+    // Somente para criar um objeto fake para ser passado como parâmetro
+    function Obj( aSource, Id1 )
+    {
+      this.aSource = aSource;
+      this.Id1 = Id1;
+      this.sessionKey = aResp.sessionKey;
+    }
+
+    var obj = new Obj( aSource, strIDSvc );
+
+    processSubProcess.apply( obj, [ strSubProcID, false ] );
+  }
+
+  return win;
+}
+
+function doProcessSubProcessConfirmation( )
+{
+  var ID1          = this.form.ID1.value;
+  var ID4          = this.form.ID4.value;
+  var ID5          = this.form.ID5.value;
+  var nIdSvc       = this.form.nIdSvc.value;
+  var bDesvio      = this.form.bDesvio.value;
+  var bUseLayout   = this.form.bUseLayout.value;
+  var bCloseWindow = this.form.bCloseWindow.value;
+  
+  showShield( );
+
+  var cmd = "var aResp = postContent( window.parent.g_strURL, \"ID1=" + ID1
+    + "&ID4=" + ID4
+    + "&ID5=" + ID5
+    + "&nIdSvc="  + nIdSvc
+    + "&bDesvio=" + bDesvio
+    + "&bUseLayout=" + bUseLayout
+    + "\");window.parent.processSubProcessConfirmation( stringToJson( aResp ), "
+    + bCloseWindow + " ) ;";
+
+  setTimeout( cmd, 1 );
+}
+
+// Função chamada na confirmação de um relatório HTML.
+function doProcessReportConfirmation( )
+{
+  var ID1 = this.form.ID1.value;
+  var ID4 = this.form.ID4.value;
+
+  showShield( );
+
+  window.parent.nextStep( ID1, ID4, "" );
+}
+
+// Esse método é usado para tratar o caso em que houve um pedido de confirmação do Subprocesso
+// e este foi confirmado.
+function processSubProcessConfirmation( pr_aResp, pr_bCloseWindow, pr_bCloseProgress )
+{
+  var l              = undefined;
+  var type           = undefined;
+  var parentIsWindow = false;
+  
+  if( pr_bCloseProgress )
+    closeProgressWindow( );
+
+  var processWin = getWindowBefore( ) ? getWindowBefore( ).getFrameWindow( ) : self;
+
+  if( pr_bCloseWindow )
+    g_ErrorDialog.close( );
+  
+  // Trata para saber aonde estão os dados armazenados no documento.
+  // Temos que tratar o caso em que o SubProcesso abre uma janela e o
+  // caso em que ele em si está dentro de uma janela.
+  if( getHowManyWindowsOpened( ) > 1 )
+  {
+	    if( getLastWindow( )._bSubProcessType != undefined )
+	    {
+	      l    = getLastWindow( )._Listview;
+	      type = getLastWindow( )._bSubProcessType;
+	    }
+	    else
+	    {
+	      parentIsWindow = true;
+	      var win = getWindowBefore( );
+	      if( win )
+          {
+            l    = win._Listview;
+            type = win._bSubProcessType;	    	  
+          }
+	      else
+          {
+            l    = processWin.g_Listview;
+            type = processWin.g_bSubProcessType;	    	  
+          }
+	    }
+  }
+  else
+  {
+    l    = processWin.g_Listview;
+    type = processWin.g_bSubProcessType;
+  }
+
+  if( pr_aResp.Status == 0 || pr_aResp.Status == 2 )
+  {
+    g_bDeleteLog = false;
+
+    if( pr_aResp.bRefreshFilter )
+    {
+      var aJson = stringToJson( postContent( g_strURL, 'ID1=' + pr_aResp.bRefreshFilterID ) );
+      processWin.parent.document.updateFilterData( aJson );
+    }
+
+    if( type == 0 && !pr_aResp.lvd ) // Listview, porém é de cadastro
+    {
+      if( pr_aResp.RowsEffects )
+        pr_aResp.Rows.effects = pr_aResp.RowsEffects;
+      if( pr_aResp.RowsMenuState )
+        pr_aResp.Rows.menuState = pr_aResp.RowsMenuState;
+
+      if( pr_aResp.newRowsEffects )
+        pr_aResp.newRows.effects = pr_aResp.newRowsEffects;
+      if( pr_aResp.newRowsMenuState )
+        pr_aResp.newRows.menuState = pr_aResp.newRowsMenuState;
+
+      if( l )
+        l.atualizaGrid( pr_aResp.Rows, 600, false, pr_aResp.bRefreshListview, pr_aResp.newRows, pr_aResp.deletedRows );
+      else if( parent.grid )
+        parent.grid.atualizaGrid( pr_aResp.Rows, 600, false, pr_aResp.bRefreshListview, pr_aResp.newRows, pr_aResp.deletedRows );
+    }
+
+    if( pr_aResp.pd )
+    {
+      var json = stringToJson( pr_aResp.pd );
+      var f;
+
+      try
+      {
+        f = parent.frames;
+      }
+      catch( e )
+      {
+        f = window.frames;
+      }
+
+      processWin.parent.document.updateObjects( f, json );
+    }
+
+    if( pr_aResp.Status == 2 )
+      showDialog( pr_aResp.SvcID, true );
+    else if( pr_aResp.UseLayout )
+    {
+      bCancelScreen = false;
+
+      closeFocusWindow( );
+    }
+
+    if( pr_aResp.lvd && l )
+    {
+      l.clear( );
+
+      if( pr_aResp.lvd.Effects )
+        l._aEffects = pr_aResp.lvd.Effects;
+      if( pr_aResp.lvd.menuState != undefined )
+        l._menuState = pr_aResp.lvd.menuState;
+
+      l.loadData( pr_aResp.lvd.Data.data );
+    }
+
+    if( pr_aResp.HTMLResultID )
+    {
+      if( pr_aResp.bShowJSWindow )
+        processWin.showWindowProcessResult( g_strURL + '?ID1=' + pr_aResp.HTMLResultID, undefined, undefined, pr_aResp.aResultWindowButtons );
+      else
+        processWin.openBrowserWindow( g_strURL + '?ID1=' + pr_aResp.HTMLResultID );
+    }
+  }
+  else
+  {
+    g_bDeleteLog = true;
+    processWin.showDialog( pr_aResp.SvcID, true );
+  }
+
+  hideShield( );
+}
+
+// Execução principal de um Subprocesso
+function processSubProcess( nId2, bInsideWindow )
+{
+  showShield( );
+
+  var strId3 = "";
+
+  if( this.aSource != undefined )
+    strId3 = buildQueryString( this.aSource );
+
+  if( g_aInputUpload.length > 0 )
+  {
+    function ObjUpload( aSource, ID1, ID2, nSessionKey, nLayoutKey, bInsideWindow )
+    {
+      this.aSource       = aSource;
+      this.ID1           = ID1;
+      this.ID2           = ID2;
+      this.nSessionKey   = nSessionKey;
+      this.nLayoutKey    = nLayoutKey;
+      this.bInsideWindow = bInsideWindow;
+    }
+
+    g_objUploadSubProcess = new ObjUpload( this.aSource, this.Id1, nId2,
+      this.sessionKey, this._LayoutKey, bInsideWindow );
+    
+    prepareSubProcessUpload( nId2 );
+  }
+  else
+  {
+    var cmd = 'executeDelayedprocessSubProcess( "' + strId3      + '","' + this.Id1        + '",' + nId2          + ',' +
+                                                 this.sessionKey + ','   + this._LayoutKey + ','  + bInsideWindow + ');';
+
+    setTimeout( cmd, 1 );
+  }
+}
+
+function prepareSubProcessUpload( pr_nId2 )
+{
+  var strParam = 'ID1=' + g_strPrepareSubProcessUpload + '&ID2=' + pr_nId2;
+  
+  eval( postContent( g_strURL, strParam ) );
+}
+
+function executeDelayedprocessSubProcess( strId3, nId1, nId2, nSessionKey, nLayoutKey, bInsideWindow )
+{
+  var l                   = undefined;
+  var type                = undefined;
+  var parentIsWindow      = false;
+  var bDelayedWindowClose = false;
+  var bShowResult         = false;
+  var g_bDeleteLogOLD     = g_bDeleteLog; //P13055.7: Em uma tela de cadastro, não estava excluindo o log, pois o subprocesso altera essa variavel e não devolve o valor...
+
+  // Trata para saber aonde estão os dados armazenados no documento.
+  // Temos que tratar o caso em que o SubProcesso abre uma janela e o
+  // caso em que ele em si está dentro de uma janela
+  if( getHowManyWindowsOpened( ) > 0 )
+  {
+    if( getLastWindow( )._bSubProcessType != undefined )
+    {
+      l    = getLastWindow( )._Listview;
+      type = getLastWindow( )._bSubProcessType;
+    }
+    else
+    {
+      parentIsWindow = true;
+      l              = g_Listview;
+      type           = g_bSubProcessType;
+    }
+  }
+  else
+  {
+    l    = g_Listview;
+    type = g_bSubProcessType;
+  }
+
+  var strDadosLv = "";
+
+  if( type == 0 )
+    if( l != undefined )
+    {
+      if( l.internalName != undefined )
+        strDadosLv = "&ListCompName=" + l.internalName;
+
+      strDadosLv  += "&bFirstLine="   + ( l.getTotRows( ) == 0 );
+
+      if( l.getTotRows( ) > 0 )
+        strDadosLv += "&index=" + l.getKey( );
+    }
+
+  var strSessionKey = '&sessionKey=';
+  var bUseLayout    = false;
+
+  if( nSessionKey )
+    strSessionKey += nSessionKey; //O subProcesso não apresenta uma tela.
+  else
+  {
+    strSessionKey += nLayoutKey;  //O subProcesso apresenta tela.
+    bUseLayout     = true;
+  }
+
+  var aResp = postContent( g_strURL, 'ID1=' + nId1 + '&ID2=' + nId2 + '&ID3=' + strId3 + '&ID4=true' + strDadosLv + strSessionKey + "&bUseLayout=" + bUseLayout );
+  aResp = stringToJson( aResp );
+
+  if( aResp.Status == 0 || aResp.Status == 2 )
+  {
+    g_bDeleteLog = false;
+
+    if( aResp.bRefreshFilter )
+    {
+      var aJson = stringToJson( postContent( g_strURL, 'ID1=' + aResp.bRefreshFilterID ) );
+      parent.document.updateFilterData( aJson );
+    }
+
+    if( type == 0 && !aResp.lvd ) // Listview, porém é de cadastro
+    {
+      if( aResp.RowsEffects )
+        aResp.Rows.effects = aResp.RowsEffects;
+      if( aResp.RowsMenuState )
+        aResp.Rows.menuState = aResp.RowsMenuState;
+
+      if( aResp.newRowsEffects )
+        aResp.newRows.effects = aResp.newRowsEffects;
+      if( aResp.newRowsMenuState )
+        aResp.newRows.menuState = aResp.newRowsMenuState;
+
+      l.atualizaGrid( aResp.Rows, 600, false, aResp.bRefreshListview, aResp.newRows, aResp.deletedRows );
+    }
+
+    if( aResp.pd )
+    {
+      var json = stringToJson( aResp.pd );
+      var f;
+
+      if( aResp.UseLayout || parentIsWindow )
+        try
+        {
+          f = parent.frames;
+        }
+        catch( e )
+        {
+          f = window.frames;
+        }
+      else
+        f = window.frames;
+
+      if( !bInsideWindow )
+        document.updateObjects( f, json );
+      else
+        parent.document.updateObjects( f, json );
+    }
+
+    if( getDialog( ) && getDialog( ).isWindow )
+      bInsideWindow = true;
+
+    if( aResp.Status == 2 )
+    {
+      var strParams = "";
+      if( type != 0 && g_buttonSubmit && g_buttonSubmit.internalName )
+        strParams = g_buttonSubmit.internalName;
+
+      strParams += "&nIdSvc=" + nId2 + "&bUseLayout=" + aResp.UseLayout;
+
+      if( !bInsideWindow )
+        g_ErrorDialog = showDialog( aResp.SvcID, true, strParams );
+      else
+      {
+        parent.g_ErrorDialog = showDialog( aResp.SvcID, true, strParams );
+        parent.g_ErrorDialog.processWindow = window;
+      }
+    }
+    else //Se não é uma mensagem de erro/confirmação, 
+    {
+      if( aResp.SvcSubPrcID ) //Veio um aviso de progresso?
+      {
+        if( !bInsideWindow )
+          g_winProgress = showDialog( g_nSvcPrgID, false );
+        else
+          parent.g_winProgress = showDialog( g_nSvcPrgID, false );
+        
+        postContentAsync( g_strURL,
+                          "ID1=" + aResp.SvcSubPrcID + "&ID4=1&ID5=true&nIdSvc=" + nId2 + "&bDesvio=false&bUseLayout=" + bUseLayout,
+                          processSubProcessConfirmation, null, [false, true], true );
+      }
+    }
+
+    if( aResp.UseLayout )
+    {
+      hideShield( );
+      bCancelScreen = false;
+      bDelayedWindowClose = true;
+    }
+
+    if( aResp.lvd )
+    {
+      l.clear( );
+      if( aResp.lvd.Effects )
+        l._aEffects = aResp.lvd.Effects;
+      if( aResp.lvd.menuState != undefined )
+        l._menuState = aResp.lvd.menuState;
+
+      l.loadData( aResp.lvd.Data.data );
+    }
+
+    if( aResp.HTMLResultID )
+      bShowResult = true;
+  }
+  else
+  {
+    if( getDialog( ) && getDialog( ).isWindow )
+      bInsideWindow = getDialog( ).isWindow;
+
+    var strParams = "";
+    if( type != 0 && g_buttonSubmit && g_buttonSubmit.internalName )
+      strParams = g_buttonSubmit.internalName;
+
+    strParams += "&nIdSvc=" + nId2;
+
+    g_bDeleteLog = true;
+
+    if( !bInsideWindow )
+      g_ErrorDialog = showDialog( aResp.SvcID, true, strParams );
+    else
+    {
+      parent.g_ErrorDialog = showDialog( aResp.SvcID, true, strParams );
+      parent.g_ErrorDialog.processWindow = window;
+    }
+  }
+
+  // TODO A verificar: execução neste ponto estoura exceção o firefox.
+  hideShield( );
+
+  //Precisa para poder fechar a tela do subProcesso.
+  if( bDelayedWindowClose )
+    closeDialog( );
+  
+  //PROJETO#11591
+  //Movido para após o fechamento da janela de subprocesso. Problema encontrado no Processo 1585.
+  //A opção openBrowserWindow abre uma nova janela do navegador. 
+  //No IE, se for dado o comando de closeDialog antes, ele dá foco na janela, 
+  //escondendo a janela do navegador que já foi aberta.
+  if( bShowResult )
+  {
+    if( aResp.bShowJSWindow )
+      showWindowProcessResult( g_strURL + '?ID1=' + aResp.HTMLResultID, undefined, undefined, aResp.aResultWindowButtons );
+    else
+      openBrowserWindow( g_strURL + '?ID1=' + aResp.HTMLResultID );
+  }
+
+  g_bDeleteLog = g_bDeleteLogOLD;
+}
+
+function confirmForm( )
+{
+  getWindowFrameBefore( ).document.doClickModalForm( );
+}
+
+document.doClickModalForm = function( )
+{
+  g_buttonSubmit._isConfirmed = true;
+  g_buttonSubmit.mouseUpEvent( );
+}
+
+document.setCpFocus = function( strCpName )
+{
+  try
+  {
+    // MANTIS 24824
+    try
+    {
+      document.getElementById( 'txArgBusca' ).focus( );
+      document.getElementById( 'txArgBusca' ).blur ( );
+    }
+    catch( e ){ }
+
+    eval( strCpName + ".focus( );" );
+  }
+  catch( e ){ }
+}
+
+function showListing( strURL, strIDSvc, bCompleteListing )
+{
+  var strIdSavedObj = postContent( strURL, 'ID1=' + g_nSvcSaveObjecID + '&ID3=' + g_strOldFilterQueryString );
+
+  var strPag    = "&pag="    + grid.getCurrPage ( );
+  var strOrder  = "&order="  + grid.getSortOrder( );
+  var strTotReg = "&regTot=" + grid.getTotRows  ( );
+
+  window.open( strURL + '?ID1=' + strIDSvc + '&ID2=' + strIdSavedObj + strTotReg + strPag + strOrder + "&bCompleteListing=" + bCompleteListing,'','toolbar,scrollbars,resizable,status,dependent,width=700,height=500' );
+}
+
+function calcOffsetTop( e )
+{
+  var n = 0;
+
+  while( true )
+  {
+    if( compareNoCase( e.tagName, 'td'     ) != 0 &&
+        compareNoCase( e.tagName, 'center' ) != 0 &&
+        compareNoCase( e.tagName, 'div' )    != 0 &&
+        compareNoCase( e.tagName, 'tbody'  ) != 0 )
+      n += e.offsetTop;
+
+    e = e.parentNode;
+
+    if( compareNoCase( e.tagName, 'body' ) == 0 )
+      break;
+  }
+
+  return n;
+}
+
+function calcOffset( obj )
+{
+  var curLeft = curTop = 0;
+
+  if( obj.offsetParent )
+  {
+    do
+    {
+      curLeft += obj.offsetLeft;
+      curTop  += obj.offsetTop;
+    } while( obj = obj.offsetParent );
+  }
+
+  return [curLeft, curTop];
+}
+
+function calcAjuste( pr_element )
+{
+  var ajuste = [0, 0];
+  var windowElement = pr_element.ownerDocument.parentWindow;
+
+  for( var _parent = pr_element.parentNode; _parent != undefined; _parent = _parent.parentNode )
+  {
+    if( _parent.tagName == "FIELDSET" )
+      ajuste[0] += 2;
+    else if( _parent.tagName == "SPAN" && _parent.type == 28 ) // 28 = Pageman
+    {
+      ajuste[0] += 3;
+      ajuste[1] += 2;
+    }
+  }
+
+  return ajuste;
+}
+
+function calcOffsetLeft( e )
+{
+  var n = 0;
+
+  while( true )
+  {
+    if( compareNoCase( e.tagName, 'tr' )    != 0 &&
+        compareNoCase( e.tagName, 'div' )   != 0 &&
+        compareNoCase( e.tagName, 'tbody' ) != 0 )
+      n += e.offsetLeft;
+
+    // Duplica o Fieldset? Assim funciona. Tem algo a ver com a TR dentro do Fieldset
+    if( compareNoCase( e.tagName, 'fieldset' ) == 0 )
+      n += e.offsetLeft;
+
+    e = e.parentNode;
+    if( compareNoCase( e.tagName, 'body' ) == 0 )
+      break;
+  }
+
+  return n;
+}
+
+function calcScrollTop( e )
+{
+  var n = 0;
+
+  while( true )
+  {
+    if( compareNoCase( e.tagName, 'tr' ) != 0 &&
+        compareNoCase( e.tagName, 'tbody' ) != 0 )
+      n += e.scrollTop;
+
+    e = e.parentNode;
+    if( compareNoCase( e.tagName, 'body' ) == 0 )
+      break;
+  }
+
+  return n;
+}
+
+function adjustComponentValue( cp )
+{
+  var strValue = cp.value;
+
+  if( cp.type == "text" || cp.type == "textarea" )
+  {
+    strValue = strValue.replace( new RegExp( "'", "g" ), "" );
+    strValue = strValue.replace( new RegExp( '"', "g" ), "" );
+
+    strValue = strValue.replace( /\\/g, "\\\\" );
+  }
+
+  return strValue;
+}
+
+function createTextArea( strName, strCpName )
+{
+  eval( strCpName + " = document.getElementById( '" + strName + "' );" );
+}
+
+function finalizeTextArea( strName, nType, strClassRW, strClassRO, strWrap, bReadOnly, aEvents, nMaxLines, nMaxLength, font )
+{
+  var self = this;
+  
+  this.setReadOnly          = textArea.setReadOnly;
+  this.isReadOnly           = textArea.isReadOnly;
+  this.getJsonValue         = textArea.getJsonValue;
+  this.setJsonValue         = textArea.setJsonValue;
+  this.setadditionalContent = textArea.setadditionalContent;
+  this.checkLimits          = textArea.checkLimits;
+  this.setFont              = textArea.setFont;
+  this.onkeydown            = function( pr_event ){ self.checkLimits( nMaxLength, nMaxLines, pr_event ) };
+  this.onkeyup              = function( pr_event ){ self.checkLimits( nMaxLength, nMaxLines, pr_event ) };
+  this.onkeypress           = TextArea_KeyPress;
+  this.onpaste              = TextArea_Paste;
+
+  this._type          = nType;
+  this.internalName   = strName;
+  this.strClassRW     = strClassRW;
+  this.strClassRO     = strClassRO;
+  this.aEventListener = aEvents;
+  this.nMaxLines      = nMaxLines;
+  this.nMaxLength     = nMaxLength;
+  this.wrap           = strWrap;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  if( font != undefined )
+    this.setFont( font );
+  
+  if( this.aEventListener != undefined && this.aEventListener.length > 0 )
+    this.onblur = function( )
+    {
+      fireEvent.apply( this );
+    };
+
+  this.setReadOnly( bReadOnly );
+}
+
+function TextArea_KeyPress( pr_event )
+{
+  var key;
+
+  if( !pr_event )
+    key = window.event.keyCode;
+  else
+    key = pr_event.which;
+
+  setTimeout( "TextAreaMaxLinesVerification( '" + this.id + "' );" );
+
+  return Input_TreatKeyPress( key );
+}
+
+function TextArea_Paste( )
+{
+  var self = this;
+  
+  setTimeout( function( ){ TextArea_AfterPaste( self.id ); } )
+
+  return true;
+}
+
+function TextArea_AfterPaste( pr_elmId )
+{
+  var elm = document.getElementById( pr_elmId ),
+    value = elm.value,
+    nLines = 1,
+    str = [],
+    charCode;
+
+  for( var i = 0; i < value.length; i++ )
+  {
+    charCode = value.charCodeAt( i );
+
+    // 10 == \n
+    // 13 == \r
+    // Ou ao contrário 
+    if( ( Input_TreatKeyPress( charCode ) || charCode == 10 ) && charCode != 13 )
+    {
+      if( charCode == 10 )
+        nLines++;
+
+      if( elm.nMaxLines > 0 && elm.nMaxLines < nLines )
+        break;
+
+      str.push( value.charAt( i ) );
+    }
+  }
+
+  elm.value = str.join( "" );
+}
+
+/**
+ * Verifica o número de linhas de um TextArea e efetua o corte das linhas excedentes.
+ * @param {String} pr_elmId nome do elemento que será verificado.
+ */
+function TextAreaMaxLinesVerification( pr_elmId )
+{
+  var elm = document.getElementById( pr_elmId );
+
+  if( elm.nMaxLines == 0 )
+    return;
+
+  var value = elm.value,
+    nLines = 1;
+
+  for( var i = 0; i < value.length; i++ )
+  {
+    charCode = value.charCodeAt( i );
+
+    if( value.substring( i ).indexOf( "\n" ) == 0 )
+    {
+      if( nLines >= elm.nMaxLines )
+      {
+        // IE coloca \r\n, tenho que dar substring até antes do \r.
+        elm.value = elm.value.substring( 0, isIE( ) ? i - 1 : i );
+        break;
+      }
+
+      nLines++;
+    }
+  }
+}
+
+function TextArea_TreatKeyPress( key )
+{
+  if( ( key != 34 && key != 39 ) &&
+      ( ( key >= 33  && key <= 126 ) ||
+        ( key >= 191 && key <= 207 ) ||
+        ( key >= 210 && key <= 214 ) ||
+        ( key >= 217 && key <= 221 ) ||
+        ( key >= 224 && key <= 239 ) ||
+        ( key >= 241 && key <= 246 ) ||
+        ( key >= 249 && key <= 253 ) ||
+        ( key == 13 || key == 186 || key == 170 || key == 32 || key == 10 ) ) )
+    return true;
+
+  return false;
+}
+
+function createCombobox( strCbName, strParentName, bAutoAdjustDropDown, bStatic )
+{
+  eval( strCbName + "= drivecombobox({name:'" + strCbName + "',parent:'" + strParentName + "',AutoAdjustDropDown:" + bAutoAdjustDropDown + ",Static:" + bStatic + "});" );
+}
+
+function finalizeCombobox( strId1   , nIdSvc       , nWidth          , strData           , strInternalName,
+                           aSource  , bReadOnly    , bClearOnReadOnly, strCssClass       , strCssClassRO  ,
+                           jsonValue, strParentComp, aEventListener  , strSourceCompName , strAlign       )
+{
+  this.internalName = strInternalName;
+  this.setAttribute( "internalName", strInternalName );
+  this.strAlign = strAlign == "right" ? "right" : "left";
+
+  if( isIE7( ) )
+  {
+    this._input.style.textAlign = this.strAlign;
+
+    var combobox = this;
+
+    finalizeButtonSuggestEx.apply( this._button, [ "", "", false, true, 16, 16, [], "" ] );
+    this._button.setEvent( undefined );
+
+    this._button.addEvent( "mousedown", function( ){ combobox._button.focus( ); drivecombobox.handleDropDown.apply( combobox._button, [] ); } );
+    this._button.addEvent( "keydown"  , this.onkeydown  );
+    this._button.addEvent( "keypress" , this.onkeypress );
+  }
+  else
+  {
+    this._combo.style.textAlign = strAlign == "right" ? "right" : "left";
+    this._combo.id = "select_" + this.internalName;
+  }
+
+  if( nWidth > 0 )
+    this.setWidth( nWidth );
+  else
+    this.setWidth( 100 );
+
+  if( !isIE7( ) )
+    this.finish( );
+
+  // Componente vazio enviará a String "[]"
+  if( strData.length > 2 )
+    if( !isIE7( ) )
+      this.loadJson( strData );
+    else
+      this.loadData( strData );
+  else
+  {
+    this.Id1   = strId1;
+    this.IdSvc = nIdSvc;
+  }
+
+  if( jsonValue )
+    this.setJsonValue( jsonValue );
+
+  this.aSource = aSource;
+
+  if( aEventListener.length > 0 )
+  {
+    this.setOnchangeFunction( fireEvent );
+    this.aEventListener = aEventListener;
+  }
+
+  this._sourceCompName   = strSourceCompName;
+  this.strParentCompName = ( strParentComp != "" ? strParentComp : undefined );
+  this.bClearOnReadOnly  = bClearOnReadOnly;
+  this.setReadOnly( bReadOnly );
+}
+
+function createCheckbox( pr_strChkName, pr_strParentName, pr_strLabel, pr_bChecked, pr_strInternalName )
+{
+  var strInternalName = pr_strInternalName ? pr_strInternalName : "";
+    
+  eval( pr_strChkName + " = checkbox( { parent:document.getElementById( '" + pr_strParentName + "' )," +
+        "label:'" + pr_strLabel + "', value:" + pr_bChecked + ", internalName:'" + strInternalName + "' } );" );
+
+  eval( pr_strChkName + "._parent = " + pr_strParentName );
+}
+
+function finalizeCheckbox( pr_nWidth   , pr_nHeight       , pr_strInternalName, pr_strCssClass,
+                           pr_strHAlign, pr_bReadOnly     , pr_bIgnoreEvents  ,
+                           pr_font     , pr_aEventListener, pr_strVAlign      )
+{
+  this._type = 1;
+
+  this.bIgnoreEvents = pr_bIgnoreEvents;
+  this.internalName  = pr_strInternalName;
+  this.name          = "ck_" + pr_strInternalName;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  var parentStyle = window.getComputedStyle ? window.getComputedStyle( this.parentNode, null )
+                                            : this.parentNode.currentStyle;
+
+  this.label.style.color      = parentStyle.color;
+  this.label.style.fontFamily = parentStyle.fontFamily;
+  this.label.style.fontSize   = parentStyle.fontSize;
+  this.label.style.fontStyle  = parentStyle.fontStyle;
+  this.label.style.fontWeight = parentStyle.fontWeight;
+
+  this.addCssClass ( pr_strCssClass                   );
+  this.setHAlign   ( pr_strHAlign ? pr_strHAlign : "" );
+  this.setVAlign   ( pr_strVAlign ? pr_strVAlign : "" );
+  this.setFont     ( pr_font                          );
+
+  if( pr_nWidth > 0 )
+    this.setWidth( pr_nWidth );
+
+  if( pr_nHeight > 0 )
+    this.setHeight( pr_nHeight );
+
+  this.setReadOnly = function( pr_bIsReadOnly )
+  {
+    if( this._parent.readonly == 'true' )
+    {
+      this._setReadOnly( true );
+      return;
+    }
+
+    this._setReadOnly( pr_bIsReadOnly );
+  }
+
+  if( pr_aEventListener && pr_aEventListener.length > 0 )
+  {
+    this.setEvent( function( )
+                   {
+                     if( !this.bIgnoreEvents )
+                     {
+                       if( !this.bReadOnly && !g_isClearingLayout )
+                         fireEvent.apply( this, [] );
+                     }
+                     else
+                     {
+                       if( !g_isLoading && !this.bReadOnly && !g_isClearingLayout )
+                         fireEvent.apply( this, [] );
+                     }
+                   }
+                 );
+
+    this.aEventListener = pr_aEventListener;
+  }
+
+  this.setReadOnly( pr_bReadOnly );
+}
+
+function createSwapBox( pr_strCompName, pr_strInternalName )
+{
+  eval( pr_strCompName + " = swapbox( {  name: '" + pr_strInternalName + "' } );" );
+}
+
+function finalizeSwapBox( pr_nType                     , pr_strLvSource           , pr_strLvTarget                 ,
+                          pr_strBtTarget2Source        , pr_strBtAllTargets2Source, pr_strBtSource2Target          ,
+                          pr_strBtAllSources2Target    , pr_strBtMoveUp           , pr_strBtMoveDown               ,
+                          pr_nSvcLvTargetDblClickChange, pr_nSvcBtTarget2Source   , pr_nSvcBtAllTargets2Source     ,
+                          pr_nSvcLvSourceDblClickChange, pr_nSvcBtSource2Target   , pr_nSvcBtAllSources2Target     ,
+                          pr_nSvcBtMoveUp              , pr_nSvcBtMoveDown        , pr_nSvcLvTargetSelectionChange ,
+                          aEventListener               , pr_bReadOnly                 )
+{
+  this._type = pr_nType;
+
+  this.nSvcLvTargetDblClickChange  = pr_nSvcLvTargetDblClickChange;
+  this.nSvcBtTarget2Source         = pr_nSvcBtTarget2Source;
+  this.nSvcBtAllTargets2Source     = pr_nSvcBtAllTargets2Source;
+  this.nSvcLvSourceDblClickChange  = pr_nSvcLvSourceDblClickChange;
+  this.nSvcBtSource2Target         = pr_nSvcBtSource2Target;
+  this.nSvcBtAllSources2Target     = pr_nSvcBtAllSources2Target;
+  this.nSvcBtMoveUp                = pr_nSvcBtMoveUp;
+  this.nSvcBtMoveDown              = pr_nSvcBtMoveDown;
+  this.nSvcLvTargetSelectionChange = pr_nSvcLvTargetSelectionChange;
+
+  this.lvSource            = eval( pr_strLvSource            );
+  this.lvTarget            = eval( pr_strLvTarget            );
+  this.btTarget2Source     = eval( pr_strBtTarget2Source     );
+  this.btAllTargets2Source = eval( pr_strBtAllTargets2Source );
+  this.btSource2Target     = eval( pr_strBtSource2Target     );
+  this.btAllSources2Target = eval( pr_strBtAllSources2Target );
+  this.btMoveUp            = eval( pr_strBtMoveUp            );
+  this.btMoveDown          = eval( pr_strBtMoveDown          );
+
+  this.aEventListener = aEventListener; // Evento onChange
+
+  this.lvSource.swapbox = this;
+  this.lvTarget.swapbox = this;
+
+  this.lvSource.setReadOnly           = this.listview_setReadOnly;
+  this.lvTarget.setReadOnly           = this.listview_setReadOnly;
+  this.lvSource.configureDetachEvents = this.listview_configureDetachEvents;
+  this.lvTarget.configureDetachEvents = this.listview_configureDetachEvents;
+  this.lvSource.configureAttachEvents = this.listview_configureAttachEvents;
+  this.lvTarget.configureAttachEvents = this.listview_configureAttachEvents;
+
+  this.configureKeyboardNavigation( true );
+  
+  this.setReadOnly( pr_bReadOnly );
+}
+
+function createInputMaskedValue( pr_strCompName, pr_strParentName, pr_strInternalName )
+{
+  eval( pr_strCompName + " = inputMaskedValue( { parent:document.getElementById( '" + pr_strParentName + "' ), name: '" + pr_strInternalName + "' } );" );
+
+  var internalName = pr_strInternalName ? pr_strInternalName : pr_strCompName;
+
+  eval( pr_strCompName + "._parent      = document.getElementById( '" + pr_strParentName + "' );" );
+  eval( pr_strCompName + ".internalName = '" + internalName     + "'" );
+  eval( pr_strCompName + ".name         = '" + internalName     + "'" );
+  eval( pr_strCompName + ".cpName       = '" + pr_strCompName   + "'" );
+}
+
+function finalizeInputMaskedValue( pr_strValue     , pr_bReadOnly, pr_nType, 
+                                   pr_strWidth     , pr_oConfig  , pr_strCssClass, 
+								   pr_strCssClassRO, pr_aSource  , pr_aEventListenerChange )
+{
+  this._type   = pr_nType;
+  this.aSource = pr_aSource;
+
+  this._cssClassRO = pr_strCssClassRO;
+  this._cssClass   = pr_strCssClass;  
+
+  this.txtValue.internalName = "imask_" + this.internalName;
+  
+  this.setAttribute         ( "internalName", this.internalName               );
+  this.txtValue.setAttribute( "internalName", this.txtValue.internalName      );
+
+  if( pr_strWidth )
+    this.txtValue.style.width = pr_strWidth + "px";
+
+  this.setReadOnly( pr_bReadOnly );
+
+  if( pr_aEventListenerChange.length > 0 )
+    this.aEventListener = pr_aEventListenerChange;
+  else
+    this.aEventListener = [];
+
+  this.doConfig( pr_oConfig  );
+  this.setValue( pr_strValue );
+}
+
+function createInputGenericSearch( pr_strCompName, pr_strParentName, pr_strInternalName )
+{
+  eval( pr_strCompName + " = inputGenericSearch( { parent:document.getElementById( '" + pr_strParentName + "' ), name: '" + pr_strInternalName + "' } );" );
+
+  var internalName = pr_strInternalName ? pr_strInternalName : pr_strCompName;
+
+  eval( pr_strCompName + "._parent      = document.getElementById( '" + pr_strParentName + "' );" );
+  eval( pr_strCompName + ".internalName = '"        + internalName     + "'" );
+  eval( pr_strCompName + ".name         = 'gnSrch_" + internalName     + "'" );
+  eval( pr_strCompName + ".cpName       = '"        + pr_strCompName   + "'" );
+}
+
+function finalizeInputGenericSearch( pr_bReadOnly            , pr_nType          , pr_strWidth                ,
+                                     pr_bInputButtonVisible  , pr_bQuickSearch   , pr_bQuickSearchFieldEnabled,
+                                     pr_nId1                 , pr_nQuickSearchSvc, pr_nOpenWindowSvc          ,
+                                     pr_nAdditionalDataSvc   , pr_getValueSvc    , pr_getKeyValueSvc          ,
+                                     pr_strListviewName      , pr_strHelpUrl     , pr_aSource                 ,
+                                     pr_aEventListenerChange , pr_mapMaskConfig  , pr_nMaxLength              )
+{
+  this.Id1                      = pr_nId1;
+  this._type                    = pr_nType;
+  this.quickSearchSvc           = pr_nQuickSearchSvc;
+  this.bQuickSearch             = pr_bQuickSearch;
+  this.bQuickSearchFieldEnabled = pr_bQuickSearchFieldEnabled;
+  this.openWindowSvc            = pr_nOpenWindowSvc;
+  this.additionalDataSvc        = pr_nAdditionalDataSvc;
+  this.getValueSvc              = pr_getValueSvc;
+  this.getKeyValueSvc           = pr_getKeyValueSvc;
+  this.strListviewName          = pr_strListviewName;
+  this.strTxtValueROClassName   = "txtValueReadOnly";
+  this.strHelpUrl               = pr_strHelpUrl;
+  this.aSource                  = pr_aSource;
+
+  finalizeButton.apply( this.btnOpenWindow, [ 21, 0, pr_nId1, pr_bReadOnly, false ] );
+  this.btnOpenWindow.setDisplay( pr_bInputButtonVisible );
+
+  this.txtValue.internalName      = this.internalName;
+  this.btnOpenWindow.internalName = this.internalName + "_btn";
+  
+  this.setAttribute              ( "internalName", this.internalName               );
+  this.txtValue.setAttribute     ( "internalName", this.txtValue.internalName      );
+  this.btnOpenWindow.setAttribute( "internalName", this.btnOpenWindow.internalName );
+
+  this.setMaxLength( pr_nMaxLength );
+
+  if( pr_strWidth )
+    this.txtValue.style.width = pr_strWidth + "px";
+
+  if( !this.bQuickSearchFieldEnabled )
+  {
+    this.txtValue.readOnly  = true;
+    this.txtValue.className = this.strTxtValueROClassName;
+    this.bQuickSearch       = false;
+  }
+
+  this.setReadOnly( pr_bReadOnly );
+
+  if( pr_aEventListenerChange.length > 0 )
+    this.aEventListenerChange = pr_aEventListenerChange;
+  else
+    this.aEventListenerChange = [];
+
+  if( pr_mapMaskConfig )
+    configTextMask( this.txtValue, pr_mapMaskConfig );
+}
+
+function createButton( pr_strButtonName, pr_strParentName, pr_strLabel,
+  pr_strImgUrl, pr_strInternalName, pr_imageClass )
+{
+  if( pr_imageClass )
+    pr_imageClass = "'" + pr_imageClass + "'";
+  
+  eval( pr_strButtonName + " = button( { parent:document.getElementById( '"
+    + pr_strParentName + "' ), " + "label:'" + pr_strLabel + "', imgUrl:'"
+    + getContextURL( ) + "Obj/" + pr_strImgUrl + "', imageClass:" + pr_imageClass + " } );" );
+
+  var internalName = pr_strInternalName ? pr_strInternalName : pr_strButtonName;
+
+  eval( pr_strButtonName + "._parent      = document.getElementById( ' " + pr_strParentName + "' );" );
+  eval( pr_strButtonName + ".internalName = '" + internalName + "'" );
+  eval( pr_strButtonName + ".name         = 'btn_" + internalName + "'" );
+  eval( pr_strButtonName + ".cpName       = '" + pr_strButtonName + "'" );
+}
+
+function finalizeButton( pr_nHeight, pr_nWidth, pr_nIdSvc, pr_bReadOnly, pr_bImageVisible, pr_nType )
+{
+  this.Id1   = pr_nIdSvc;
+  this._type = pr_nType;
+
+  this.setImageDisplay( pr_bImageVisible );
+
+  if( pr_nHeight > 0 )
+    this.setHeight( pr_nHeight );
+
+  this.setWidth( pr_nWidth );
+
+  this.setReadOnly( pr_bReadOnly );
+}
+
+function finalizeButtonReport( pr_nIdValidate    , pr_nIdSvc   , pr_nType               ,
+                               pr_nProc          , pr_bReadOnly, pr_bVisibleWhenReadOnly,
+                               pr_aDataCompNames )
+{
+  try
+  { //A variavel não é definido, e o eval cai com erro. Não consigo testar para saber se a variável está definida.
+    eval( "this.aSource = " + pr_aDataCompNames + ";");
+  } catch(e)
+  {
+    this.aSource = undefined;
+  }
+
+  this.IdValidate     = pr_nIdValidate;
+  this.nIdSvc         = pr_nIdSvc;
+  this.nProc          = pr_nProc;
+
+  this.setVisibleReadOnly( pr_bVisibleWhenReadOnly );
+  this.setEvent          ( fireEvent               );
+
+  this.aEventListener = [ { type:pr_nType } ];
+
+  this.setReadOnly = function( bReadOnly )
+  {
+    this._setReadOnly( bReadOnly );
+  }
+
+  this.setReadOnly( pr_bReadOnly );
+}
+
+function isInsideDiv( cp )
+{
+  var aux = cp._parent;
+
+  while( aux.tagName != 'HTML' )
+  {
+    if( aux.tagName == 'DIV' )
+      return true;
+
+    if( aux.parentNode == undefined )
+      break;
+
+    aux = aux.parentNode;
+  }
+
+  return false;
+}
+
+function finalizeInputDigitalSignature( bEnableDefaultEvent )
+{
+  this.bEnableDefaultEvent = bEnableDefaultEvent;
+
+  this.setEvent( function( )
+                  {
+                    if( this.aEventListener != undefined && this.aEventListener.length > 0  )
+                      if( !this.bIgnoreEvents )
+                      {
+                        if( !this.bReadOnly && !g_isClearingLayout )
+                          fireEvent.apply( this, [] );
+                      }
+                      else
+                      {
+                        if( !g_isLoading && !this.bReadOnly && !g_isClearingLayout )
+                          fireEvent.apply( this, [] );
+                      }
+
+                    var cp = eval( 'cp_irotOutputType' );
+                    if( cp != undefined && this.bEnableDefaultEvent && !this.bReadOnly )
+                    {
+                      cp.setOutputReadOnly( this.checked );
+                      if( this.checked )
+                        cp.setJsonValue( stringToJson( '{output:0}' ) );
+                    }
+                  }
+               );
+}
+
+function createCheckboxList( strName, strParentName )
+{
+  eval( strName + "=checkboxlist({parent:'" + strParentName + "'});" );
+}
+
+function _CheckboxList_DblClick( e )
+{
+  if( this.selected.length > 0 )
+  {
+    for( var i = 0; i < this.selected.length; i++ )
+    {
+      var iRow = this.selected[i];
+      this.data.rows[iRow].cells[0].value = this.data.rows[iRow].cells[0].value == 'true' ? 'false' : 'true';
+    }
+    this.refresh( );
+  }
+}
+
+function configPageButton( obj )
+{
+   //Isso tem que sair daqui para ser chamado em outro lugar e o finalize da listView tambem.
+  obj._imgArrowFirst    = getContextURL( ) + 'Obj/' + ( obj.bForm ? 'gray-' : '' ) + 'arrow-first'    + ( obj.bForm ? '.png' : '.gif' );
+  obj._imgArrowPrevious = getContextURL( ) + 'Obj/' + ( obj.bForm ? 'gray-' : '' ) + 'arrow-previous' + ( obj.bForm ? '.png' : '.gif' );
+  obj._imgArrowNext     = getContextURL( ) + 'Obj/' + ( obj.bForm ? 'gray-' : '' ) + 'arrow-next'     + ( obj.bForm ? '.png' : '.gif' );
+  obj._imgArrowLast     = getContextURL( ) + 'Obj/' + ( obj.bForm ? 'gray-' : '' ) + 'arrow-last'     + ( obj.bForm ? '.png' : '.gif' );
+
+  obj._imgArrowFirstDisable    = getContextURL( ) + 'Obj/' + ( obj.bForm ? 'gray-' : '' ) + 'arrow-first-dis'    + ( obj.bForm ? '.png' : '.gif' );
+  obj._imgArrowPreviousDisable = getContextURL( ) + 'Obj/' + ( obj.bForm ? 'gray-' : '' ) + 'arrow-previous-dis' + ( obj.bForm ? '.png' : '.gif' );
+  obj._imgArrowNextDisable     = getContextURL( ) + 'Obj/' + ( obj.bForm ? 'gray-' : '' ) + 'arrow-next-dis'     + ( obj.bForm ? '.png' : '.gif' );
+  obj._imgArrowLastDisable     = getContextURL( ) + 'Obj/' + ( obj.bForm ? 'gray-' : '' ) + 'arrow-last-dis'     + ( obj.bForm ? '.png' : '.gif' );
+}
+
+function finalizeCheckboxList( nWidth, nHeight, jsonHeader, strData, strEffect,
+  strInternalName, bReadOnly, bPaginated, nIdSvcPageContent, nIdSvc,
+  nIdSvcChange, bVisibleSelectAll, aSource )
+{
+  this.internalName       = strInternalName;
+  this._cpName            = 'cp_' + strInternalName;
+  this._nIdSvcPageContent = nIdSvcPageContent;
+  this.bForm              = true;
+  this._nIdSvc            = nIdSvc;
+  this._nIdSvcChange      = nIdSvcChange;
+  this._bDisableKeyNavigation = true;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  if( this.bForm )
+  {
+    this._divListView.align = "left";
+    this._divData.align     = "left";
+  }
+
+  this.setPaginated( bPaginated );
+  this.configPageButton( );
+
+  this.loadHeaderFromJson( jsonHeader );
+
+  if( nWidth > 0 )
+    this.setWidth( nWidth );
+
+  if( nHeight > 0 )
+    this.setHeight( nHeight );
+
+  if( strEffect )
+    this._aEffects = stringToJson( strEffect );
+
+  this.loadData( strData.data );
+
+  this.setReadOnly( bReadOnly );
+  this.setCkAllValue( );
+  this.setVisibleSelectAll( bVisibleSelectAll );
+  this.aSource = aSource;
+}
+
+function createInputDate( strName, strParentName, strPath, nIdSvc, bVisibleDailyBase, nAdjustPosX, nAdjustPosY )
+{
+  eval( strName + "=new InputDate( '" + strName + "','" + strParentName  + "','" +
+    strPath + "'," + nIdSvc + "," + bVisibleDailyBase + "," + nAdjustPosX + "," + nAdjustPosY + " );" );
+}
+
+function finalizeInputDate( strName                , strInternalName     , strParentName     , strIdSvcFillCal, strIdSvcSugDate                ,
+                            bMonthly               , aSource             , nIdSvc            , strValue       , strCssClass                    ,
+                            strCssClassRO          , bReadOnly           , bReadOnlyDailyBase, bReadOnlyDate  , bClear                         ,
+                            menuItem               , bDailyBase          , strMenuJson       , bUseMenu       , bPortuguese                    ,
+                            aEventListenerDailyBase, aEventListenerChange, aEventListener    , strCaption     , bReadOnlyWhenUncheckedDailyBase,
+                            dtFirstDate            , dtLastDate          , bIgnoreEvents     , nTypeItemMenu )
+{
+  eval( "var inpDate = " + strName + ";" );
+  
+  inpDate.finalize( strName                , strInternalName     , strParentName     , strIdSvcFillCal, strIdSvcSugDate                ,
+                    bMonthly               , aSource             , nIdSvc            , strValue       , strCssClass                    ,
+                    strCssClassRO          , bReadOnly           , bReadOnlyDailyBase, bReadOnlyDate  , bClear                         ,
+                    menuItem               , bDailyBase          , strMenuJson       , bUseMenu       , bPortuguese                    ,
+                    aEventListenerDailyBase, aEventListenerChange, aEventListener    , strCaption     , bReadOnlyWhenUncheckedDailyBase,
+                    dtFirstDate            , dtLastDate          , bIgnoreEvents     , nTypeItemMenu );
+}
+
+function createInputDateTime( strName, strParentName, strPath, nIdSvc, bVisibleDailyBase, nAdjustPosX, nAdjustPosY )
+{
+  eval( strName + "=new InputDateTime( '" + strName + "','" + strParentName  + "','" +
+    strPath + "'," + nIdSvc + "," + bVisibleDailyBase + "," + nAdjustPosX + "," + nAdjustPosY + " );" );
+}
+
+function finalizeInputDateTime( strName    , strInternalName, strParentName, strIdSvcFillCal     , strIdSvcSugDate,
+                                aSource    , nIdSvc         , strValue     , strCssClass         ,strCssClassRO   , 
+                                bReadOnly  , bClear         , bPortuguese  , aEventListenerChange, aEventListener , 
+                                dtFirstDate, dtLastDate     , bIgnoreEvents, bShowSeconds        , bMandatoryTime )
+{
+  eval( "var inpDate = " + strName + ";" );
+  
+  inpDate.finalize = InputDateTime.finalize;
+  
+  inpDate.finalize( strName    , strInternalName, strParentName, strIdSvcFillCal     , strIdSvcSugDate,
+                    aSource    , nIdSvc         , strValue     , strCssClass         ,strCssClassRO   , 
+                    bReadOnly  , bClear         , bPortuguese  , aEventListenerChange, aEventListener , 
+                    dtFirstDate, dtLastDate     , bIgnoreEvents, bShowSeconds        , bMandatoryTime );
+}
+
+function createInputDouble( args )
+{
+  eval( args['jsName'] + " = inputdouble({parent:'" + args['parentName'] + "'});" );
+}
+
+function finalizeInputDouble( strInternalName, nMaxLen, nNumDecimals, dValue, nWidth, bSigned,
+                              strCssClassRO, strCssClassRW, bReadOnly, aEventListener )
+{
+  this.bSigned = bSigned;
+  this.nMaxLen = nMaxLen;
+  this.nNumDecimals  = nNumDecimals;
+  this.nNumInt       = nMaxLen - nNumDecimals;
+  this.internalName  = strInternalName;
+  this.strCssClassRO = strCssClassRO;
+  this.strCssClassRW = strCssClassRW;
+  this._setValue( dValue );
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  if( nWidth > 0 )
+    this.setWidth( nWidth );
+
+  this.setReadOnly( bReadOnly );
+
+  if( aEventListener.length > 0 )
+    this.aEventListener = aEventListener;
+  else
+    this.aEventListener = [];
+
+  this.applyFormat( false );
+}
+
+function createButtonSuggest( pr_strButtonName, pr_strParentName, pr_strPath,
+                              pr_strLabel     , pr_strImgUrl    )
+{
+  eval( pr_strButtonName + " = button( { parent:document.getElementById( '" + pr_strParentName + "' ), " +
+        "label:'" + pr_strLabel + "', imgUrl:'" + getContextURL( ) + "Obj/" + pr_strImgUrl + "' } );" );
+
+  eval( pr_strButtonName + "._parent='" + pr_strParentName + "'");
+}
+
+function finalizeButtonSuggestEx( pr_strIdSvcSug, pr_nIdSvc , pr_bReadOnly, pr_bVisibleWhenReadOnly,
+                                  pr_nWidth     , pr_nHeight, pr_aSource  , pr_nMountedIdSvc       ,
+                                  pr_bVisible   )
+{
+  var bImageVisible = !( this.getValue( ) != "" && this.getImageUrl( ) == ( getContextURL( ) + "Obj/" ) );
+
+  finalizeButton.apply       ( this, [ pr_nHeight    , pr_nWidth, pr_nMountedIdSvc, pr_bReadOnly           , bImageVisible ] );
+  finalizeButtonSuggest.apply( this, [ pr_strIdSvcSug, pr_nIdSvc, pr_bReadOnly    , pr_bVisibleWhenReadOnly, pr_aSource, pr_bVisible ] )
+}
+
+function finalizeButtonSuggest( pr_strIdSvcSug         , pr_nIdSvc , pr_bReadOnly,
+                                pr_bVisibleWhenReadOnly, pr_aSource, pr_bVisible )
+{
+  var bImageVisible = !( this.getValue( ) != "" && this.getImageUrl( ) == ( getContextURL( ) + "Obj/" ) );
+
+  this.setImageDisplay( bImageVisible );
+
+  this.IdSuggest = pr_strIdSvcSug;
+  this.IdSvc     = pr_nIdSvc;
+
+  this.setVisibleReadOnly( pr_bVisibleWhenReadOnly );
+  this.setEvent          ( fireEvent               );
+
+  this.aEventListener = [
+  {
+    type: 5,
+    Id1: pr_strIdSvcSug,
+    IdSvc: pr_nIdSvc,
+    sources: pr_aSource
+  } ];
+
+  this.setReadOnly = function( pr_isReadOnly )
+  {
+    this._setReadOnly( pr_isReadOnly );
+  }
+
+  this.setReadOnly( pr_bReadOnly );
+
+  if( pr_bVisible != undefined )
+    this.setVisibility( pr_bVisible );
+}
+
+function finalizeButtonCloseWindow( pr_nType )
+{
+  this.aEventListener = [
+  {
+    type :pr_nType
+  } ];
+
+  this.setEvent    ( fireEvent );
+  this._setReadOnly( false     );
+
+  this.setReadOnly = function( ){ }
+}
+
+function finalizeButtonFilter( pr_nType, pr_target, pr_isVisibleReadOnly, pr_isReadOnly )
+{
+  this.setVisibleReadOnly( pr_isVisibleReadOnly );
+
+  this.aEventListener = [
+  {
+    type :pr_nType,
+    target :pr_target,
+    bFilter :true
+  } ];
+  this.setEvent   ( fireEvent     );
+  this.setReadOnly( pr_isReadOnly );
+}
+
+function finalizeButtonHelp( pr_strHelpSrc, pr_nType )
+{
+  this.style.backgroundColor = "buttonface";
+
+  this.aEventListener = [
+  {
+    type: pr_nType,
+    HelpFile: pr_strHelpSrc
+  } ];
+
+  this.setEvent( fireEvent );
+
+  this._setReadOnly( false );
+
+  this.setReadOnly = function( bReadOnly )
+  { };
+}
+
+function finalizeButtonProcess( pr_strParentKey   , pr_strMountedValidateId, pr_aEvents,
+                                pr_isReadOnly     , pr_nType               , pr_nId2   ,
+                                pr_aDataCompNames )
+{
+  this._isConfirmed = false;
+  this.setEvent( function( )
+                 {
+                   g_buttonSubmit = this;
+                   fireEvent.apply( this );
+                 }
+               );
+
+  eval( "this.aSource        = " + pr_aDataCompNames + ";" );
+
+  this.IdValidate            = pr_strMountedValidateId;
+  this.ID2                   = pr_nId2;
+  this._LayoutKey            = pr_strParentKey;
+  this.aProcessEventListener = pr_aEvents;
+  this.aEventListener = [
+  {
+    type: pr_nType,
+    target: this
+  } ];
+
+  this.setReadOnly = function( pr_isReadOnly )
+  {
+    this._setReadOnly( pr_isReadOnly );
+  };
+
+  this.setReadOnly( pr_isReadOnly );
+}
+
+function finalizeButtonSubmit( pr_nType, pr_aDataCompNames )
+{
+  eval( "this.aSource = " + pr_aDataCompNames + ";" );
+
+  this.aEventListener = [
+  {
+    type: pr_nType,
+    target: this
+  } ];
+
+  this.setEvent    ( fireEvent );
+  this._setReadOnly( false     );
+
+  this.setReadOnly = function( ){ };
+  
+  this.setJsonValue = function( json )
+                      {
+                        if( json.setup )
+                        {
+                          if( json.setup.readOnly != undefined )
+                            this._setReadOnly( json.setup.readOnly );
+                          if( json.setup.caption != undefined )
+                            this.setCaption( json.setup.caption );
+                        }
+                      };
+}
+
+function finalizeButtonSubProcess( pr_jsSources           , pr_nType          , pr_strMountedSubId,
+                                   pr_strMountedValidateId, pr_strMountedSvcId, pr_nIdSvc         ,
+                                   pr_bVisibleWhenReadOnly, pr_strHelpUrl     )
+{
+  this.aSource = pr_jsSources;
+
+  this.strHelpUrl           = pr_strHelpUrl;
+  this.strIDSvc             = pr_strMountedSubId;
+  this.strSubProcID         = pr_nIdSvc;
+  this.strValidateSubProcID = pr_strMountedValidateId;
+  this.aEventListener       = [ { type: pr_nType, target: this } ];
+
+  this.setVisibleReadOnly( pr_bVisibleWhenReadOnly );
+  this.setEvent          ( function( )
+                           {
+                             if( this.strHelpUrl && this.strHelpUrl.length > 0 )
+                               g_strMfbHelpName = getContextURL( ) + "Doc/" + this.strHelpUrl;
+                             
+                             fireEvent.apply( this, [] );
+                             
+                             g_strMfbHelpName = undefined;
+                           } );
+}
+
+function postPrmAndSetLocation( strSaveId, strSavePrm, strLocationId )
+{
+  postContent( g_strURL, 'ID1=' + strSaveId + '&' + strSavePrm );
+  redirectTo ( g_strURL + '?ID1=' + strLocationId              );
+}
+
+function validateSubRegistry( strValidateSvcId )
+{
+  return stringToJson(
+    postContent( g_strURL, 'ID1=' + strValidateSvcId + '&_Key=' + grid.getKey( ) ) );
+}
+
+function initSubRegistry( strValidateSvcId, strSaveId, strLocationId, strSuperRegistryId, nIdLock )
+{
+  var aResp;
+  var bValidate = strValidateSvcId != "";
+  g_bSubRegistryContext = true;
+
+  if( bValidate )
+    aResp = validateSubRegistry( strValidateSvcId );
+
+  if( !bValidate || (aResp.Status == 0) )
+  {
+    var strSavePrm =
+      '_Key=' + grid.getKey( ) +
+      '&_SuperRegistryId=' + strSuperRegistryId +
+      '&_SubRegistryId=' + strLocationId +
+      '&_LastFiredButtonFilterName=' + g_strLastFiredButtonFilterName +
+      '&ID3=' + g_strOldFilterQueryString +
+      (nIdLock != undefined ? '&_IdLock=' + nIdLock : "") +
+      '&pag=' + grid.getCurrPage( )  +
+      '&order=' + grid.getSortOrder( );
+
+    postPrmAndSetLocation( strSaveId, strSavePrm, strLocationId );
+  }
+  else
+    showDialog( aResp.SvcID, true );
+}
+
+function lockItemAndInitSubRegistry( strLockItemId, strValidateSvcId, strSaveId, strLocationId )
+{
+  var aResp;
+  var bValidate = strValidateSvcId != "";
+
+  if( bValidate )
+    aResp = validateSubRegistry( strValidateSvcId );
+
+  if( !bValidate || (aResp.Status == 0) )
+    showForm( g_strURL + "?_LocationId=" + strLocationId + '&_SaveId=' + strSaveId, strLockItemId );
+  else
+    showDialog( aResp.SvcID, true );
+}
+
+function goToPrc( nIDPrc, strIDGoToPrc, strIDSvcGoToPrc )
+{
+  var key;
+  var lvName = "";
+
+  if( window.grid != undefined )
+    key = window.grid.getKey( );
+  else
+  {
+    key    = g_Listview.getKey( );
+    lvName = g_Listview.internalName;
+  }
+
+  if( key == undefined )
+    key = '';
+
+  var str =
+    '_Key=' + key +
+    '&_LVName=' + lvName +
+    '&_IDPrc=' + nIDPrc;
+
+  var aResp = stringToJson( postContent( g_strURL, 'ID1=' + strIDSvcGoToPrc + '&' + str ) );
+
+  if( aResp.Status == 0 )
+    redirectTo( g_strURL + '?ID1=' + strIDGoToPrc + '&IDKey=' + aResp.ID );
+  else
+    showDialog( aResp.SvcID, true );
+}
+
+function executeActionMenu( nId, strCompName, pr_event )
+{
+  var cp = eval( "cp_" + strCompName );
+  cp.executeMenuAction( nId );
+}
+
+function executeActionMenuInteger( nId, strCompName, pr_event )
+{
+  if( !pr_event )
+    pr_event = window.event;
+  
+  if( isIE( ) )
+    pr_event.cancelBubble = true;
+  else
+    pr_event.stopPropagation( );
+  
+  var cp = eval( "cp_" + strCompName );
+  cp.executeMenuAction( nId );
+  this._InputInteger.setFocus( );
+}
+
+function getScrollBarWidth( )
+{
+  var nBarWidth = 0;
+  var e         = document.createElement("DIV");
+  var s         = e.style;
+  s.overflow    = "scroll";
+  s.width       = "300px";
+  s.height      = "100px";
+  s.visibility  = "hidden";
+  document.body.appendChild( e );
+  nBarWidth     = parseInt( 300 - e.scrollWidth );
+  e.parentNode.removeChild( e );
+
+  return nBarWidth;
+}
+
+function getStyle( strStyleName )
+{
+  for( var i = 0; i < document.styleSheets.length; i++ )
+    for( j = 0; j < document.styleSheets[i].rules.length; j++ )
+      if( document.styleSheets[i].rules[j].selectorText == "." + strStyleName )
+        return document.styleSheets[i].rules[j].style;
+
+  return 'undefined';
+}
+
+document.doConfirm = function( strID )
+{
+  aResp = stringToJson(
+    postContent( g_strURL, 'ID1=' + strID +
+                          '&ID4=' + (parent.grid.getTotRows( ) == 0) +
+                          '&ID5=true' ) );
+
+  if( aResp.Status == 0 )
+  {
+    g_bDeleteLog = false;
+    if( nSvc != 10 || ( nSvc == 10 && aResp.Rows ) )
+    {
+      if( aResp.RowsEffects )
+        aResp.Rows.effects = aResp.RowsEffects;
+      if( aResp.RowsMenuState )
+        aResp.Rows.menuState = aResp.RowsMenuState;
+
+      parent.grid.atualizaGrid( aResp.Rows, nSvc );
+    }
+
+    closeDialog( );
+  }
+  else
+  {
+    g_bDeleteLog = true;
+    showDialog( aResp.SvcID, true );
+  }
+}
+
+function createPageMan( strCpName, strParentName, strWidth, strHeight, bWizard )
+{
+  eval( strCpName + "= pageman( {parent:'" + strParentName + "', width:" + strWidth + ", height:" + strHeight + ", bWizard:" + bWizard + "});" );
+}
+
+function finalizePageMan( strID1, strIDChangePage, strInternalName, aPage, aPageChangeEvents, bDisplay, bVisibility, mapPageVisibility )
+{
+  var self = this;
+
+  this.internalName = strInternalName;
+  this.ID1          = strID1;
+  this.IDChangePage = strIDChangePage;
+  this.type         = 28;
+  
+  this.setAttribute( "internalName", this.internalName );
+  
+  for( var i = 0; i < aPage.length; i++ )
+    this.addPage( aPage[i][0], aPage[i][1], aPage[i][2], aPage[i][3], aPage[i][4] );
+
+  for( var i = 0; i < aPageChangeEvents.length; i++ )
+    this.addPageChangeEvent( aPageChangeEvents[i] );
+
+  this.setVisible( bVisibility );
+  this.setDisplay( bDisplay    );
+  
+  //Timeout pois deve garantir que as tabs estão montadas e renderizadas.
+  setTimeout( function( ){ self.refreshTabsWidth( );
+                           self.configVisibleTabs( mapPageVisibility ); }, 10 );
+}
+
+function closeDropDowns( )
+{
+  for( var i = 0; i < g_aCombo.length; i++ )
+    g_aCombo[i].closeDropDown( );
+}
+
+function formatHTMLtoJS( strNome )
+{
+  strNome = strNome.replace( new RegExp( "&lt;",   "g" ), "<"  );
+  strNome = strNome.replace( new RegExp( "&gt;",   "g" ), ">"  );
+  strNome = strNome.replace( new RegExp( "&amp;",  "g" ), "&"  );
+  strNome = strNome.replace( new RegExp( "&nbsp;", "g" ), " "  );
+  strNome = strNome.replace( new RegExp( "&#10;",  "g" ), "\n" );
+  strNome = strNome.replace( new RegExp( "&#13;",  "g" ), "\r" );
+  strNome = strNome.replace( new RegExp( "&#39;",  "g" ), "'"  );
+
+  return strNome;
+}
+
+function formatJStoHTML( strNome )
+{
+  strNome = strNome.replace( new RegExp( "<",  "g" ), "&lt;"   );
+  strNome = strNome.replace( new RegExp( ">",  "g" ), "&gt;"   );
+  strNome = strNome.replace( new RegExp( "&",  "g" ), "&amp;"  );
+  strNome = strNome.replace( new RegExp( " ",  "g" ), "&nbsp;" );
+  strNome = strNome.replace( new RegExp( "\n", "g" ), "&#10;"  );
+  strNome = strNome.replace( new RegExp( "\r", "g" ), "&#13;"  );
+  strNome = strNome.replace( new RegExp( "'",  "g" ), "&#39;"  );
+
+  return strNome;
+}
+
+function createRadiobutton( strRbgName, strRbName, strParentName, strNomeGrupo, strLabel )
+{
+  var rbg;
+
+  try
+  {
+    rbg = eval( strRbgName );
+    if( rbg && !rbg._isCreated )
+      throw new Error( 'Criar novamente...' );
+  }
+  catch( e )
+  {
+    eval( strRbgName + " = radiobutton( { grupo:'" + strNomeGrupo + "' } );" );
+    rbg = eval( strRbgName );
+  }
+
+  eval( strRbName + " = rbg.createRadiobutton( '" + strParentName + "', '" + strRbName + "', '" + strLabel + "' );" );
+}
+
+function finalizeRadiobutton( bReadonly, bChecked )
+{
+  this.setReadOnly( bReadonly );
+  this.setValue( bChecked );
+}
+
+function createInputPortfolio( strCpName,       strParent,              strName,               strPortLabel,       strIdSvcInputPortfolio, 
+		                           strTdClass,      strCssField,            strCssROField,         bTodasCart,         bConsol,
+		                           bAccount,        bPortDef,               bTodasCartAltList,     bConsolAltList,     bAccountAltList,
+		                           bPortDefAltList, bShowInvalidPortMsg,    bShowAlternateList,    bShowPortfolioList, bLinearLayout,
+		                           bPortugues,      strAltListFieldCaption, strAltListLinkCaption, nBasket,            strBasket )
+{
+  if( nBasket > 0 )
+    eval( strCpName + "=inputPortfolioBasket( { cpName:'" + strCpName + "', parent:'" + strParent + "', name:'" + strName + "', " +
+          "strIdSvcInputPortfolio:'" + strIdSvcInputPortfolio + "', tdClass:'" + strTdClass + "', " +
+          "cssField:'" + strCssField + "', cssROField:'" + strCssROField + "', bPortugues:" + bPortugues +
+          ", bAccount:" + bAccount + ", bPortDef:" + bPortDef +
+          ", nBasket:" + nBasket + ", strBasket:'" + strBasket + "' } );" );
+  else
+    eval( strCpName + "=inputPortfolio( { cpName:'" + strCpName + "', parent:'" + strParent + "', name:'" + strName + 
+    		    "', portLabel:'" + strPortLabel + "', strIdSvcInputPortfolio:'" + strIdSvcInputPortfolio + "', tdClass:'" + strTdClass +
+            "', cssField:'" + strCssField + "', cssROField:'" + strCssROField + "', bTodasCart:" + bTodasCart +
+            ", bConsol:" + bConsol + ", bAccount:" + bAccount + ", bPortDef:" + bPortDef +
+            ", bTodasCartAltList:" + bTodasCartAltList + ", bConsolAltList:" + bConsolAltList + 
+            ", bAccountAltList:" + bAccountAltList + ", bPortDefAltList:" + bPortDefAltList + ", bPortugues:" + bPortugues +
+            ", strAltListFieldCaption:'" + strAltListFieldCaption + "', strAltListLinkCaption:'" + strAltListLinkCaption +
+            "', bShowInvalidPortMsg:" + bShowInvalidPortMsg + ", bShowAlternateList:" + bShowAlternateList + ", bShowPortfolioList:" + bShowPortfolioList +
+            ", bLinearLayout:" + bLinearLayout + " } );" );
+}
+
+function finalizeInputPortfolio( bReadOnly,                    pr_bIgnoreEvents,            aEventListenerList, 
+                                 aEventListenerAltList,        aEventListenerPort,          aEventListenerAll,
+                                 aEventListenerConsol,         aEventListenerAccount,       aEventListenerPortDef,
+                                 aEventListenerAllAltList,     aEventListenerConsolAltList, aEventListenerAccountAltList, 
+                                 aEventListenerPortDefAltList, aEventListenerBothAccounts,  aEventListener,
+                                 bBasket,                      strJsonValue,                nComponentView )
+{
+  this.bIgnoreEvents = pr_bIgnoreEvents;
+
+  if( !bBasket )
+  {
+    this.setReadOnly( bReadOnly );
+
+    this._divSelLst._cbList.setOnchangeFunction( fireEventInputPortfolio );
+    this._divSelLst._cbPort.setOnchangeFunction( fireEvent               );
+
+    this._divSelLst._cbList.aEventListener       = aEventListenerList;
+    this._divSelLst._cbPort.aEventListener       = aEventListenerPort;
+    this._divSelLst._ckAll.aEventListener        = aEventListenerAll;
+    this._divSelLst._ckConsol.aEventListener     = aEventListenerConsol;
+    this._divSelLst._ckAccountSel.aEventListener = aEventListenerAccount;
+    this._divSelLst._ckPortDef.aEventListener    = aEventListenerPortDef;
+    
+    this._divSelAltLst._cbList.setOnchangeFunction( fireEventInputPortfolio );
+    this._divSelAltLst._cbPort.setOnchangeFunction( fireEvent               );
+
+    this._divSelAltLst._cbList.aEventListener       = aEventListenerAltList;
+    this._divSelAltLst._cbPort.aEventListener       = aEventListenerPort;
+    this._divSelAltLst._ckAll.aEventListener        = aEventListenerAllAltList;
+    this._divSelAltLst._ckConsol.aEventListener     = aEventListenerConsolAltList;
+    this._divSelAltLst._ckAccountSel.aEventListener = aEventListenerAccountAltList;
+    this._divSelAltLst._ckPortDef.aEventListener    = aEventListenerPortDefAltList;
+
+    if( this._showAccount )
+      this._divDigInc._ckAccountDig.aEventListener = aEventListenerBothAccounts;
+
+    this._divDig._iiCod.aEventListener = aEventListenerPort;
+    this.aEventListener                = aEventListener;
+    
+    //Obriga a configurar visão portfolio por padrão
+    inputPortfolio.changeView.apply( this, [0] );
+   
+    if( nComponentView > -1 )
+      inputPortfolio.changeView.apply( this, [nComponentView] );
+    
+    this.setJsonValue( strJsonValue );    
+    this.setFirstList( );
+  }
+  else
+  {
+    this.setReadOnly( bReadOnly );
+    if( this.showChecks )
+    {
+      if( this._divChecks._ckAccount )
+        this._divChecks._ckAccount.aEventListener = aEventListenerAccount;
+
+      if( this._divChecks._ckDefault )
+        this._divChecks._ckDefault.aEventListener = aEventListenerPortDef;
+    }
+    
+    this.setJsonValue( strJsonValue );
+  }
+}
+
+function createInputPensionFund( strCpName, strParent, strName, strIdSvcInputPensionFund,
+                                 strTdClass, strCssField, strCssROField, bAllPlans, bEntity, bOperations,
+                                 bPortugues, nPensionFund, nPlan, strJsonCbPensionFund, strJsonCbPlan )
+{
+  eval( strCpName + "=inputPensionFund( { cpName:'" + strCpName + "', parent:'" + strParent + "', name:'" + strName + "', " +
+        "strIdSvcInputPensionFund:'" + strIdSvcInputPensionFund + "', tdClass:'" + strTdClass + "', " +
+        "cssField:'" + strCssField + "', cssROField:'" + strCssROField + "', bAllPlans:" + bAllPlans +
+        ", bEntity:" + bEntity + ", bOperations:" + bOperations +
+        ", bPortugues:" + bPortugues + ", nPensionFund:" + nPensionFund + ", nPlan:" + nPlan +
+        ", strJsonCbPensionFund:\"" + strJsonCbPensionFund + "\", strJsonCbPlan:\"" + strJsonCbPlan + "\" } );" );
+}
+
+function finalizeInputPensionFund( bReadOnly, aEventListenerPensionFund, aEventListenerPlan,
+                                 aEventListenerEntity, aEventListenerOperations,
+                                 aEventListenerAllPlans, aEventListener, 
+                                 bEntityCheck, bOperationsCheck, bAllPlansCheck )
+{
+  this.setReadOnly( bReadOnly );
+  this._cbPensionFund.aEventListener = aEventListenerPensionFund;
+  this._cbPlan.aEventListener        = aEventListenerPlan;
+  this._ckEntity.aEventListener      = aEventListenerEntity;
+  this._ckOperations.aEventListener  = aEventListenerOperations;
+  this._ckAllPlans.aEventListener    = aEventListenerAllPlans;
+  this.aEventListener                = aEventListener;
+  
+  if( bEntityCheck )
+    this._ckEntity.setValue( bEntityCheck );
+  
+  if( bOperationsCheck )
+    this._ckOperations.setValue( bOperationsCheck );
+  
+  if( bAllPlansCheck )
+    this._ckAllPlans.setValue( bAllPlansCheck );
+}
+
+function createInputFileExport( strCpName, strParent, strName, strTdClass, strCssField,
+                                strCssROField, strExportLabel, bFileInput, bCreateFromCNPJ,
+                                bPortugues, strFileName, bExportFileCheck, bCreateFromCNPJCheck )
+{
+  eval( strCpName + "=inputFileExport( { cpName:'" + strCpName + "', parent:'" + strParent + "', name:'" + strName + "', " +
+        "tdClass:'" + strTdClass + "', cssField:'" + strCssField + "', cssROField:'" + strCssROField + "', " +
+        "strExportLabel:'" + strExportLabel + "', bFileInput:" + bFileInput + ", bCreateFromCNPJ:" + bCreateFromCNPJ +
+        ", bPortugues:" + bPortugues + ", strFileName:'" + strFileName + "', bExportFileCheck:" + bExportFileCheck +
+        ", bCreateFromCNPJCheck:" + bCreateFromCNPJCheck + " } );" );
+}
+
+function finalizeInputFileExport( bReadOnly, aEventListenerCreateFromCNPJ, aEventListenerExportFile, aEventListener )
+{
+  this.setReadOnly( bReadOnly );
+
+  this.aEventListener                        = aEventListener;
+  this._div._ckCreateFromCNPJ.aEventListener = aEventListenerCreateFromCNPJ;
+  this._div._ckExportFile.aEventListener     = aEventListenerExportFile;
+}
+
+function createForeignLayoutArea( strCpName, strParent, strName, id1, idHandler )
+{
+  eval( strCpName + "=foreignLayoutArea( { cpName:'" + strCpName + "', parent:'" + strParent + "', name:'" + strName + "', id1:'" + id1 + "', idHandler:'" + idHandler + "' } );" );
+}
+
+function finalizeForeignLayoutArea( bReadOnly )
+{
+  this.setReadOnly( bReadOnly );
+
+  this.buildQueryString        = buildQueryString;
+  this.buildQueryStringEx      = buildQueryStringEx;
+  this.getDataForeignCompNames = getDataForeignCompNames;  
+  this.aSource                 = [];
+}
+
+function createInputReportOutputType( strCpName, strParent, strName, strTdClass, strCssField, strCssROField,
+                                      bDownload, bPortugues, nOutputType, bDownloadCheck )
+{
+  eval( strCpName + "=inputReportOutputType( { cpName:'" + strCpName + "', parent:'" + strParent +
+          "', name:'" + strName + "', tdClass:'" + strTdClass + "', cssField:'" + strCssField +
+          "', cssROField:'" + strCssROField + "', bDownload:" + bDownload + ", bPortugues:" + bPortugues +
+          ", nOutputType:" + nOutputType + ", bDownloadCheck:" + bDownloadCheck + " } );" );
+}
+
+function finalizeInputReportOutputType( bReadOnly )
+{
+  this.setReadOnly( bReadOnly );
+  this.setDownloadVisible( this.bShowDownload );
+}
+
+function createInputReportHeader( strCpName, strParent, strName, strTdClass, strCssField, strCssROField,
+                                  bPortugues, bLeftNameCheck, bShortNameCheck, bLogotypeCheck,
+                                  bLeftNameBoxDisplay, bShortNameBoxDisplay, bLogotypeBoxDisplay )
+{
+  eval( strCpName + "=inputReportHeader( { cpName:'" + strCpName + "', parent:'" + strParent +
+        "', name:'" + strName + "', tdClass:'" + strTdClass + "', cssField:'" + strCssField +
+        "', cssROField:'" + strCssROField + "', bPortugues:" + bPortugues + ", bLeftNameCheck:" + bLeftNameCheck +
+        ", bShortNameCheck:" + bShortNameCheck + ", bLogotypeCheck:" + bLogotypeCheck + ", "+
+        " bLeftNameBoxDisplay: " + bLeftNameBoxDisplay + ", bShortNameBoxDisplay: " + bShortNameBoxDisplay + ", " +
+        " bLogotypeBoxDisplay: " + bLogotypeBoxDisplay + " } );" );
+}
+
+function finalizeInputReportHeader( bReadOnly, bReadOnlyLogotype, bReadOnlyShortName, bReadOnlyLeftName,
+                                    aEventListenerLogotype, aEventListenerShortName,
+                                    aEventListenerLeftName, aEventListener )
+{
+  this.setReadOnly( bReadOnly );
+
+  if( !bReadOnly )
+  {
+    this._div._ckShortName.setReadOnly( bReadOnlyShortName );
+    this._div._ckLeftName.setReadOnly ( bReadOnlyLeftName  );
+    this._div._ckLogotype.setReadOnly ( bReadOnlyLogotype  );
+  }
+
+  this._div._ckShortName.aEventListener = aEventListenerShortName;
+  this._div._ckLeftName.aEventListener  = aEventListenerLeftName;
+  this._div._ckLogotype.aEventListener  = aEventListenerLogotype;
+  this.aEventListener                   = aEventListener;
+
+  this.setLeftNameDisplay ( this.bLeftNameDisplay  );
+  this.setShortNameDisplay( this.bShortNameDisplay );
+  this.setLogotypeDisplay ( this.bLogotypeDisplay  );
+}
+
+function createInputReportPaging( strCpName, strParent, strName, strTdClass, strCssField, strCssROField,
+                                  bAccountPrint, bSavePage, bPortugues,
+                                  bAccountPrintCheck, bSavePageCheck, nInitialPage, nPosition )
+{
+  eval( strCpName + "=inputReportPaging( { cpName:'" + strCpName + "', parent:'" + strParent +
+          "', name:'" + strName + "', tdClass:'" + strTdClass + "', cssField:'" + strCssField +
+          "', cssROField:'" + strCssROField + "', bAccountPrint:" + bAccountPrint + ", bSavePage:" + bSavePage +
+          ", bPortugues:" + bPortugues + ", bAccountPrintCheck:" + bAccountPrintCheck +
+          ", bSavePageCheck:" + bSavePageCheck + ", nInitialPage:" + nInitialPage + ", nPosition:" + nPosition + " } );" );
+}
+
+function finalizeInputReportPaging( bReadOnly, bReadOnlyAccountPrint, bReadOnlySavePage,
+                                    bReadOnlyPosition, bReadOnlyInitialPage,
+                                    aEventListenerAccountPrint, aEventListenerSavePage,
+                                    aEventListenerInitialPage, aEventListenerPosition, aEventListener )
+{
+  this.bReadOnlyAccountPrint = bReadOnlyAccountPrint;
+  this.bReadOnlySavePage     = bReadOnlySavePage;
+  this.bReadOnlyPosition     = bReadOnlyPosition;
+  this.bReadOnlyInitialPage  = bReadOnlyInitialPage;
+
+  this.setReadOnly( bReadOnly );
+
+  if( !bReadOnly )
+  {
+    this._div._ckAccountPrint.setReadOnly( bReadOnlyAccountPrint );
+    this._div._ckSavePage.setReadOnly    ( bReadOnlySavePage     );
+    this._div._rbHeader.setReadOnly      ( bReadOnlyPosition     );
+    this._div._rbFooter.setReadOnly      ( bReadOnlyPosition     );
+    this._div._iiPage.setReadOnly        ( bReadOnlyInitialPage  );
+  }
+
+  this._div._ckAccountPrint.aEventListener = aEventListenerAccountPrint;
+  this._div._ckSavePage.aEventListener     = aEventListenerSavePage;
+  this._div._rbgPosition.aEventListener    = aEventListenerPosition;
+  this._div._iiPage.aEventListener         = aEventListenerInitialPage;
+  this.aEventListener                      = aEventListener;
+
+  this.configureControls( this._div._ckAccountPrint.checked );
+}
+
+function createInputRangeDate( strCpName      , strParent      , strName        , strTdClass , strCssField   , strCssROField,
+                               bPortuguese    , bMonthly       , bShowDailyBase ,bVertical   , bUseMenu      , nIdSvc       ,
+                               strInitialLabel, strFinalLabel  , dtInitialDate  , dtFinalDate, menuItemInitial, menuItemFinal ,
+                               bDailyBase     , strIdSvcFillCal, strIdSvcSugDate, strCaption )
+{
+  eval( strCpName + "=inputRangeDate( { cpName:'" + strCpName + "', parent:'" + strParent +
+          "', name:'" + strName + "', tdClass:'" + strTdClass + "', cssField:'" + strCssField +
+          "', cssROField:'" + strCssROField + "', bPortuguese:" + bPortuguese +
+          ", bMonthly:" + bMonthly + ", bShowDailyBase:" + bShowDailyBase + ", bVertical:" + bVertical +
+          ", bUseMenu:" + bUseMenu + ", nIdSvc:" + nIdSvc + ", strInitialLabel:'" + strInitialLabel +
+          "', strFinalLabel:'" + strFinalLabel + "', dtInitialDate:'" + dtInitialDate +
+          "', dtFinalDate:'" + dtFinalDate + "', nInitialOption: menuItemInitial " +
+          ", nFinalOption: menuItemFinal, bDailyBase:" + bDailyBase +
+          ", strIdSvcFillCal:'" + strIdSvcFillCal + "', strIdSvcSugDate:'" + strIdSvcSugDate + "'" +
+          ", strCaption:'" + strCaption + "'} );" );
+}
+
+function finalizeInputRangeDate( bReadOnly  , bReadOnlyDailyBase              , bReadOnlyDates,
+                                 strJsonMenu, aEventListenerDailyBase         , aEventListener,
+                                 aSource    , bReadOnlyWhenUncheckedDailyBase )
+{
+  this.bReadOnlyWhenUncheckedDailyBase = bReadOnlyWhenUncheckedDailyBase != undefined ? bReadOnlyWhenUncheckedDailyBase : false;
+  this.initialize ( strJsonMenu );
+  
+  if( this.bShowDailyBase )
+    this._fsDiv._ckDailyBase.aEventListener = aEventListenerDailyBase;
+
+  this.aEventListener = aEventListener;
+  this.aSource        = aSource;
+
+  if( bReadOnly )
+  {
+    this.setReadOnlyDates( true );
+    if( this.bShowDailyBase )
+      this._fsDiv._ckDailyBase.setReadOnly( true );
+  }
+  else
+  {
+    if( this.bShowDailyBase )
+      this._fsDiv._ckDailyBase.setReadOnly( false );
+
+    if( this.bShowDailyBase && bReadOnlyWhenUncheckedDailyBase )
+      this.setReadOnlyDates( !this._fsDiv._ckDailyBase.getValue( ) );
+    else
+      this.setReadOnlyDates( false );
+
+    if( this.bShowDailyBase )
+      this._fsDiv._ckDailyBase.setEvent( function( )
+                                         {
+                                             this._parent.setReadOnly( !this.getValue( ) && this._parent.bReadOnlyWhenUncheckedDailyBase );
+                                             this.setReadOnly        ( false             );
+
+                                             if( !this.getValue( ) && this._parent.bReadOnlyWhenUncheckedDailyBase )
+                                               this._parent.setJsonValue( { initialdate:"", finaldate:"" } );
+
+                                             if( !this.isReadOnly( ) )
+                                             {
+                                               fireEvent.apply( this, [] ); //Evento de Mudança da Base Diaria
+                                               //Evento de Mudança do componente
+                                               fireEvent.apply( this._parent, [] );
+                                             }
+                                         } );
+  }
+}
+
+function getProgressData( nCycles )
+{
+  try //Código protegido para caso ocorra erro com o propertiesData
+  {
+    var aResp = stringToJson( postContent( g_strURL, 'ID1=' + strProgresDataSvcID + ( g_bCancelProcess ? '&ID2=cancel' : '' ) ) );
+  } catch(e)
+  {
+    setTimeout( 'getProgressData( ' + nCycles + ' );', 100 * nCycles );
+    return;
+  }
+
+  if( !aResp.bFinalized )
+  {
+    for( var i in aResp )
+    {
+      try
+      {
+        eval( "cp_" + i ).setJsonValue( aResp[i] );
+      }
+      catch( e )
+      { }
+    }
+
+    setTimeout( 'getProgressData( ' + nCycles + ' );', 100 * nCycles );
+  }
+  else
+    closeProgressWindow( );
+}
+
+function cancelProgress( )
+{
+  if( confirm( g_bEnglish ? "Confirm Cancel?" : "Confirma o Cancelamento?" ) )
+  {
+    g_bCancelProcess = true;
+    blinkElm         = this;
+    blinkElm.visible = true;
+
+    blinkElm.style.color = "red";
+    blinkElm.value       = g_bEnglish ? "Canceling" : "Cancelando";
+    blinkElm.setEvent( function( ){ } );
+    blinkElm.blur( );
+
+    blinkIt( );
+  }
+}
+
+function blinkIt( )
+{
+  blinkElm.style.visibility = blinkElm.visible ? "visible" : "hidden";
+
+  blinkElm.visible = !blinkElm.visible;
+  setTimeout( 'blinkIt( )', 500 );
+}
+
+function handleCancelProgress( )
+{ }
+
+function showMenu( nID, nID2, pr_event )
+{
+  if( !g_favoritesMenu.bFilled )
+  {
+    // Tratamento de espaços no TextArea
+    var strResp = postContent    ( g_strURL, 'ID1=' + nID + '&ID2=' + nID2 );
+    strResp     = strResp.replace( new RegExp( "\n", "g" ), "\\n" );
+    strResp     = strResp.replace( new RegExp( "\r", "g" ), "\\r" );
+    var aResp   = stringToJson   ( strResp );
+
+    for( var i = 0; i < aResp.items.length; i++ )
+    {
+      try
+      {
+        g_favoritesMenu.addItem( aResp.items[i] );
+      }
+      catch( e ){ }
+    }
+
+    g_favoritesMenu.bFilled = true;
+  }
+
+  if( !pr_event )
+    pr_event = window.event;
+
+  g_aMenu = new Array( );
+  g_aMenu[0] = g_favoritesMenu;
+
+  g_aMenu[0]._show( pr_event );
+  pr_event.cancelBubble = true;
+}
+
+//Função de preenchimento de favoritos modificada, para o caso dos favoritos existentes já cadastrados, com essa modificação,
+//mesmo os componentes que tiveram seus dados guardados no banco não serão preenchidos, se o componente for configurado para tal.
+//Além disso, aumenta ligeiramente o desempenho, por declarar o componente, ao invés de referenciar por diversas chamadas eval().
+function fillFavorites( json )
+{
+  var comp;
+
+  //Antes, testa para saber se veio a mensagem de favorito inválido. Se veio, mostra mensagem ao usuário.
+  if( json['favtInvalid'] )
+  {
+    var page = getContextURL( ) + ( g_bEnglish ? "Obj/faverrori.html" : "Obj/faverrorp.html" );
+    var win  = showGenericWindow( g_bEnglish ? "Error in the Favorites" : "Erro nos Favoritos", 480, 70, page , true, false, true );
+
+    return;
+  }
+
+  //Preciso salvar o PD do Favorito como sendo o PD Original do Registry, senao, 
+  //as telas nao funcionam corretamente.
+  postContent( g_strURL, 'ID1=' + g_nSvcSaveObjecID + '&ID3=' + escape( jsonToString( json ) ) + '&PDOriginal=true' );
+
+  for( var i in json )
+  {
+    try
+    {
+      comp = eval( "cp_" + i );
+
+      // Tratamento para limpar os comboboxes
+      if( comp._type && comp._type == 6 && !comp.isStatic( ) )
+        comp.clear( );
+
+      if( json[i].type && ( !comp.isIgnoreFavorites || !comp.isIgnoreFavorites( ) ) )
+      {
+        g_isLoading = true;
+        comp.setJsonValue( json[i] );
+      }
+    }
+    catch( e ){ }
+  }
+
+  g_isLoading = false;
+}
+
+function fillForeignProperties( json )
+{
+  for( var i in json )
+  {
+    try
+    {
+      eval( "cp_" + i ).setJsonValue( json[i] );
+    }
+    catch( e ){ }
+  }
+}
+
+function showFormAddFavorites( nID, nIDSaveToSession, nID2 )
+{
+  postContent( g_strURL, 'ID1=' + nID + '&Param=' + buildQueryString( aDataCompNames, true, true ) + '&ID2=' + nIDSaveToSession );
+  showDialog( nID, true, '&ID2=' + nID2 );
+}
+
+function confirmAddFavorite( nID2 )
+{
+  var bResp = parent.document.addFavorites( this.Id1, nID2, escape( adjustComponentValue( cp_txNome ) ) );
+
+  if( bResp == true )
+    closeDialog( );
+}
+
+document.addFavorites = function( nID, nID2, strNome )
+{
+  g_favoritesMenu.bFilled = false;
+  g_favoritesMenu.clear( );
+
+  var aResp = stringToJson( postContent( g_strURL, 'ID1=' + nID + '&ID2=' + nID2 + '&FavoriteName=' + strNome ) );
+
+  if( aResp.favoriteExists )
+  {
+    showDialog( aResp.SvcID, true );
+    return false;
+  }
+
+  document.getElementById( g_strTxArgBusca ).focus( );
+  document.getElementById( g_strTxArgBusca ).blur( );
+
+  return true;
+}
+
+function showFormUpdateFavorites( nID, nIDSaveToSession, nID2 )
+{
+  postContent( g_strURL, 'ID1=' + nID + '&Param=' + buildQueryString( aDataCompNames, true, true ) + '&ID2=' + nIDSaveToSession );
+  showDialog( nID, true, '&ID2=' + nID2 );
+}
+
+function confirmUpdateFavorite( nID2 )
+{
+  if( cp_cbFavorito.getValue( ) != "" )
+  {
+    var bResp = parent.document.updateFavorites( this.Id1, nID2, cp_cbFavorito.getValue( ) );
+    if( bResp == true )
+      closeDialog( );
+  }
+  else
+    closeDialog( );
+}
+
+document.updateFavorites = function( nID, nID2, strId )
+{
+  g_favoritesMenu.bFilled = false;
+  g_favoritesMenu.clear( );
+  var aResp = stringToJson( postContent( g_strURL, 'ID1=' + nID + '&ID2=' + nID2 + '&FavoriteId=' + strId ) );
+
+  if( aResp.erro )
+  {
+    showDialog( aResp.SvcID, true );
+    return false;
+  }
+
+  document.getElementById( g_strTxArgBusca ).focus( );
+  document.getElementById( g_strTxArgBusca ).blur( );
+
+  return true;
+}
+
+function showFormDeleteFavorites( nID, nID2 )
+{
+  showDialog( nID, true, '&ID2=' + nID2 );
+}
+
+function confirmDeleteFavorite( nID2 )
+{
+  if( cp_cbFavorito.getValue( ) != "" )
+  {
+    var bResp = parent.document.deleteFavorites( this.Id1, nID2, cp_cbFavorito.getValue( ) );
+    if( bResp == true )
+      closeDialog( );
+  }
+  else
+    closeDialog( );
+}
+
+document.deleteFavorites = function( nID, nID2, strId )
+{
+  g_favoritesMenu.bFilled = false;
+  g_favoritesMenu.clear( );
+  var aResp = stringToJson( postContent( g_strURL, 'ID1=' + nID + '&ID2=' + nID2 + '&FavoriteId=' + strId ) );
+
+  if( aResp.erro )
+  {
+    showDialog( aResp.SvcID, true );
+    return false;
+  }
+
+  document.getElementById( g_strTxArgBusca ).focus( );
+  document.getElementById( g_strTxArgBusca ).blur( );
+
+  return true;
+}
+
+function createInputUpload( strName, strInternalName, strParentName, strCssClassRO, nSize,
+  bCompact, bMultiple, aKnownFileTypes, aAllowedFileTypes, 
+  idSvcValidate )
+{
+  var conf = {};
+
+  conf.name               = strInternalName;
+  conf.parent             = strParentName;
+  conf.CssClassRO         = strCssClassRO;
+  conf.size               = nSize;
+  conf.compact            = bCompact;
+  conf.multiple           = bMultiple;
+  conf.aKnownFileTypes    = aKnownFileTypes;
+  conf.aAllowedFileTypes  = aAllowedFileTypes;
+  conf.idSvcValidate      = idSvcValidate;
+
+  eval( strName + " = inputupload( conf );" );
+}
+
+function showShield( pr_bKeepFocus )
+{
+  //MANTIS#33835: Se tem uma tela de progresso, não posso exibir um shield em cima dela. Isso acontece quando o framework de processo
+  //joga o shield. Deveria ser feito só no processo, mas no momento é melhor aqui...
+  if( getTopWindow( ).g_winProgress != undefined )
+    return;
+
+  if( g_divShield == undefined )
+  {
+    g_divShield = document.createElement( "DIV" );
+    g_divShield.onclick = function( pr_event ){ if( !pr_event ) pr_event = window.event; pr_event.cancelBuble=true; };
+
+    g_divShield.style.overflow = "hidden";
+    g_divShield.style.position = "absolute";
+    g_divShield.style.top      = 0;
+    g_divShield.style.left     = 0;
+    g_divShield.style.width    = "100%";
+    g_divShield.style.height   = "100%";
+    //MANTIS#31505 - Preciso setar um background ou opacidade. Senão, nosso amigo IE deixa os eventos passarem...
+    //PROJETO#13107 - A imagem foi removida do background, quando estamos no IE7 - Exibir a imagem da forma abaixo gera erro de mixed content.
+    if( !isIE7( ) && !isIE7CompatView( ) )
+      g_divShield.style.background = 'url(data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7)';
+    
+    g_divShield.style.opacity = 0.01;
+    
+    document.body.appendChild( g_divShield );
+    
+    //MANTIS#31505
+    //Preciso criar um INPUT e dar focus nele ao exibir o shield.
+    //Caso contrário, o foco fica no que foi clicado e permite o usuário usar ENTER....
+    g_divShield._input = document.createElement( "INPUT" );
+    g_divShield._input.type           = 'checkbox';
+    g_divShield._input.style.position = 'absolute';
+    g_divShield._input.style.top      = '-1000px';
+    
+    g_divShield.appendChild( g_divShield._input );
+  }
+
+  g_divShield.style.zIndex     = 10000000;
+  g_divShield.style.visibility = "visible";
+  g_divShield.style.cursor     = "wait";
+  
+  //MANTIS#32305
+  //Não posso configurar o focus no input escondido quando é disparado eventos de interface.
+  //No evento de setPropertiesData esse parametro vem true, portanto, o focus dos compoenentes é mantido.
+  if( !pr_bKeepFocus )
+    g_divShield._input.focus( );
+
+  window.status = "Aguarde, processando...";
+}
+
+function hideShield( )
+{
+  if( g_divShield != undefined )
+  {
+    g_divShield.style.zIndex     = -1;
+    g_divShield.style.visibility = "hidden";
+    g_divShield.style.cursor     = "default";
+  }
+
+  window.status = "";
+}
+
+function createInputsecurity( strCpName, strInternalName )
+{
+  eval( strCpName + "=inputsecurity( { name: '" + strInternalName + "' } );" );
+}
+
+function finalizeInputsecurity( nType, strName, strNameIgs )
+{
+  this._type     = nType;
+  this.igsSource = eval( strNameIgs );
+}
+
+function createInputseries( strCpName, strInternalName )
+{
+  eval( strCpName + "=inputseries( { name: '" + strInternalName + "' } );" );
+}
+
+function finalizeInputseries( nType, strName, strNameIgs )
+{
+  this._type     = nType;
+  this.igsSource = eval( strNameIgs );
+}
+
+function createInputSecurityBalance( strCpName, strParent, strName, strIdSvcInputSecurityBalance,
+                                     strTdClass, strCssField, strCssROField, bPortugues,
+                                     strValue, nPortfolio, nOpenSelectScreen )
+{
+  eval( strCpName + "=inputSecurityBalance( { cpName:'" + strCpName + "', parent:'" + strParent + "', name:'" + strName + "', " +
+        "strIdSvcInputSecurityBalance:'" + strIdSvcInputSecurityBalance + "', tdClass:'" + strTdClass + "', " +
+        "cssField:'" + strCssField + "', cssROField:'" + strCssROField + "', bPortugues:" + bPortugues +
+        ", strValue:'" + strValue + "', nPortfolio:" + nPortfolio + ", nOpenSelectScreen:" + nOpenSelectScreen +
+        " } );" );
+}
+
+function finalizeInputSecurityBalance( bReadOnly, aEventListener )
+{
+  this.setReadOnly( bReadOnly );
+  this.aEventListener = aEventListener;
+}
+
+function createInputSecurityIssuers( strCpName, strParent, strName, strIdSvcInputSecurityIssuers,
+                            strTdClass, strCssField, strCssROField, bPortugues,
+                            strValue, nOpenSelectScreen )
+{
+  eval( strCpName + "=inputSecurityIssuers( { cpName:'" + strCpName + "', parent:'" + strParent + "', name:'" + strName + "', " +
+        "strIdSvcInputSecurityIssuers:'" + strIdSvcInputSecurityIssuers + "', tdClass:'" + strTdClass + "', " +
+        "cssField:'" + strCssField + "', cssROField:'" + strCssROField + "', bPortugues:" + bPortugues +
+        ", strValue:'" + strValue + "', nOpenSelectScreen:" + nOpenSelectScreen +
+        " } );" );
+}
+
+function finalizeInputSecurityIssuers( bReadOnly, aEventListener )
+{
+  this.setReadOnly( bReadOnly );
+  this.aEventListener = aEventListener;
+}
+
+function createInputPaper( strCpName, strParent, strName, strIdSvcInputPaper,
+                           strTdClass, strCssField, strCssROField, bPortugues,
+                           nValue, strPaperName, nOpenSelectScreen )
+{
+  eval( strCpName + "=inputPaper( { cpName:'" + strCpName + "', parent:'" + strParent + "', name:'" + strName + "', " +
+        "strIdSvcInputPaper:'" + strIdSvcInputPaper + "', tdClass:'" + strTdClass + "', " +
+        "cssField:'" + strCssField + "', cssROField:'" + strCssROField + "', bPortugues:" + bPortugues +
+        ", nValue:" + nValue + ", strPaperName:'" + strPaperName + "', nOpenSelectScreen:" + nOpenSelectScreen +
+        " } );" );
+}
+
+function finalizeInputPaper( bReadOnly, aEventListener )
+{
+  this.setReadOnly( bReadOnly );
+  this.aEventListener = aEventListener;
+}
+
+function createInputAccount( strCpName, strParent, strName, strIdSvcInputAccount,
+                             strTdClass, strCssField, strCssROField, bPortugues,
+                             nAccount, nPlan, bShowName, strLabel,
+                             nOpenSelectScreen, nGetAccountName, nGetAccountMask )
+{
+  eval( strCpName + "=inputAccount( { cpName:'" + strCpName + "', parent:'" + strParent + "', name:'" + strName + "', " +
+        "strIdSvcInputAccount:'" + strIdSvcInputAccount + "', tdClass:'" + strTdClass + "', " +
+        "cssField:'" + strCssField + "', cssROField:'" + strCssROField + "', bPortugues:" + bPortugues +
+        ", nAccount:" + nAccount + ", nPlan:" + nPlan + ", bShowName:" + bShowName + 
+        ", strLabel:'" + strLabel + "', nOpenSelectScreen:" + nOpenSelectScreen +
+        ", nGetAccountName:" + nGetAccountName + ", nGetAccountMask:" + nGetAccountMask +
+        " } );" );
+}
+
+function finalizeInputAccount( bReadOnly, aEventListener )
+{
+  this.setReadOnly( bReadOnly );
+  this.setEventListener( aEventListener );
+}
+
+function createInputInvestor( strCpName, strParent, strName, strIdSvcInputInvestor,
+                              strTdClass, strCssField, strCssROField, bPortugues,
+                              nValue, bOnlyShowSearchButton, nOpenSelectScreen, nSearchInvestorCodeName )
+{
+  eval( strCpName + "=inputInvestor( { cpName:'" + strCpName + "', parent:'" + strParent + "', name:'" + strName + "', " +
+        "strIdSvcinputInvestor:'" + strIdSvcInputInvestor + "', tdClass:'" + strTdClass + "', " +
+        "cssField:'" + strCssField + "', cssROField:'" + strCssROField + "', bPortugues:" + bPortugues +
+        ", nValue:" + nValue + ", bOnlyShowSearchButton:" + bOnlyShowSearchButton + ", nOpenSelectScreen:" + nOpenSelectScreen + ", nSearchInvestorCodeName:" + nSearchInvestorCodeName +
+        " } );" );
+}
+
+function finalizeInputInvestor( bReadOnly, aEventListener )
+{
+  this.setReadOnly( bReadOnly );
+  this.aEventListener = aEventListener;
+}
+
+function createInputAccountPlan( strCpName, strParent, strName, strIdSvcInputAccountPlan,
+                             strIdSvcFillComboBox,
+                             strTdClass, strCssField, strCssROField, bShowLevel, bPortugues,
+                             nPlan, nLevel, nGetDefaultLevel, nFillComboPlan, nFillComboLevel )
+{
+  eval( strCpName + "=inputAccountPlan( { cpName:'" + strCpName + "', parent:'" + strParent + "', name:'" + strName + "', " +
+        "strIdSvcInputAccountPlan:'" + strIdSvcInputAccountPlan + "', strIdSvcFillComboBox:'" + strIdSvcFillComboBox + "', " +
+        "tdClass:'" + strTdClass + "', cssField:'" + strCssField + "', cssROField:'" + strCssROField +
+        "', bPortugues:" + bPortugues + ", bShowLevel:" + bShowLevel +
+        ", nPlan:" + nPlan + ", nLevel:" + nLevel + ", nGetDefaultLevel:" + nGetDefaultLevel +
+        ", nFillComboPlan:" + nFillComboPlan + ", nFillComboLevel:" + nFillComboLevel +
+        " } );" );
+}
+
+function finalizeInputAccountPlan( bReadOnly, aEventListener, aEventListenerAccountPlan, aEventListenerLevel )
+{
+  this.setReadOnly( bReadOnly );
+  this.aEventListener = aEventListener;
+  this._divDig._cbPlan.aEventListener  = aEventListenerAccountPlan;
+  if( this.bShowLevel )
+    this._divDig._cbLevel.aEventListener = aEventListenerLevel;
+}
+
+function createListview( pr_strName, pr_strParentName, pr_strClassName )
+{
+  eval( pr_strName + "=listview( { parent:'" + pr_strParentName + "', className:'" + pr_strClassName + "', name:'" + pr_strName + "' } );" );
+}
+
+function _List_DblClick( e )
+{
+  if( this.selected.length > 0 )
+  {
+    for( var i = 0; i < this.selected.length; i++ )
+    {
+      var iRow = this.selected[i];
+      this.data.rows[iRow].cells[0].value = this.data.rows[iRow].cells[0].value == 'true' ? 'false' : 'true';
+    }
+    this.refresh( );
+  }
+}
+
+function finalizeListview( nWidth                    , nHeight                 , jsonHeader            , jsonData                ,
+                           strEffect                 , strInternalName         , bReadOnly             , aMenuState              ,
+                           bForm                     , bMultiSelect            , jsonMenu              , Id1                     ,
+                           Id2                       , nIdSvc                  , bReturnAllRows        , bMoveRowUpDown          ,
+                           bDisableSort              , bDisableKeyNavigation   , bPaginated            , nIdSvcPageContent       ,
+                           aSource                   , aOnDblClickEventListener, aOnSelectEventListener, aOnUnselectEventListener,
+                           aOnRowsUpdateEventListener, nTpEventoInclusao       , nTpEventoAlteracao    , nTpEventoExclusao       , 
+                           nTpEventoMoverParaBaixo   , nTpEventoMoverParaCima  )
+{
+  this.internalName = strInternalName;
+  this._cpName      = "cp_" + strInternalName;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  this.bForm                = bForm;
+  this.bMultiSelect         = bMultiSelect;
+  this.Id1                  = Id1;
+  this.Id2                  = Id2;
+  this._nIdSvc              = nIdSvc;
+  this._bReturnAllRows      = bReturnAllRows;
+  this._bDisableSort        = bDisableSort;
+  this._bKeyboardNavigation = !bDisableKeyNavigation;
+  this._nIdSvcPageContent   = nIdSvcPageContent;
+
+  if( this.bForm )
+  {
+    this._divListView.align = "left";
+    this._divData.align     = "left";
+  }
+
+  this.setPaginated( bPaginated );
+  this.configPageButton( );
+
+  this.loadHeaderFromJson( jsonHeader );
+
+  if( nWidth > 0 )
+    this.setWidth( nWidth );
+
+  if( nHeight > 0 )
+    this.setHeight( nHeight );
+
+  if( strEffect )
+    this._aEffects = stringToJson( strEffect );
+  if( aMenuState != undefined )
+    this._menuState = aMenuState;
+
+  this.loadData( jsonData.data );
+
+  this.nTpEvento               = -1;
+  this.nTpEventoInclusao       = nTpEventoInclusao;
+  this.nTpEventoAlteracao      = nTpEventoAlteracao;
+  this.nTpEventoExclusao       = nTpEventoExclusao;
+  this.nTpEventoMoverParaBaixo = nTpEventoMoverParaBaixo;
+  this.nTpEventoMoverParaCima  = nTpEventoMoverParaCima;
+
+  this.configureMenu( jsonMenu, bMoveRowUpDown );
+  this.aOnDblClickEventListener   = aOnDblClickEventListener;
+  this.aOnSelectEventListener     = aOnSelectEventListener;
+  this.aOnUnselectEventListener   = aOnUnselectEventListener;
+  this.aOnRowsUpdateEventListener = aOnRowsUpdateEventListener;
+  this.aSource                    = aSource;
+
+  if( bPaginated )
+    this.setURL( g_strURL );
+  
+  this.setReadOnly( bReadOnly );
+}
+
+function createInputPassword( strTxName, strHTMLName )
+{
+  eval( strTxName + " = document.getElementById( '" + strHTMLName + "' );" );
+}
+
+function finalizeInputPassword( strName, nType, strParentName, strCssClass, strCssClassRO, aEventListener, aEventOnLostFocus )
+{
+  this.internalName = strName;
+  this._type        = nType;
+  this._parent      = strParentName;
+  this._cssClass    = strCssClass;
+  this._cssClassRO  = strCssClassRO;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  if( aEventListener.length > 0 && !this.bReadOnly )
+  {
+    this.aEventListener = aEventListener;
+    this.onkeypress     = function( pr_event )
+                          {
+                            var key = pr_event ? pr_event.which : window.event.keyCode;
+                            treatKey.apply( this, [ key ] );
+                          };
+  }
+
+  if( aEventOnLostFocus.length > 0 && !this.bReadOnly )
+  {
+    this.aEventOnLostFocus = aEventOnLostFocus;
+    this.onblur = function( )
+    {
+      fireEvent.apply( this, [this.aEventOnLostFocus] );
+    }
+  }
+
+  this.setJsonValue = function( json )
+  {
+    if( json.setup )
+    {
+      if( json.setup.value != undefined )
+        this.value = json.setup.value;
+      if( json.setup.readOnly != undefined )
+        this.setReadOnly( json.setup.readOnly );
+    }
+    else
+      this.value = json.value;
+  }
+
+  this.getJsonValue = function( pr_bComplete )
+  {
+    if( pr_bComplete )
+      return '{type:' + this._type + ',setup: {readOnly: ' + this.readOnly + ',value:\"' + adjustComponentValue( this ) + '\"} }';
+    else
+      return '{ type:' + this._type + ',value:\"' + adjustComponentValue( this ) + '\" }';
+  }
+
+  this.setReadOnly = function( b )
+  {
+    this.readOnly = b;
+
+    if( b )
+      this.className = this._cssClassRO;
+    else
+      this.className = this._cssClass;
+  }
+
+  this.onkeypress = Input_KeyPress;
+  this.onpaste    = Input_Paste;
+}
+
+function createInputText( strTxName, strHTMLName )
+{
+  eval( strTxName + " = document.getElementById( '" + strHTMLName + "' );" );
+}
+
+function finalizeInputText( strName, nType, strParentName, strCssClass, strCssClassRO, aEventListener, aEventOnLostFocus, mapMaskConfig )
+{
+  this.internalName = strName;
+  this._type        = nType;
+  this._parent      = strParentName;
+  this._cssClass    = strCssClass;
+  this._cssClassRO  = strCssClassRO;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  if( aEventListener.length > 0 && !this.bReadOnly )
+  {
+    this.aEventListener = aEventListener;
+    this.onkeypress     = function( pr_event )
+                          {
+                            var key = pr_event ? pr_event.which : window.event.keyCode;
+                            treatKey.apply( this, [ key ] );
+                          };
+  }
+
+  if( aEventOnLostFocus.length > 0 && !this.bReadOnly )
+  {
+    this.aEventOnLostFocus = aEventOnLostFocus;
+    this.onblur = function( )
+    {
+      fireEvent.apply( this, [this.aEventOnLostFocus] );
+    }
+  }
+
+  this.setJsonValue = function( json )
+  {
+    if( json.setup )
+    {
+      if( json.setup.value != undefined )
+        this.value = json.setup.value;
+      if( json.setup.readOnly != undefined )
+        this.setReadOnly( json.setup.readOnly );
+    }
+    else
+      this.value = json.value;
+  }
+
+  this.getJsonValue = function( pr_bComplete )
+  {
+    if( pr_bComplete )
+      return '{type:' + this._type + ',setup: {readOnly: ' + this.readOnly + ',value:\"' + adjustComponentValue( this ) + '\"} }';
+    else
+      return '{ type:' + this._type + ',value:\"' + adjustComponentValue( this ) + '\" }';
+  }
+
+  this.setReadOnly = function( b )
+  {
+    this.readOnly = b;
+
+    if( b )
+      this.className = this._cssClassRO;
+    else
+      this.className = this._cssClass;
+  }
+
+  this.onkeypress = Input_KeyPress;
+  this.onpaste    = Input_Paste;
+
+  configTextMask( this, mapMaskConfig );
+}
+
+function Input_KeyPress( pr_event ) // Trata os eventos do InputText
+{
+  var key;
+
+  if( !pr_event )
+    pr_event = window.event;
+
+  key = pr_event.which || pr_event.keyCode;
+
+  return Input_TreatKeyPress( key );
+}
+
+function Input_TreatKeyPress( key )
+{
+  if( ( key != 34 && key != 39 ) &&
+      ( ( key >= 33  && key <= 126 ) ||
+        ( key >= 191 && key <= 207 ) ||
+        ( key >= 210 && key <= 214 ) ||
+        ( key >= 217 && key <= 221 ) ||
+        ( key >= 224 && key <= 239 ) ||
+        ( key >= 241 && key <= 246 ) ||
+        ( key >= 249 && key <= 253 ) ||
+        ( key == 13 || key == 8 || key == 186 || key == 170 || key == 32 ) ) )
+    return true;
+
+  return false;
+}
+
+function Input_Paste( )
+{
+  if( !window["clipboardData"] )
+    return;
+
+  var str = clipboardData.getData( 'Text' );
+
+  if( str.length == 0 )
+    return true;
+
+  var strAux = "";
+  for( i = 0; i < str.length; i++ )
+    if( Input_TreatKeyPress( str.charCodeAt( i ) ) == true )
+      strAux = strAux + str.charAt( i );
+
+  clipboardData.setData( 'Text', strAux );
+
+  return true;
+}
+
+function getContextURL( )
+{
+  return g_strURLContext;
+}
+
+function getImagesRoot( )
+{
+  return getContextURL( ) + "Obj/";
+}
+
+function getDummyHtmlURL( )
+{
+  return getContextURL( ) + "Tmp/Dummy.html";
+}
+
+function finalizeModalFormButton( pr_bLayoutContentReadOnly, pr_bEnabled  , pr_bAllowClickWhenReadOnly,
+                                  pr_nType                 , pr_Id2       , pr_nLayoutId              ,
+                                  pr_bVisibleWhenReadOnly  , pr_strCaption, pr_aSource                ,
+                                  pr_strHelpUrl            )
+{
+  this._type                   = pr_nType;
+  this.ID2                     = pr_Id2;
+  this._nLayoutId              = pr_nLayoutId;
+  this.isLayoutContentReadOnly = pr_bLayoutContentReadOnly;
+  this.strHelpUrl              = pr_strHelpUrl;
+
+  this.setValue          ( pr_strCaption           );
+  this.setVisibleReadOnly( pr_bVisibleWhenReadOnly );
+  this.setEvent          ( function( )
+                           {
+                             if( this.strHelpUrl && this.strHelpUrl.length > 0 )
+                               g_strMfbHelpName = getContextURL( ) + "Doc/" + this.strHelpUrl;
+                             
+                             fireEvent.apply( this, [] );
+                             
+                             g_strMfbHelpName = undefined;
+                           } );
+
+  this.aEventListener = [
+  {
+    type :this._type
+  } ];
+
+  this.aSource = pr_aSource;
+
+  this.setEnabled = function( pr_isEnabled )
+  {
+    this._setReadOnly( !pr_isEnabled );
+
+    this.enabled = pr_isEnabled;
+  }
+
+  this.getEnabled = function( )
+  {
+    return this.enabled;
+  }
+
+  this.setReadOnly = function( pr_bReadOnly )
+  {
+    this.isLayoutContentReadOnly = pr_bReadOnly;
+  }
+
+  this.setEnabled( pr_bEnabled );
+
+  this.setJsonValue = modalformbuttonSetJsonValue;
+}
+
+function createInputMaskNumber( strCpName, strParent, strElName, strIName, strType, strCssRWField, strCssROField,
+                                nMaxDigits, strMask, strWidth )
+{
+  eval( strCpName + "=inputmasknumber( { parent:'" + strParent + "', elname:'" + strElName + "', " +
+        "type:'" + strType + "', maxdigits:'" + nMaxDigits + "', " +
+        "mask:'" + strMask + "', iname:'" + strIName + "', width:'" + strWidth +
+        "', cssclass:'" + strCssRWField + "', cssclassro:'" + strCssROField +
+        "' } );" );
+}
+
+function finalizeInputMaskNumber( strDigitPlaceChar, strLeftFillChar, bReadOnly, strAlign, strValue, aEventListener )
+{
+  this.aEventListener = aEventListener;
+  this.strDPC = strDigitPlaceChar == undefined ? '0' : strDigitPlaceChar ;
+  this.strLFC = strLeftFillChar == undefined ? '0' : strLeftFillChar ;
+  this.style.textAlign = strAlign;
+
+  this.internalValue = inputmasknumber.removeLetters( strValue, this.nMaxDigits );
+  this.applyMask( this.strLFC );
+
+  this.setReadOnly = function( bReadOnly )
+  {
+    if( this.parentNode.readonly == 'true' && !bReadOnly )
+      return;
+
+    if( bReadOnly )
+    {
+      this.Enabled = false;
+      this.className = this._cssClassRO;
+    }
+    else
+    {
+      this.Enabled = true;
+      this.className = this._cssClassRW;
+    }
+    this.readOnly = bReadOnly;
+  }
+
+  this.setReadOnly( bReadOnly );
+}
+
+function createLabel( strLbName, strHTMLName )
+{
+  eval( strLbName + " = document.getElementById( '" + strHTMLName + "' );" );
+
+  strLbName = eval( strLbName );
+
+  strLbName.setJsonValue = function( json )
+  {
+    if( json.setup )
+    {
+      if( json.setup.value != undefined )
+      {
+        var style = this.style;
+        this.innerHTML = json.setup.value;
+        this.style.fontFamily = style.fontFamily;
+        this.style.color = style.color;
+        this.style.fontSize = style.fontSize;
+        this.style.fontStyle = style.fontStyle;
+        this.style.fontWeight = style.fontWeight;
+      }
+
+      if( json.setup.font )
+        this.style.fontFamily = json.setup.font;
+
+      if( json.setup.fontcolor )
+        this.style.color = json.setup.fontcolor;
+
+      if( json.setup.fontsize )
+        this.style.fontSize = json.setup.fontsize;
+
+      if( json.setup.fontstyle != undefined )
+      {
+        if( json.setup.fontstyle == 2 || json.setup.fontstyle == 3 )
+          this.style.fontStyle = "italic";
+        if( json.setup.fontstyle == 1 || json.setup.fontstyle == 3 )
+          this.style.fontWeight = "bold";
+        if( json.setup.fontstyle == 0 )
+        {
+          this.style.fontStyle = "normal";
+          this.style.fontWeight = "normal";
+        }
+      }
+      
+      if( json.setup.url != undefined )
+        this.href = json.setup.url;
+    }
+    else
+    {
+      this.innerHTML = json.value;
+    }
+  }
+}
+
+function createTimer( strCpName, strName, strParent, nInterval )
+{
+  eval( strCpName + "=timer( { cpName:'" + strCpName + "', name:'" + strName + "', parent:'" + strParent +
+                    "', nInterval:" + nInterval + "});" );
+}
+
+function finalizeTimer( bReadOnly, bEnabled, action )
+{
+  this.setAction( action );
+  this.setReadOnly( bReadOnly );
+  this.setEnabled( bEnabled );
+}
+
+function DivBeforeShow( strDisplay )
+{
+  this.setDisplay( strDisplay );
+}
+
+function createDiv( strCpName, strName, strInternalName, nType, strVisibility, strDisplay )
+{
+  eval( strCpName + " = div( { name:'" + strName + "', internalName: '" + strInternalName + "' } );" );
+  eval( strCpName + "._type = " + nType );
+  eval( strCpName + ".visibility = '" + strVisibility + "'" );
+  eval( strCpName + ".display = '" + strDisplay + "'" );
+}
+
+function submitFormListview( )
+{
+  if( nSvc == 50 )
+  {
+    closeDialog( );
+    return;
+  }
+
+  var strAux = "";
+
+  if( this._isConfirmed == true )
+    strAux = "&ID5=true";
+  else
+    g_buttonSubmit = this;
+
+  var a;
+
+  try
+  {
+    a = parent.frames;
+  } catch( e )
+  {
+    a = window.frames;
+  }
+
+  var l;
+  var i = 0;
+
+  for( i = 0; i < a.length; i++ )
+  {
+    l = eval( "a[" + i + "].cp_" + g_SuperCompName );
+
+    if( l != undefined )
+      break;
+  }
+
+  // Se não achar, a listview está no próprio document
+  if( l == undefined )
+    l = eval( "parent.cp_" + g_SuperCompName );
+
+  var aResp = postContent( g_strURL, 'ID1='         + this.Id1 +
+                                     '&Id2='        + nSvc     +
+                                     '&ID3='        + buildQueryStringEx( aDataCompNames, getDataForeignCompNames( ) ) +
+                                     '&LayoutId='   + g_nLayoutId               +
+                                     '&CompName='   + g_SuperCompName           + //strAux ) );
+                                     '&bFirstLine=' + ( l.getTotRows( ) ==  0 ) + strAux +
+                                     '&index='      + ( nSvc            == 10 ? l.getTotRows( ) : l.getKey( ) ) );
+
+  // Reseta a confirmação para que eventualmente seja confirmado novamente.
+  this._isConfirmed = false;
+
+  // Se for Propriedades não precisa fazer nada, o request foi só pra limpar os PD's que estavam na sessão
+  if( nSvc == 50 )
+  {
+    bCancelScreen = false;
+    closeDialog( );
+    return;
+  }
+
+  aResp = stringToJson( aResp );
+
+  if( aResp.Status == 0 || ( aResp.Status == 2 && aResp.bRegistrySuccessMessage ) )
+  {
+    g_bDeleteLog = false;
+
+    if( nSvc == 30 )
+      l.atualizaGrid( null, nSvc );
+    else if( ( nSvc != 10 && nSvc != 40 ) || ( ( nSvc == 10 || nSvc == 40 ) && aResp.Rows ) )
+    {
+      if( aResp.RowsEffects )
+        aResp.Rows.effects = aResp.RowsEffects;
+      if( aResp.RowsMenuState )
+        aResp.Rows.menuState = aResp.RowsMenuState;
+
+      l.atualizaGrid( aResp.Rows, nSvc ); //Passa a 1a pq LV NACEP ñ tem suporte p/ múltiplos registros por operação.
+    }
+
+    if( aResp.pd )
+    {
+      var json = stringToJson( aResp.pd );
+      var f;
+
+      try
+      {
+        f = parent.frames;
+      }
+      catch( e )
+      {
+        f = window.frames;
+      }
+
+      parent.document.updateObjects( f, json );
+    }
+
+    bCancelScreen = false;
+
+    if( aResp.bRegistrySuccessMessage )
+      showDialog( aResp.SvcID, true );
+    else
+      closeDialog( );
+  }
+  else
+  {
+    g_bDeleteLog = true;
+    showDialog( aResp.SvcID, true );
+  }
+}
+
+function createInputIntegerSpinButton( iiArgs, sbArgs )
+{
+  var strJsName = iiArgs.jsName;
+  iiArgs.jsName = "spin" + strJsName;
+  createInputInteger( iiArgs );
+  createSpinButton( strJsName, iiArgs.parentName, eval( iiArgs.jsName ) );
+}
+
+function finalizeInputIntegerSpinButton( iiArgs, sbArgs )
+{
+  finalizeInputInteger.apply( this._input, [ iiArgs ] );
+  finalizeSpinButton.apply( this, [ iiArgs, sbArgs ] );
+
+  this._input.blurEvent = this._input.onblur;
+
+  // Utilizado também no onpaste da spinbutton.js, lá que é controlado tal evento do componente. 
+  this._input.validaValor = function( )
+  {
+    var value = this.value;
+    if( value > this._parent._max )
+      value = this._parent._max;
+    else if( value < this._parent._min )
+      value = this._parent._min;
+
+    this.value = value;
+    this._setValue( value );
+  }
+
+  this._input.onblur = function( )
+  {
+    this.validaValor( );
+    this.blurEvent.apply( this, [] );
+  };
+}
+
+function createSpinButton( strJsName, strParentName, internalElement )
+{
+  eval( strJsName + "= spinbutton({parent:'" + strParentName + "'});" );
+  eval( strJsName ).setIntenalElement( internalElement );
+}
+
+function finalizeSpinButton( iArgs, sbArgs )
+{
+  this.internalName = iArgs["strInternalName"];
+  this.setWidth( iArgs.nWidth );
+  this.setReadOnly( iArgs.bReadOnly );
+  this.setInc( sbArgs.nInc );
+  this.setMinimum( sbArgs.nMin );
+  this.setMaximum( sbArgs.nMax );
+  this.setWrap( sbArgs.bWrap );
+  this.aEventListener = sbArgs.aEvents;
+  
+  this.setAttribute( "internalName", this.internalName );
+}
+
+function finalizeElement( strCompName, bIgnoreFavorites, bDataComponent )
+{
+  var comp;
+
+  try
+  {
+    comp = eval( strCompName );
+  }
+  catch( e )
+  { }
+  
+  if( !comp )
+    return;
+
+  comp.bIgnoreFavorites = bIgnoreFavorites;
+
+  comp.isIgnoreFavorites = function( )
+  {
+    return this.bIgnoreFavorites;
+  }
+
+  comp.isVisualJson = function( )
+  {
+    return this.bVisualJson;
+  }
+}
+
+function customConfirmProcess( strURL, id1, aSource )  //serviço de fechamento da tela de confirmação de processos.
+{
+  g_bIsSubmit = true;
+  //MANTIS#34224: Deixou de fazer um GET e passou a ir direto para um POST do nextstep...
+  //document.location = strURL + '?ID1=' + id1 + '&ID3=' + buildQueryString( aSource ) + '&ID4=1';
+  
+  parent.nextStep( id1, 1 );
+  closeDialog( );  
+}
+
+function purge( d )
+{
+  var a = d.attributes, i, l, n;
+  if( a )
+  {
+    l = a.length;
+    for( i = 0; i < l; i += 1 )
+    {
+      n = a[i].name;
+      if( typeof d[n] === 'function' )
+      {
+        d[n] = null;
+      }
+    }
+  }
+  a = d.childNodes;
+  if( a )
+  {
+    l = a.length;
+    for( i = 0; i < l; i += 1 )
+    {
+      purge( d.childNodes[i] );
+    }
+  }
+}
+
+function discardElement( element )
+{
+  var garbageBin = document.getElementById( 'IELeakGarbageBin' );
+  if( !garbageBin )
+  {
+    garbageBin = document.createElement( 'DIV' );
+    garbageBin.id = 'IELeakGarbageBin';
+    garbageBin.style.display = 'none';
+    document.body.appendChild( garbageBin );
+  }
+
+  // move the element to the garbage bin
+  garbageBin.appendChild( element );
+  garbageBin.innerHTML = '';
+}
+
+function unload( )
+{
+  g_aCombo.splice( 0, g_aCombo.length );
+}
+
+function createAreaSwitch( strCpName, strHtmlName, strJSName, nSize, i, nType )
+{
+  eval( strJSName + "= areaswitch({htmlname:'" + strHtmlName + "', name:'" + strCpName + "', size:" + nSize + ",index:" + i + "});" );
+  eval( strJSName + "._type = " + nType );
+}
+
+function showPaginatedForm( strID1, strID2 )
+{
+  showDialog( strID1, true, strID2 );
+}
+
+function updateRowsPerPage( )
+{
+  postContent( g_strURL, 'ID1=' + this.Id1 + '&ID2=' + this.ID2 + '&ID3=' + buildQueryString( aDataCompNames ) );
+  updateImgRowsPerPage( cp_iiRowsPerPage.getValue( ), parseInt(cp_hdRowsPerPageMax.value) );
+  closeDialog( );
+}
+
+function updateImgRowsPerPage( nRowsPerPage, nRowsPerPageMax )
+{
+  var elm;
+
+  try
+  {
+    elm = parent.document.getElementById( "rowsPerPage" );
+  }
+  catch( e )
+  {
+    elm = document.getElementById( "rowsPerPage" );
+  }
+
+  if( elm )
+    if( !parseInt( nRowsPerPage ) || parseInt( nRowsPerPage ) >= parseInt( nRowsPerPageMax ) )
+    {
+      elm.innerHTML = nRowsPerPageMax;
+      elm.className = "max";
+    }
+    else
+    {
+      elm.innerHTML = nRowsPerPage;
+      elm.className = "";
+    }
+}
+
+function decodeEntities( str )
+{
+  var strOut = str;
+
+  strOut = strOut.replace( new RegExp( "&aacute;", "g" ), "á" );
+  strOut = strOut.replace( new RegExp( "&Aacute;", "g" ), "Á" );
+  strOut = strOut.replace( new RegExp( "&agrave;", "g" ), "à" );
+  strOut = strOut.replace( new RegExp( "&Agrave;", "g" ), "À" );
+  strOut = strOut.replace( new RegExp( "&acirc;",  "g" ), "â" );
+  strOut = strOut.replace( new RegExp( "&Acirc;",  "g" ), "Â" );
+  strOut = strOut.replace( new RegExp( "&atilde;", "g" ), "ã" );
+  strOut = strOut.replace( new RegExp( "&Atilde;", "g" ), "Ã" );
+  strOut = strOut.replace( new RegExp( "&auml;",   "g" ), "ä" );
+  strOut = strOut.replace( new RegExp( "&Auml;",   "g" ), "Ä" );
+
+  strOut = strOut.replace( new RegExp( "&eacute;", "g" ), "é" );
+  strOut = strOut.replace( new RegExp( "&Eacute;", "g" ), "É" );
+  strOut = strOut.replace( new RegExp( "&egrave;", "g" ), "è" );
+  strOut = strOut.replace( new RegExp( "&Egrave;", "g" ), "È" );
+  strOut = strOut.replace( new RegExp( "&ecirc;",  "g" ), "ê" );
+  strOut = strOut.replace( new RegExp( "&Ecirc;",  "g" ), "Ê" );
+  strOut = strOut.replace( new RegExp( "&euml;",   "g" ), "ë" );
+  strOut = strOut.replace( new RegExp( "&Euml;",   "g" ), "Ë" );
+
+  strOut = strOut.replace( new RegExp( "&iacute;", "g" ), "í" );
+  strOut = strOut.replace( new RegExp( "&Iacute;", "g" ), "Í" );
+  strOut = strOut.replace( new RegExp( "&igrave;", "g" ), "ì" );
+  strOut = strOut.replace( new RegExp( "&Igrave;", "g" ), "Ì" );
+  strOut = strOut.replace( new RegExp( "&icirc;",  "g" ), "î" );
+  strOut = strOut.replace( new RegExp( "&Icirc;",  "g" ), "Î" );
+  strOut = strOut.replace( new RegExp( "&iuml;",   "g" ), "ï" );
+  strOut = strOut.replace( new RegExp( "&Iuml;",   "g" ), "Ï" );
+
+  strOut = strOut.replace( new RegExp( "&oacute;", "g" ), "ó" );
+  strOut = strOut.replace( new RegExp( "&Oacute;", "g" ), "Ó" );
+  strOut = strOut.replace( new RegExp( "&ograve;", "g" ), "ò" );
+  strOut = strOut.replace( new RegExp( "&Ograve;", "g" ), "Ò" );
+  strOut = strOut.replace( new RegExp( "&ocirc;",  "g" ), "ô" );
+  strOut = strOut.replace( new RegExp( "&Ocirc;",  "g" ), "Ô" );
+  strOut = strOut.replace( new RegExp( "&ouml;",   "g" ), "ö" );
+  strOut = strOut.replace( new RegExp( "&Ouml;",   "g" ), "Ö" );
+  strOut = strOut.replace( new RegExp( "&otilde;", "g" ), "õ" );
+  strOut = strOut.replace( new RegExp( "&Otilde;", "g" ), "Õ" );
+
+  strOut = strOut.replace( new RegExp( "&uacute;", "g" ), "ú" );
+  strOut = strOut.replace( new RegExp( "&Uacute;", "g" ), "Ú" );
+  strOut = strOut.replace( new RegExp( "&ugrave;", "g" ), "ù" );
+  strOut = strOut.replace( new RegExp( "&Ugrave;", "g" ), "Ù" );
+  strOut = strOut.replace( new RegExp( "&ucirc;",  "g" ), "û" );
+  strOut = strOut.replace( new RegExp( "&Ucirc;",  "g" ), "Û" );
+  strOut = strOut.replace( new RegExp( "&uuml;",   "g" ), "ü" );
+  strOut = strOut.replace( new RegExp( "&Uuml;",   "g" ), "Ü" );
+
+  strOut = strOut.replace( new RegExp( "&ccedil;", "g" ), "ç" );
+  strOut = strOut.replace( new RegExp( "&Ccedil;", "g" ), "Ç" );
+
+  strOut = strOut.replace( new RegExp( "&ntilde;", "g" ), "ñ" );
+  strOut = strOut.replace( new RegExp( "&Ntilde;", "g" ), "Ñ" );
+
+  strOut = strOut.replace( new RegExp( "&yacute;", "g" ), "ý" );
+  strOut = strOut.replace( new RegExp( "&Yacute;", "g" ), "Ý" );
+
+  strOut = strOut.replace( new RegExp( "&deg;", "g" ), "°" );
+
+  return strOut;
+}
+
+function callForeignProcess( menuItem, strURL, nIdMenu, nIdPrc, strIDSvc, bCloseWindow, strHelpFile )
+{
+  var strLvKey  = "";
+  var strID3    = ""; // ID3 terá os sources da listview, em caso de Listview de formulário
+  var strLvName = ""; // Nome da Listview. Vazio caso listview de cadastro.
+
+  g_Listview = menuItem._parent._listviewParent;
+
+  if( g_Listview.bForm )
+    strLvName = "&_lvName=" + g_Listview.internalName;
+
+  if( g_Listview.getTotRows( ) > 0 )
+    strLvKey = "&_lvKey=" + g_Listview.getKey( );
+
+  if( !g_Listview.bForm )
+    g_winCallForeignProcess = showForm( strURL,
+                      strIDSvc,
+                      '&ID2=' + nIdMenu + '&_Process=' + nIdPrc + strLvName + strLvKey + strID3 + '&_close=' + bCloseWindow,
+                      strHelpFile );
+  else
+    g_winCallForeignProcess = parent.showForm( strURL,
+                             strIDSvc,
+                             '&ID2=' + nIdMenu + '&_Process=' + nIdPrc + strLvName + strLvKey + strID3 + '&_close=' + bCloseWindow,
+                             strHelpFile );
+}
+
+function sufixoSeguinte( )
+{
+  return ++g_nSufixo;
+}
+
+function getSelectionStart( pr_elm )
+{
+  if( typeof pr_elm.selectionStart == "number" )
+    return pr_elm.selectionStart;
+  
+  if( pr_elm.createTextRange )
+  {
+    var dup = document.selection.createRange( ).duplicate( );
+    dup.moveEnd( 'character', pr_elm.value.length );
+
+    if( dup.text == '' )
+      return pr_elm.value.length;
+
+    return pr_elm.value.lastIndexOf( dup.text );
+  }
+  
+  return 0;
+}
+
+function getSelectionEnd( pr_elm )
+{
+  if( typeof pr_elm.selectionEnd == "number" )
+    return pr_elm.selectionEnd;
+  
+  if( pr_elm.createTextRange )
+  {
+    if( pr_elm.moveToElementText )
+    {
+      // The current selection
+      var range = document.selection.createRange( );
+      // We'll use this as a 'dummy'
+      var stored_range = range.duplicate( );
+      // Select all text
+      stored_range.moveToElementText( pr_elm );
+      // Now move 'dummy' end point to end point of original range
+      stored_range.setEndPoint( 'EndToEnd', range );
+      // Now we can calculate start and end points
+      var selectionStart = stored_range.text.length - range.text.length;
+      var selectionEnd   = selectionStart           + range.text.length;
+
+      return selectionEnd;
+    }
+
+    var dup = document.selection.createRange( ).duplicate( );
+    dup.moveStart( 'character', -pr_elm.value.length );
+
+    return dup.text.length;
+  }
+  
+  return 0;
+}
+
+function setSelection( pr_elm, pr_posStart, pr_posEnd )
+{
+  if( pr_elm.setSelectionRange )
+  {
+    pr_elm.focus( );
+    pr_elm.setSelectionRange( pr_posStart, pr_posEnd );
+  }
+  else if( pr_elm.createTextRange )
+  {
+    var range = pr_elm.createTextRange( );
+    range.collapse( true );
+    range.moveEnd( 'character', pr_posEnd );
+    range.moveStart( 'character', pr_posStart );
+    range.select( );
+  }
+}
+
+function getCaretPosition( pr_elm )
+{
+  var bReadOnly = pr_elm.isReadOnly( );
+  var len = 0;
+
+  //Em alguns casos, esse método gera um exceção. E isso dispara uma exceção no Registry.
+  //Em todos os casos de ocorrência do problema, foi detectado que existe um TextArea escondido na tela.
+  //A fonte do problema parece ser uma exceção gerada ao determinar a posição do cursor em um componente escondido.
+    pr_elm.setReadOnly( false );
+    pr_elm.focus( );
+
+  try 
+  {
+    if( pr_elm.selectionStart )
+      return pr_elm.selectionStart;
+    else if( !document.selection )
+      return 0;
+
+    var c   = "\001";
+    var sel = document.selection.createRange( );
+    var dul = sel.duplicate( );
+
+    dul.moveToElementText( pr_elm );
+    sel.text = c;
+    len      =   ( dul.text.indexOf( c ) );
+    sel.moveStart( 'character', -1       );
+    sel.text = "";
+  }
+  catch( e )
+  {
+    len = 0;
+  }
+  finally
+  {
+    pr_elm.setReadOnly( bReadOnly );
+  }
+
+  return len;
+}
+
+function setCaretPosition( pr_elm, pr_nPos )
+{
+  if( pr_elm.setSelectionRange )
+  {
+    pr_elm.focus( );
+    pr_elm.setSelectionRange( pr_nPos, pr_nPos );
+  }
+  else if( pr_elm.createTextRange )
+  {
+    var range = pr_elm.createTextRange( );
+    range.collapse ( true       );
+    range.moveEnd  ( 'character', pr_nPos );
+    range.moveStart( 'character', pr_nPos );
+    range.select( );
+  }
+}
+
+function getMouseXY( pr_event )
+{
+  var position = new Array( );
+
+  if( !pr_event )
+    var pr_event = window.event;
+
+  if( pr_event.pageX || pr_event.pageY )
+  {
+    position[0] = pr_event.pageX;
+    position[1] = pr_event.pageY;
+  }
+  else if( pr_event.clientX || pr_event.clientY )
+  {
+    position[0] = pr_event.clientX + document.body.scrollLeft
+      + document.documentElement.scrollLeft;
+    position[1] = pr_event.clientY + document.body.scrollTop
+      + document.documentElement.scrollTop;
+  }
+
+  return position;
+}
+
+function attachHint( obj, title, dynamicContentFunction, bSpeech, className, pr_position )
+{
+  var events   = {};
+  var show     = {};
+  var hide     = {};
+  var position = {};
+
+  if( pr_position )
+    position = pr_position;
+  else
+    position =  
+    {
+      target: "mouse",
+      adjust:
+      {
+        x: 15,
+        y: bSpeech ? 5 : 15
+      }
+    };
+  
+  if( dynamicContentFunction )
+  {
+    events.show = function( event, elm )
+      {
+        var text = dynamicContentFunction( );
+        
+        if( !text )
+        {
+          try
+          {
+            event.preventDefault( );
+          }
+          catch( e )
+          { }
+          
+          return;
+        }
+
+        elm.reposition( );
+        elm.set( "content.text", text );
+      }
+  }
+  else
+  {
+    events.show = function( event, elm )
+      {
+        elm.reposition( );
+      };
+  }
+  
+  if( bSpeech )
+  {
+    show.delay = 0;
+
+    hide.event    = false;
+    hide.inactive = 2500;
+
+    position.my = "top center";
+    position.at = "bottom center";
+  }
+  
+  var jObj   = $( obj );
+
+  jObj.qtip( {
+    content:
+    {
+      text: title || " "
+    },
+    style:
+    {
+      classes: "tip qtip-shadow" + ( className ? " qtip-" + className : "" )
+    },
+    position: position,
+    show: show,
+    hide: hide,
+    events: events
+  } );
+}
+
+function attachSpeechHint( obj, title, dynamicContentFunction )
+{
+  attachHint( obj, title, dynamicContentFunction, true, "dark" );
+}
+
+function attachErrorHint( obj, title, dynamicContentFunction )
+{
+  attachHint( obj, title, dynamicContentFunction, true, "red" );
+}
+
+function showSpeech( pr_obj )
+{
+  $( pr_obj ).qtip( "show" );
+}
+
+function detachHint( pr_obj )
+{
+  $( pr_obj ).qtip( "destroy", true );
+}
+
+function createCustomClassFromFont( pr_font )
+{
+  var rules = [];
+
+  if( pr_font.fontcolor != undefined )
+    rules[rules.length] = { propertyName: "color", propertyValue: pr_font.fontcolor };
+  if( pr_font.font != undefined )
+    rules[rules.length] = { propertyName: "font-family", propertyValue: pr_font.font };
+  if( pr_font.fontsize != undefined )
+    rules[rules.length] = { propertyName: "font-size", propertyValue: pr_font.fontsize };
+  if( pr_font.fontstyle != undefined )
+    rules[rules.length] = { propertyName: "font-style", propertyValue: pr_font.fontstyle };
+  if( pr_font.fontweight != undefined )
+    rules[rules.length] = { propertyName: "font-weight", propertyValue: pr_font.fontweight };
+
+  return createCustomClass( rules );
+}
+
+function createCustomClass( pr_styles )
+{
+  if( !pr_styles.length )
+    return "";
+
+  var style = document.getElementById( registry.ui.dynamicCssId );
+
+  if( !style )
+  {
+    var head = document.getElementsByTagName( "head" )[0];
+    
+    style      = document.createElement( "style" );
+    style.id   = registry.ui.dynamicCssId;
+    style.type = "text/css";
+
+    head.appendChild( style );
+  }
+
+  var className = "regCustomClass_" + g_customRegistryClassSufix++;
+  var rules     = "";
+
+  for( var i = 0; i < pr_styles.length; i++ )
+    rules += pr_styles[i].propertyName + ":" + pr_styles[i].propertyValue + ";";
+
+  rules = "." + className + " { " + rules + " }";
+
+  if( style.styleSheet )
+    style.styleSheet.cssText += rules;
+  else
+    style.appendChild( document.createTextNode( rules ) );
+
+  return className;
+}
+
+function cssDisable( pr_comp )
+{
+  $( pr_comp ).addClass( "disabled" );
+}
+
+function cssEnable( pr_comp )
+{
+  $( pr_comp ).removeClass( "disabled" );
+}
+
+function calendarDateSelected( strDate, strName )
+{
+  try
+  {
+    eval( "var inpDate = window.parent.g_openedCalendar.inpDate;" );
+  }
+  catch( e )
+  {
+    var inpDate = g_openedCalendar.inpDate;
+  }
+  
+  inpDate.bShow = false;
+  
+  inpDate._setValue( strDate, true );
+  
+  inpDate.txDate.focus( );
+  inpDate.calWin.hide ( );
+}

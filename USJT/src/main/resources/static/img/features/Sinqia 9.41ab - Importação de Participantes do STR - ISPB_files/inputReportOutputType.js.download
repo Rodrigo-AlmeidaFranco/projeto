@@ -1,0 +1,235 @@
+inputReportOutputType = function(arg){return inputReportOutputType.__constructor(arg)};
+//------------------------------------------------------------------------------
+
+inputReportOutputType.__constructor = function(arg)
+{
+  var e = document.createElement("SPAN");
+
+  e._constructor = inputReportOutputType._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+inputReportOutputType._constructor = function(arg)
+{
+  this._parent = document.getElementById( arg["parent"] );
+
+  this._parent.appendChild( this );
+
+  this._div = document.createElement("DIV");
+
+  this._bReadOnly = false;
+  this._type = 17;
+  this._downloadChange = false;
+  this._isRefreshing = false;
+  this.bShowDownload  = arg["bDownload"];
+
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField, bPortugues;
+  cpName        = arg["cpName"];       // Nome do componente no JavaScript
+  elName        = "el_" + arg["name"]; // Nome do componente no HTML
+  strName       = arg["name"];         // Nome do componente, nome dado ao componente no java
+  strTdClass    = arg["tdClass"];      // CSS para as TD do HTML
+  strCssField   = arg["cssField"];     // CSS para campos não ReadOnly
+  strCssROField = arg["cssROField"];   // CSS para campos ReadOnly
+
+  // Guarda parametros que serão usados em outros métodos
+  this._bPortugues      = arg["bPortugues"];  // Indica se o sistema está rodando em português
+  this.internalName     = strName;
+  this._strCssROField   = arg["cssROField"];
+  this._strCssField     = arg["cssField"];
+  this._cpName          = cpName;
+  this._elName          = elName;
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  // Início da construção do DIV Principal
+  // ----------------------------------------
+  this.appendChild( this._div );
+
+  var strHTML = "<table width='100%' border=0 cellspacing=0 cellpadding=0>" +
+                  "<tr>" +
+                  "<td width='120px' class='" + strTdClass + "'>" +
+                    "<fieldset class='" + strTdClass + "' style='display:inline;'>" +
+                     "<legend>" + ( this._bPortugues ? "Formato de Saída" : "Output Format" ) + "</legend>" +
+                     "<table border=0 cellspacing=2 cellpadding=0>" +
+                       "<tr>"  +
+
+                         "<td nowrap align=center>\n" +
+                           "<select id='" + elName + "_selROT' name='" + elName + "_selROT' size=1>\n" +
+                             "<option value=0>PDF</option>\n" +
+                             "<option value=3>CSVbr</option>\n" +
+                             "<option value=4>CSVus</option>\n" +
+                             //Mantis#M27613
+                             "<option value=1>CSVbrImage</option>\n" +
+                             "<option value=2>CSVusImage</option>\n" +
+                             //Mantis#M34465
+                             "<option value=6>TXTbr</option>\n" +
+                             "<option value=7>TXTus</option>\n" +
+                           "</select>\n" +
+                         "</td>\n" +
+
+                         "<td>\n" +
+                           "<img src=" + getContextURL( ) + "Obj/circleHelp.png border=0 style='cursor:pointer;' onClick='window.open( \"" +
+                                         getContextURL( ) + "Doc/FormatosDeSaida_" + (this._bPortugues ? "p" : "i") + ".html\",\"\",\"scrollbars,resizable,status,dependent,width=700,height=500\")' title='" +
+                                         (this._bPortugues ? "Ajuda" : "Help") + "'>\n" +
+                         "<td>\n" +
+                       "</tr>" +
+                     "</table>" +
+                    "</fieldset>" +
+                  "</td>";
+
+     strHTML = strHTML + "<td align='center' height='100%' class='" + strTdClass + "'>" +
+                           "<div id='" + elName + "_divDownload" + "'>" +
+                           "<table height='100%' border=0 cellspacing=0 cellpadding=0>" +
+                             "<tr><td height=8></td></tr>" +
+                             "<tr>" +
+                               "<td id='" + elName + "_ckDownload" + "' class='" + strTdClass + "' align='center' height=18 valign='middle'></td>" +
+                             "</tr>"  +
+                           "</table>" +
+                           "</div>" +
+                         "</td>";
+
+  strHTML = strHTML + "</tr></table>";
+  this._div.innerHTML = strHTML;
+  this._divDownload = document.getElementById( elName + "_divDownload" );
+
+  this._div._selROT = eval( elName + "_selROT" );
+
+  createCheckbox(cpName + "_ckDownload", elName + "_ckDownload", "Download" , arg["bDownloadCheck"] );
+  finalizeCheckbox.apply(eval(cpName + "_ckDownload"), [ 80 , 15, "'" + strName + "'", strCssField, "left", false, false, {}, [] ]);
+  this._div._ckDownload = eval(cpName + "_ckDownload");
+  this._div._ckDownload._parent = this;
+  this._div._ckDownload.style.display = "";
+  this._div._ckDownload.aEventListener = [];
+  this._div._ckDownload.setEvent( function( )
+                                  {
+                                    if( !this.isReadOnly( ) )
+                                    {
+                                      if( this._parent._downloadChange == false )
+                                      {
+                                        this._parent._downloadChange = true;
+                                        fireEvent.apply( this, [] );
+                                        this._parent._downloadChange = false;
+                                      }
+                                    }
+                                  } );
+
+  // Preenche de acordo com a opção marcada.
+  if( arg["nOutputType"] == 1 )
+    this._div._selROT.selectedIndex = 3;
+  else if( arg["nOutputType"] == 2 )
+    this._div._selROT.selectedIndex = 4;
+  else if( arg["nOutputType"] == 3 )
+    this._div._selROT.selectedIndex = 1;
+  else if( arg["nOutputType"] == 4 )
+    this._div._selROT.selectedIndex = 2;
+  else if( arg["nOutputType"] == 6 )
+    this._div._selROT.selectedIndex = 5;
+  else if( arg["nOutputType"] == 7 )
+    this._div._selROT.selectedIndex = 6;
+  else
+    this._div._selROT.selectedIndex = 0;
+
+  this._div._selROT.disabled = this._bReadOnly;
+  this._bDownloadVisible = true;
+
+  // ---------------------------------------
+  // Final da construção do DIV Principal
+
+  this.setReadOnly        = inputReportOutputType.setReadOnly;
+  this.getReadOnly        = inputReportOutputType.getReadOnly;
+  this.getJsonValue       = inputReportOutputType.getJsonValue;
+  this.setJsonValue       = inputReportOutputType.setJsonValue;
+  this.setOutputReadOnly  = inputReportOutputType.setOutputReadOnly;
+  this.setDownloadVisible = inputReportOutputType.setDownloadVisible;
+  this.isDownloadVisible  = inputReportOutputType.isDownloadVisible;
+}
+
+inputReportOutputType.setOutputReadOnly = function( b )
+{
+  this._div._selROT.disabled = b;
+}
+
+inputReportOutputType.setDownloadVisible = function( b )
+{
+  this._bDownloadVisible = b;
+  
+  if( b )
+    this._divDownload.style.display = "";
+  else
+    this._divDownload.style.display = "none";
+}
+
+inputReportOutputType.isDownloadVisible = function( )
+{
+  return this._bDownloadVisible;
+}
+
+inputReportOutputType.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+
+  this.setOutputReadOnly( b );
+
+  if( this.bShowDownload )
+    this._div._ckDownload.setReadOnly( b );
+}
+
+inputReportOutputType.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputReportOutputType.getJsonValue = function( bComplete )
+{
+  var strJson = "";
+
+  if( bComplete )
+    strJson = "{type:" + this._type + ", setup: { readOnly: " + this.getReadOnly( ) + ", showDownload: " + this.isDownloadVisible( ) + ",output:" + this._div._selROT.value + ",download:" + this._div._ckDownload.checked + " } }";
+  else
+    strJson = "{type:" + this._type + ",output:" + this._div._selROT.value + ",download:" + this._div._ckDownload.checked + "}";
+
+  return strJson;
+}
+
+inputReportOutputType.setJsonValue = function( json )
+{
+  var cfg;
+
+  if( json.setup )
+    cfg = json.setup;
+  else
+    cfg = json;
+
+  if( cfg.readOnly != undefined )
+    this.setReadOnly( cfg.readOnly );
+
+  if( cfg.showDownload != undefined )
+    this.setDownloadVisible( cfg.showDownload );
+
+  if( cfg.output != undefined )
+  {
+    if( cfg.output == 1 )
+      this._div._selROT.selectedIndex = 3;
+    else if( cfg.output == 2 )
+      this._div._selROT.selectedIndex = 4;
+    else if( cfg.output == 3 )
+      this._div._selROT.selectedIndex = 1;
+    else if( cfg.output == 4 )
+      this._div._selROT.selectedIndex = 2;
+    else if( cfg.output == 6 )
+      this._div._selROT.selectedIndex = 5;
+    else if( cfg.output == 7 )
+      this._div._selROT.selectedIndex = 6;
+	  else
+	    this._div._selROT.selectedIndex = 0;
+  }
+
+  if( this.bShowDownload )
+    if( cfg.download != undefined )
+        if( cfg.download == true )
+          this._div._ckDownload.setValue( true );
+        else
+          this._div._ckDownload.setValue( false );
+}

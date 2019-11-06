@@ -1,0 +1,356 @@
+inputAgencySelection = function( pr_arg )
+{
+  return inputAgencySelection.__constructor( pr_arg )
+}
+
+inputAgencySelection.__constructor = function( pr_arg )
+{
+  var e = document.createElement( "DIV" );
+
+  e._constructor = inputAgencySelection._constructor;
+  e._constructor( pr_arg );
+
+  return e;
+}
+
+inputAgencySelection._constructor = function( arg )
+{
+  this._parent = document.getElementById( arg["parent"] );
+  this._parent.appendChild( this );
+
+  this._bReadOnly             = false;
+  this._type                  = registry.ui.types.inputAgencySelection;
+  this._nFinalAgency          = 0;
+  this._nInitialAgency        = 0;
+  this._strIdSvcSuggestAgency = arg["strIdSvcSuggestAgency"]; // Id de serviços de sugestao de conta
+  this._nServiceId            = arg["nServiceId"];
+
+  var cpName, elName, strName, strTdClass, strCssField, strCssROField;
+  var strValue;
+
+  cpName        = arg["cpName"];       // Nome do componente no JavaScript
+  elName        = "el_" + arg["name"]; // Nome do componente no HTML
+  strName       = arg["name"];         // Nome do componente, nome dado ao componente no java
+  strTdClass    = arg["tdClass"];      // CSS para as TD do HTML
+  strCssField   = arg["cssField"];     // CSS para campos não ReadOnly
+  strCssROField = arg["cssROField"];   // CSS para campos ReadOnly
+
+  this.internalName   = strName;
+  this._strCssField   = strCssField;
+  this._strCssROField = strCssROField;
+  this.bOnFocus       = false;
+  this.bShowSuggest   = arg["bShowSuggest"];
+  this.className      = "inputSelection";
+  
+  this.setAttribute( "internalName", this.internalName );
+
+  // Início da construção do DIV principal
+  // ----------------------------------------
+
+  var htmlSuggestInitial = "";
+  var htmlSuggestFinal   = "";
+  var colspan            = "";
+
+  if( this.bShowSuggest )
+  {
+    htmlSuggestInitial = "<td id='" + elName + "_tdBtInitial" + "' class='firstBtnContainer'></td>";
+    htmlSuggestFinal   = "<td id='" + elName + "_tdBtFinal"   + "' class='btnContainer'></td>";
+    colspan = "colspan='2'";
+  }
+  
+  this.innerHTML = "<table>" +
+                     "<tr>" +
+                       "<td class='" + strTdClass + "' " + colspan + "><span>" + _( "Assessor Inicial" ) + "</span></td>" +
+                       "<td class='" + strTdClass + "' " + colspan + "><span>" + _( "Assessor Final"   ) + "</span></td>" +
+                     "</tr>" +
+                     "<tr>" +
+                       "<td id='" + elName + "_iaInitial" + "' class='preBtnContainer'></td>" +
+                       htmlSuggestInitial +
+                       "<td id='" + elName + "_iaFinal" + "' class='preBtnContainer'></td>" +
+                       htmlSuggestFinal +
+                     "</tr>" +
+                   "</table>";
+
+  // Cria os Inputs de Assessor
+  var obj = { jsName: cpName + "_iaInitial", parentName: elName + "_iaInitial" };
+  createInputInteger( obj );
+
+  this._iaInitial = eval( cpName + "_iaInitial" );
+  obj = {
+          jsValue: { value:0 },
+          strInternalName: strName + "_iaInitial",
+          nMaxLen: 4,
+          nWidth: 70,
+          bSigned: false,
+          strCssClassRO: strCssROField,
+          strCssClassRW: strCssField,
+          bReadOnly: false,
+          aEventListener: []
+        }
+  finalizeInputInteger.apply( this._iaInitial, [obj] );
+
+  this._iaInitial._parent           = this;
+  this._iaInitial.isComponenteChild = true;
+  this._iaInitial.onchange          = function( )
+                                      {
+                                        if( !this.isReadOnly( ) )
+                                        {
+                                          fireEvent.apply( this, [] );
+                                          fireEvent.apply( this._parent, [] );
+                                        }
+                                      };
+
+  var obj = { jsName: cpName + "_iaFinal", parentName: elName + "_iaFinal" };
+  createInputInteger( obj );
+
+  this._iaFinal = eval( cpName + "_iaFinal" );
+  obj = {
+          jsValue: { value: 0 },
+          strInternalName: strName + "_iaFinal",
+          nMaxLen: 4,
+          nWidth: 70,
+          bSigned: false,
+          strCssClassRO: strCssROField,
+          strCssClassRW: strCssField,
+          bReadOnly: false,
+          aEventListener: []
+        }
+  finalizeInputInteger.apply( this._iaFinal, [obj] );
+
+  this._iaFinal._parent           = this;
+  this._iaFinal.isComponenteChild = true;
+  this._iaFinal.onchange          = function( )
+                                    {
+                                      if( !this.isReadOnly( ) )
+                                      {
+                                        fireEvent.apply( this, [] );
+                                        fireEvent.apply( this._parent, [] );
+                                      }
+                                    };
+
+  // Cria os Botoes de sugestao se necessário
+  if( this.bShowSuggest )
+  {
+    createButtonSuggest( elName + "_btInitial"  ,
+                         elName + "_tdBtInitial",
+                         "", "", "suggest.gif"  );
+
+    this._btInitial = window[elName + "_btInitial"];
+    this._btInitial.parent = this;
+
+    createButtonSuggest( elName + "_btFinal"  ,
+                         elName + "_tdBtFinal",
+                         "", "", "suggest.gif" );
+
+    this._btFinal = window[elName + "_btFinal"];
+    this._btFinal.parent  = this;
+  }
+
+  // ---------------------------------------
+  // Final da construção do DIV principal
+
+  this.onchange              = fireEvent;
+  this.getJsonValue          = inputAgencySelection.getJsonValue;
+  this.setJsonValue          = inputAgencySelection.setJsonValue;
+  this.setReadOnly           = inputAgencySelection.setReadOnly;
+  this.getReadOnly           = inputAgencySelection.getReadOnly;
+  this.setInitialAgency      = inputAgencySelection.setInitialAgency;
+  this.setFinalAgency        = inputAgencySelection.setFinalAgency;
+  this._suggestAgencyInitial = inputAgencySelection._suggestAgencyInitial;
+  this._suggestAgencyFinal   = inputAgencySelection._suggestAgencyFinal;
+  this.fireParentEvent       = inputAgencySelection.fireParentEvent;
+
+  this.setInitialAgency( arg["nInitialAgency"] );
+  this.setFinalAgency  ( arg["nFinalAgency"]   );
+}
+
+inputAgencySelection._suggestAgencyInitial = function( )
+{
+  var ias = this.parent;
+
+  if( ias._nServiceId == 1000 )
+  {
+    var nAccOld = ias._iaInitial.internalValue;
+    var nAccNew = ias._iaFinal.internalValue;
+
+    if( nAccNew == '' )
+       nAccNew = '0';
+
+    ias.setInitialAgency( nAccNew );
+
+    if( nAccOld != nAccNew )
+      ias._iaInitial.onchange( );
+  }
+  else
+  {
+    var nAccOld = ias._iaInitial.internalValue;
+    var nAccNew = postContent( g_strURL, 'ID1=' + ias._strIdSvcSuggestAgency + '&ID2=' + ias._nServiceId + '&ID3=' + buildQueryString( ias.aSource ) + '&ID4=1' ).trim( );
+
+    if( nAccNew == '' )
+       nAccNew = '0';
+
+    ias.setInitialAgency( nAccNew );
+
+    if( nAccOld != nAccNew )
+      ias._iaInitial.onchange( );
+  }
+}
+
+inputAgencySelection._suggestAgencyFinal = function( )
+{
+  var ias = this.parent;
+
+  if( ias._nServiceId == 1000 )
+  {
+    var nAccOld = ias._iaFinal.internalValue;
+    var nAccNew = ias._iaInitial.internalValue;
+
+    if( nAccNew == '' )
+       nAccNew = '0';
+
+    ias.setFinalAgency( nAccNew );
+
+    if( nAccOld != nAccNew )
+      ias._iaFinal.onchange( );
+  }
+  else
+  {
+    var nAccOld = ias._iaFinal.internalValue;
+    var nAccNew = postContent( g_strURL, 'ID1=' + ias._strIdSvcSuggestAgency + '&ID2=' + ias._nServiceId + '&ID3=' + buildQueryString( ias.aSource ) + '&ID4=2' ).trim( );
+
+    if( nAccNew == '' )
+       nAccNew = '0';
+
+    ias.setFinalAgency( nAccNew );
+
+    if( nAccOld != nAccNew )
+      ias._iaFinal.onchange( );
+  }
+}
+
+inputAgencySelection.setReadOnly = function( b )
+{
+  this._bReadOnly = b;
+  this._iaInitial.setReadOnly( b );
+  this._iaFinal.setReadOnly( b );
+  
+  if( this.bShowSuggest )
+  {
+    this._btInitial.setReadOnly( b );
+    this._btFinal.  setReadOnly( b );
+  }
+}
+
+inputAgencySelection.getReadOnly = function( )
+{
+  return this._bReadOnly;
+}
+
+inputAgencySelection.getJsonValue = function( bComplete )
+{
+  return "{type:" + this._type +
+         ", initialAgency:" + this._nInitialAgency +
+         ", finalAgency:"   + this._nFinalAgency +
+         "}";
+}
+
+inputAgencySelection.setJsonValue = function( json )
+{
+  if( json.setup ) // Veio pelo Setup
+  {
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+  }
+  var jsonAux = ( json.setup ? json.setup : json );
+
+  if( jsonAux.initialAgency != undefined )
+    this.setInitialAgency( jsonAux.initialAgency );
+  if( jsonAux.finalAgency != undefined )
+    this.setFinalAgency( jsonAux.finalAgency );
+}
+
+inputAgencySelection.setInitialAgency = function( nAcc )
+{
+  this._nInitialAgency = nAcc;
+  this._iaInitial.setJsonValue( {value:nAcc} );
+}
+
+inputAgencySelection.setFinalAgency = function( nAcc )
+{
+  this._nFinalAgency = nAcc;
+  this._iaFinal.setJsonValue( {value:nAcc} );
+}
+
+// InputInteger chama isso para disparar o evento do Geral
+inputAgencySelection.fireParentEvent = function( obj )
+{
+  if( obj == this._iaInitial )
+  {
+    if( this._iaInitial.internalValue != "" )
+      this._nInitialAgency = this._iaInitial.internalValue;
+    else
+      this._nInitialAgency = 0;
+  }
+  if( obj == this._iaFinal )
+  {
+    if( this._iaFinal.internalValue != "" )
+      this._nFinalAgency = this._iaFinal.internalValue;
+    else
+      this._nFinalAgency = 0;
+  }
+  fireEvent.apply( this, [] );
+}
+
+// Valida se o inputinteger deve disparar o evento de mudança de carteira
+inputAgencySelection.validateEvent = function( )
+{
+  return !this._bReadOnly;
+}
+
+function createInputAgencySelection( strCpName, strParent, strName,
+                                     strTdClass, strCssField, strCssROField,
+                                     nInitialAgency, nFinalAgency, bShowSuggest,
+                                     nServiceId, strIdSvcSuggestAgency )
+{
+  eval( strCpName + "=inputAgencySelection( { cpName:'" + strCpName + "', parent:'" + strParent + "', name:'" + strName + "', " +
+      "strIdSvcSuggestAgency:'" + strIdSvcSuggestAgency + "', " +
+      "tdClass:'" + strTdClass + "', cssField:'" + strCssField + "', cssROField:'" + strCssROField +
+      "', nInitialAgency:" + nInitialAgency + ", nFinalAgency:" + nFinalAgency +
+      ", bShowSuggest:" + bShowSuggest + ", nServiceId:" + nServiceId +
+      " } );" );
+}
+
+function finalizeInputAgencySelection( bReadOnly, aSource, aEventListenerInitial,
+                                       aEventListenerFinal, aEventListener )
+{
+  this.setReadOnly( bReadOnly );
+  
+  this.aSource = aSource;
+  
+  this._iaInitial.aEventListener = aEventListenerInitial;
+  this._iaFinal.aEventListener   = aEventListenerFinal;
+  this.aEventListener            = aEventListener;
+  
+  if( this.bShowSuggest )
+  {
+    finalizeButtonSuggestEx.apply( this._btInitial,
+          [
+             ""  , "", bReadOnly,
+             true, 16, 20       ,
+             []  , ""
+          ]
+        );
+          
+  this._btInitial.setEvent( inputAgencySelection._suggestAgencyInitial );
+  
+    finalizeButtonSuggestEx.apply( this._btFinal,
+          [
+             ""  , "", bReadOnly,
+             true, 16, 20       ,
+             []  , ""
+          ]
+        );
+          
+  this._btFinal.setEvent( inputAgencySelection._suggestAgencyFinal );
+  }
+}

@@ -1,0 +1,43 @@
+inputsecurity = function( pr_arg )
+{
+  var is = {};
+
+  is.internalName = pr_arg.name;
+  is.igsSource    = undefined;
+  is.getJsonValue = inputsecurity.getJsonValue;
+  is.setJsonValue = inputsecurity.setJsonValue;
+
+  return is;
+}
+
+inputsecurity.getJsonValue = function( bComplete )
+{
+  var json;
+
+  json = "{" +
+         "  type:"  + this._type + "," +
+         "  value:" + this.igsSource.getJsonValue( bComplete ) +
+         "}";
+
+  return json;
+}
+
+inputsecurity.setJsonValue = function( pr_json )
+{
+  if( pr_json )
+  {
+    var jsonValue = pr_json.setup ? pr_json.setup : pr_json;
+    
+    if( jsonValue.type )
+    {
+      if( jsonValue.type == 4 ) // Para manter compatibilidade com os Favoritos antigos
+	    jsonValue = stringToJson( "{type:" + this.igsSource._type + ",keyValue:'',value:'" + jsonValue.value + "'}" );
+	  else if( jsonValue.type == 33 && jsonValue.value != undefined ) // Formato atual com IGS
+	    jsonValue = jsonValue.value;
+	
+	  this.igsSource.setJsonValue( jsonValue );
+    }
+    else
+      this.igsSource.setJsonValue( pr_json );
+  }
+}

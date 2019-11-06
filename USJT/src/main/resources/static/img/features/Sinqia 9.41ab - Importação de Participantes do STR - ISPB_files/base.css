@@ -1,0 +1,20 @@
+html,
+body
+{
+  height:  100%;
+  width:   100%;
+  margin:  0px;
+  padding: 0px;
+}
+
+/* IE10: Tira o maledeto cinza do active dos links...*/
+a:active
+{
+  background-color: transparent;
+}
+
+/* IE: Tira a borda das imagens... */
+img
+{
+  border: 0px;
+}

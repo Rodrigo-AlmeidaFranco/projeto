@@ -1,0 +1,280 @@
+inputmasknumber = function(arg){return inputmasknumber.__constructor(arg)};
+//------------------------------------------------------------------------------
+
+inputmasknumber.__constructor = function( arg )
+{
+  var e = document.createElement( "INPUT" );
+
+  e._constructor = inputmasknumber._constructor;
+  e._constructor( arg );
+
+  return e;
+}
+
+inputmasknumber._constructor = function( arg )
+{
+  this._parent = document.getElementById( arg["parent"] );
+  this._parent.appendChild( this );
+
+  if( arg["elname"] )
+    this._strName = arg["elname"];
+
+  if( arg["iname"] )
+  {
+    this.internalName = arg["iname"];
+    this.setAttribute( "internalName", this.internalName );
+  }
+
+  this._bReadOnly = false;
+
+  if( arg["mask"] )
+    this.strMask = arg["mask"];
+
+  if( arg["maxdigits"] )
+    this.nMaxDigits = arg["maxdigits"];
+
+  this.internalValue='';
+
+  if( arg["type"] )
+    this._type = arg["type"];
+
+  if( arg["cssclass"] )
+    this._cssClassRW = arg["cssclass"];
+
+  if( arg["cssclassro"] )
+    this._cssClassRO = arg["cssclassro"];
+
+  if( arg["width"] != '' )
+    this.style.width = arg["width"];
+  
+  this.nOldValue     = 0;
+  this.onkeydown     = inputmasknumber.keyDown;
+  this.onkeypress    = inputmasknumber.keyPress;
+  this.onpaste       = inputmasknumber.paste;
+  this.afterPaste    = inputmasknumber.afterPaste;
+  this.oncut         = inputmasknumber.cut;
+  this.onfocus       = inputmasknumber.onFocus;
+  this.onblur        = inputmasknumber.onBlur;
+  this.applyMask     = inputmasknumber.applyMask;
+  this.setJsonValue  = inputmasknumber.setJsonValue;
+  this.getJsonValue  = inputmasknumber.getJsonValue;
+  this.removeLetters = inputmasknumber.removeLetters;
+  this.onChange      = inputmasknumber.onChange;
+
+  return this;
+}
+
+inputmasknumber.keyDown = function( pr_event )
+{
+  if ( this.readOnly )
+    return false;
+  
+  pr_event = pr_event || window.event;
+ 
+  var key    = pr_event.which  || pr_event.keyCode;
+  var target = pr_event.target || pr_event.srcElement;
+
+  switch( key )
+  {
+    case  0 : // unknown (null)
+    case 33 : // page up
+    case 34 : // page down
+    case 35 : // end
+    case 36 : // home
+    case 37 : // left arrow
+    case 38 : // up arrow
+    case 39 : // right arrow
+    case 40 : // down arrow
+      return false;
+  }
+
+  if( key == 8 || key == 46 )
+  {
+    target.internalValue = target.internalValue.substring( 0, target.internalValue.length -1 );
+    this.applyMask( this.strDPC );
+    return false;
+  }
+  return true;
+}
+
+inputmasknumber.keyPress = function( pr_event )
+{
+  pr_event = pr_event || window.event;
+  
+  var key = pr_event.which || pr_event.keyCode;
+
+  if( ( key >= 48 ) && ( key <= 57 ) && ( this.internalValue.length < this.nMaxDigits ) )
+  {
+    var target = pr_event.target || pr_event.srcElement;
+    
+    target.internalValue += String.fromCharCode( key );
+    this.applyMask( this.strDPC );
+  }
+  return false;
+}
+
+inputmasknumber.removeLetters = function ( str, nMaxDigits )
+{
+  return str.replace( new RegExp( "[^0-9]", "g" ), "" ).substring( 0, nMaxDigits );
+}
+
+inputmasknumber.paste = function( pr_event )
+{
+  if ( this.bReadOnly )
+    return false;
+
+  var self = this;
+
+  this.value = "";
+
+  setTimeout( function( ){ self.afterPaste( ); } );
+
+  return true;
+}
+
+inputmasknumber.afterPaste = function( )
+{
+  this.internalValue = this.removeLetters( this.value, this.nMaxDigits );
+  this.applyMask( this.strDPC );
+}
+
+inputmasknumber.cut = function( pr_event )
+{
+  pr_event.returnValue = false;
+  return true;
+}
+
+inputmasknumber.onFocus = function( )
+{
+  if( !this.bEventRun )
+    this.nOldValue = this.internalValue;
+
+    this.bEventRun = false;
+
+  if( !this.readOnly )
+    this.applyMask( this.strDPC );
+}
+
+inputmasknumber.onBlur = function( )
+{
+  if( !this.bReadOnly && !this.bEditMode && this.nOldValue != this.internalValue )
+  {
+    var bValidateEvent = true;
+    
+    if( this._parent && this._parent.validateEvent )
+      bValidateEvent = this._parent.validateEvent( );
+
+    if( bValidateEvent )
+      this.onChange( );
+  }
+
+  this.bEditMode = false;
+  this.applyMask( this.strLFC );
+}
+
+inputmasknumber.onChange = function( )
+{
+  fireEvent.apply( this, [] );
+}
+
+inputmasknumber.applyMask = function( caractere )
+{
+  var str = "";
+
+  for( var i = this.strMask.length -1, j = this.internalValue.length -1; i >= 0; i-- )
+  {
+    if( ( this.strMask.charAt( i ) == this.strDPC ) && ( j >= 0 ) )
+    {
+      str = this.internalValue.charAt( j ) + str;
+      j--;
+    }
+    else
+    {
+      if( this.strMask.charAt( i ) != this.strDPC )
+      {
+        str = this.strMask.charAt( i ) + str;
+      }
+      else//Acabou o input
+      {
+        str = caractere + str;
+      }
+    }
+  }
+
+  this.value = str;
+}
+
+inputmasknumber.setJsonValue = function( json )
+{
+  if( json.setup )
+  {
+    if( json.setup.mask != "null" )
+    {
+      if( ( json.setup.maxdigits != 0 ) && ( json.setup.DPC != "null" ) )
+        this.nMaxDigits = json.setup.maxdigits;
+
+      this.strMask = json.setup.mask;
+    }
+
+    if( json.setup.DPC != "null" )
+      this.strDPC = json.setup.DPC;
+
+    if( json.setup.LFC != "null" )
+      this.strLFC = json.setup.LFC;
+
+    if( json.setup.value != "null" )
+      this.internalValue = this.removeLetters( json.setup.value, this.nMaxDigits );
+
+    this.applyMask( this.strLFC );
+
+    if( json.setup.readOnly != undefined )
+      this.setReadOnly( json.setup.readOnly );
+
+    if( json.setup.align != "null" )
+      this.style.textAlign = json.setup.align;
+  }
+  else
+  {
+    if( json.mask )
+      this.strMask = json.mask;
+    
+    if( json.DPC )
+      this.strDPC = json.DPC;
+    
+    if( json.LFC )
+      this.strLFC = json.LFC;
+
+    if( json.value )
+    {
+      this.nMaxDigits    = json.value.length;
+      this.internalValue = this.removeLetters( json.value, this.nMaxDigits );
+      this.applyMask( this.strDPC );
+    }
+  }
+}
+
+inputmasknumber.getJsonValue = function( )
+{
+  var result = "";
+
+  if( this.internalValue == "" )
+  {
+    this.internalValue = this.removeLetters( this.value, this.nMaxDigits );
+    result = this.internalValue;
+  }
+  else
+  {
+    var temp = this.value;
+    this.applyMask( this.strLFC );
+    this.internalValue = this.removeLetters( this.value, this.nMaxDigits );
+    result = this.internalValue;
+
+    this.internalValue = this.removeLetters( temp, this.nMaxDigits );
+    this.applyMask( this.strDPC );
+    this.value = temp;
+  }
+
+  return '{type:' + this._type + '\,value:\"' + result +
+         '\"\,mask:\"' + this.strMask + '\"\,DPC:\"' + this.strDPC +
+         '\"\, LFC:\"' + this.strLFC + '\"}';
+}
