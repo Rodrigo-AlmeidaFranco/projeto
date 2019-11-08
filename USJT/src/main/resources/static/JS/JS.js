@@ -7,4 +7,6 @@ function show(modalClass){
 	
 	var div = document.getElementById(modalClass);
 	div.style.display = "block";
+	div.style.height =  "500px";
+	div.style.position =  "relative";
 }

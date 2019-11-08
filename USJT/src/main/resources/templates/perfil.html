@@ -163,24 +163,60 @@
 			</section>
 			<br>
 			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content trakcer"
-				id="trakcer">
-				<h3 class="title_confirmation">Status de pedido</h3><br>
-				<div th:each="ped : ${pedidos}">
+				id="trakcer" style="height: 500px;">
+
+				<!-- 			<div class="container">
+				<div class="row">
+				<div class="col-lg-4 col-md-4 col-sm-4">
+								<h3 class="title_confirmation">Status de pedido</h3><br>
+				<div th:each="ped : ${pedidos}" class="col-lg-3  col-md-6 col-sm-6" style="position: relative">
 				<img th:src="${ped.img}"/>
 				<h4>Nome: <span th:text="${ped.nome}"></span></h4>
 				<h4>Preço: <span th:text="${ped.precoVenda}"></span></h4>
 				</div>
-				
+				</div>
+				</div> 
+				</div>
+				-->
+				<div class="container">
+					<div class="row">
+						<div class="col-4" th:each="ped : ${pedidos}">
+							<img th:src="${ped.img}" alt="">
+							<div class="product-details">
+							<br>
+								<b><span th:text="${ped.nome}"></span></b>
+								<div class="price">
+									<span th:text="${ped.precoVenda}"></span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+
 			</section>
 			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content perfil"
 				id="perfil">
-				<h3 class="title_confirmation">perfil</h3><br>
-				 <h4>Nome: <span th:text="${perfil.nome}"></span></h4>
-				 <h4>Email: <span th:text="${perfil.email}"></span></h4>
-				 <h4>Telefone: <span th:text="${perfil.telefone}"></span></h4>
-				 <h4>Endereço: <span th:text="${perfil.endereco}"></span></h4>
-				 <h4>Cidade: <span th:text="${perfil.cidade}"></span></h4>
-				 <h4>UF: <span th:text="${perfil.uf}"></span></h4>
+				<h3 class="title_confirmation">perfil</h3>
+				<br>
+				<h4>
+					Nome: <span th:text="${perfil.nome}"></span>
+				</h4>
+				<h4>
+					Email: <span th:text="${perfil.email}"></span>
+				</h4>
+				<h4>
+					Telefone: <span th:text="${perfil.telefone}"></span>
+				</h4>
+				<h4>
+					Endereço: <span th:text="${perfil.endereco}"></span>
+				</h4>
+				<h4>
+					Cidade: <span th:text="${perfil.cidade}"></span>
+				</h4>
+				<h4>
+					UF: <span th:text="${perfil.uf}"></span>
+				</h4>
 			</section>
 			<section class="col-lg-12 col-md-12 col-sm-12 perfil-content suporte"
 				id="suporte">
@@ -189,18 +225,22 @@
 			<section
 				class="col-lg-12 col-md-12 col-sm-12 perfil-content metodosPagto"
 				id="metodosPagto">
-				<h3 class="title_confirmation">Metodos de Pagamento</h3><br>
+				<h3 class="title_confirmation">Metodos de Pagamento</h3>
+				<br>
 				<div th:each="pag : ${metodosPagto}">
-				 <h4>Metodo: <span th:text="${pag.nomeMetodo}"></span></h4>
+					<h4>
+						Metodo: <span th:text="${pag.nomeMetodo}"></span>
+					</h4>
 				</div>
-				
+
 			</section>
 			<section
 				class="col-lg-12 col-md-12 col-sm-12 perfil-content devolucao"
 				id="devolucao">
 				<h3 class="title_confirmation">Histórico Compras.</h3>
 				<div th:each="compras : ${historicoCompras}">
-				<span  th:text="${compras.nome}"&emsp;>&emsp;&emsp;</span>&emsp;<span th:text=" ${compras.precoVenda}"></span>
+					Produto: <b><span th:text="${compras.nome}"&emsp;>&emsp;&emsp;</span></b>&emsp;
+					Valor: <b><span th:text=" ${compras.precoVenda}"></span></b>
 				</div>
 			</section>
 		</div>
