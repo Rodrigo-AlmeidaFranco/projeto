@@ -7,6 +7,8 @@ import java.sql.SQLException;
 
 import com.usjtECommerce.USJT.connection.ConnectionFactory;
 import com.usjtECommerce.USJT.model.Produtos;
+import com.usjtECommerce.USJT.model.Usuario;
+
 import java.util.ArrayList;
 
 
@@ -17,15 +19,17 @@ private Connection connection;
  		this.connection = ConnectionFactory.obterConexao();
 	}
 	
-	public void criarProduto(Produtos produto) throws SQLException {
-		PreparedStatement stmt = this.connection.prepareStatement("INSERT INTO produtos (codigo,cod_usuario,produto,precoC,precoV,cod_fornecedor,cod_categoria) VALUES(?,?,?,?,?,?,?)");
-		stmt.setInt(1, produto.getId_produto());
-		stmt.setInt(2, produto.getCodUser());
+	public void criarProduto(Produtos produto, Usuario user) throws SQLException {
+		String sqlCreate = ("INSERT INTO produtos (codigo,cod_usuario,produto,precoC,precoV,cod_fornecedor,cod_categoria) VALUES(?,?,?,?,?,?,?)");
+		Connection conn = ConnectionFactory.obterConexao();
+        PreparedStatement stmt = conn.prepareStatement(sqlCreate);
+		stmt.setInt(1, 0);
+		stmt.setInt(2, user.getId_usuario());
 		stmt.setString(3, produto.getNome());
-		stmt.setDouble(4, produto.getPrecoCompra());
+		stmt.setDouble(4, 0);
 		stmt.setDouble(5, produto.getPrecoVenda());
-		stmt.setInt(6, produto.getCodFornecedor());
-		stmt.setInt(7, produto.getCodCategoria());
+		stmt.setInt(6, 1);
+		stmt.setInt(7, 4);
 		
 		stmt.execute();
  		stmt.close();

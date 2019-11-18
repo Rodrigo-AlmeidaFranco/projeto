@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 import com.usjtECommerce.USJT.DAO.ProdutoDAO;
 import com.usjtECommerce.USJT.model.Produtos;
+import com.usjtECommerce.USJT.model.Usuario;
 
 public class ProdutoService {
 	ProdutoDAO dao = new ProdutoDAO();
@@ -19,6 +20,10 @@ public class ProdutoService {
 	
 	public Produtos detalhe(Integer id) throws SQLException {
 		return dao.produtoDetalhe(id);
+	}
+	
+	public void anunciar(Produtos prod, Usuario user) throws SQLException {
+	    dao.criarProduto(prod,user);
 	}
 	
 }
