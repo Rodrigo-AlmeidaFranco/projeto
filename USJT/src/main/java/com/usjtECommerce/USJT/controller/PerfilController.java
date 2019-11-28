@@ -50,8 +50,9 @@ public class PerfilController {
 		mv.addObject(new Produtos());
 		return mv;
 		} else {
-		ModelAndView mv = new ModelAndView("perfil");
+		ModelAndView mv = new ModelAndView("login");
 		 mv.addObject(new Usuario());
+		 mv.addObject(new Produtos());
 		 return mv;
 		}
 	}

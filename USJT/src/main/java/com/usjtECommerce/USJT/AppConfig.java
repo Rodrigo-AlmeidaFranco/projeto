@@ -32,9 +32,7 @@ public class AppConfig implements WebMvcConfigurer {
 				.excludePathPatterns("login", "/", "/fazerLogin");
 	}
 
-	public void loginInterceptors(InterceptorRegistry registry) {
-		registry.addInterceptor(new LoginInterceptor()).addPathPatterns("/login","/fazerLogin").excludePathPatterns("/perfil","/buy", "/sell");
-	}
+
 
 	@Override
 	public void configurePathMatch(PathMatchConfigurer configurer) {
