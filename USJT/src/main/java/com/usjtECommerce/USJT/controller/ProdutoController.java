@@ -4,6 +4,9 @@ package com.usjtECommerce.USJT.controller;
 import java.sql.SQLException;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,14 +15,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.usjtECommerce.USJT.model.Categoria;
+import com.usjtECommerce.USJT.model.Pedido;
 import com.usjtECommerce.USJT.model.Produtos;
+import com.usjtECommerce.USJT.model.Usuario;
 import com.usjtECommerce.USJT.service.CategoriaService;
+import com.usjtECommerce.USJT.service.PedidoService;
 import com.usjtECommerce.USJT.service.ProdutoService;
 
 @Controller
 public class ProdutoController {
 	ProdutoService prodService = new ProdutoService();
 	CategoriaService catService = new CategoriaService();
+	PedidoService pedidoService = new PedidoService();
 	
 	@RequestMapping("/buscar")
 	public ModelAndView produto() throws SQLException{
@@ -40,4 +47,6 @@ public class ProdutoController {
 	  mv.addObject("produto",prod);
 	  return mv;
 	}
+	
+
 }
